@@ -1305,7 +1305,7 @@ class CRM_Contact_BAO_Query {
       (substr($values[0], 0, 13) == 'contribution_') ||
       (substr($values[0], 0, 6) == 'event_') ||
       (substr($values[0], 0, 12) == 'participant_') ||
-      (substr($values[0], 0, 12) == 'member_') ||
+      (substr($values[0], 0, 7) == 'member_') ||
       (substr($values[0], 0, 6) == 'quest_') ||
       (substr($values[0], 0, 8) == 'kabissa_') ||
       (substr($values[0], 0, 4) == 'tmf_') ||
@@ -4231,7 +4231,7 @@ SELECT COUNT( civicrm_contribution.total_amount ) as cancel_count,
       }
 
       if (!$appendTimeStamp) {
-        $firstDate = substr($date, 0, 8);
+        $firstDate = substr($firstDate, 0, 8);
       }
       $firstDateFormat = CRM_Utils_Date::customFormat($firstDate);
 
