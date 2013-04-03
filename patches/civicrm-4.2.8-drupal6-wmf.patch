@@ -1,0 +1,1554 @@
+diff --git a/CRM/ACL/BAO/ACL.php b/CRM/ACL/BAO/ACL.php
+index 94a49f4..848f743 100644
+--- a/CRM/ACL/BAO/ACL.php
++++ b/CRM/ACL/BAO/ACL.php
+@@ -44,6 +44,7 @@ class CRM_ACL_BAO_ACL extends CRM_ACL_DAO_ACL {
+   static $_operation = NULL;
+ 
+   static $_fieldKeys = NULL;
++  static $_group_cache = array();
+   static
+   function entityTable() {
+     if (!self::$_entityTable) {
+@@ -848,7 +849,11 @@ SELECT g.*
+       $aclKeys = array_keys($acls);
+       $aclKeys = implode(',', $aclKeys);
+ 
+-      $query = "
++      $cache_key = "$tableName-$aclKeys";
++      if ( array_key_exists( $cache_key, self::$_group_cache ) ) {
++          $ids = self::$_group_cache[ $cache_key ];
++      } else {
++        $query = "
+ SELECT   a.operation, a.object_id
+   FROM   civicrm_acl_cache c, civicrm_acl a
+  WHERE   c.acl_id       =  a.id
+@@ -857,24 +862,26 @@ SELECT   a.operation, a.object_id
+    AND   a.id        IN ( $aclKeys )
+ ORDER BY a.object_id
+ ";
+-      $params = array(1 => array($tableName, 'String'));
+-      $dao = CRM_Core_DAO::executeQuery($query, $params);
+-      while ($dao->fetch()) {
+-        if ($dao->object_id) {
+-          if (self::matchType($type, $dao->operation)) {
+-            $ids[] = $dao->object_id;
++        $params = array(1 => array($tableName, 'String'));
++        $dao = CRM_Core_DAO::executeQuery($query, $params);
++        while ($dao->fetch()) {
++          if ($dao->object_id) {
++            if (self::matchType($type, $dao->operation)) {
++              $ids[] = $dao->object_id;
++            }
+           }
+-        }
+-        else {
+-          // this user has got the permission for all objects of this type
+-          // check if the type matches
+-          if (self::matchType($type, $dao->operation)) {
+-            foreach ($allGroups as $id => $dontCare) {
+-              $ids[] = $id;
++          else {
++            // this user has got the permission for all objects of this type
++            // check if the type matches
++            if (self::matchType($type, $dao->operation)) {
++              foreach ($allGroups as $id => $dontCare) {
++                $ids[] = $id;
++              }
+             }
++            break;
+           }
+-          break;
+         }
++        self::$_group_cache[ $cache_key ] = $ids;
+       }
+     }
+ 
+diff --git a/CRM/ACL/BAO/Cache.php b/CRM/ACL/BAO/Cache.php
+index fd3ecba..c938231 100644
+--- a/CRM/ACL/BAO/Cache.php
++++ b/CRM/ACL/BAO/Cache.php
+@@ -149,7 +149,7 @@ WHERE  modified_date IS NULL OR (TIMESTAMPDIFF(MINUTE, modified_date, $now) >= $
+ ";
+     CRM_Core_DAO::singleValueQuery($query);
+ 
+-    CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache");
++    CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache");
+   }
+ }
+ 
+diff --git a/CRM/Contact/BAO/Contact.php b/CRM/Contact/BAO/Contact.php
+index ae662e3..d13ad9a 100644
+--- a/CRM/Contact/BAO/Contact.php
++++ b/CRM/Contact/BAO/Contact.php
+@@ -427,7 +427,7 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
+     }
+ 
+     // process greetings CRM-4575, cache greetings
+-    self::processGreetings($contact);
++    // NOT: self::processGreetings($contact);
+ 
+     return $contact;
+   }
+diff --git a/CRM/Contact/BAO/GroupContactCache.php b/CRM/Contact/BAO/GroupContactCache.php
+index e8e2ab0..5ce1673 100644
+--- a/CRM/Contact/BAO/GroupContactCache.php
++++ b/CRM/Contact/BAO/GroupContactCache.php
+@@ -195,7 +195,7 @@ WHERE  id IN ( $groupIDs )
+ 
+       if ($smartGroupCacheTimeout == 0) {
+         $query = "
+-TRUNCATE civicrm_group_contact_cache
++DELETE FROM civicrm_group_contact_cache
+ ";
+         $update = "
+ UPDATE civicrm_group g
+diff --git a/CRM/Contact/Form/CustomData.php b/CRM/Contact/Form/CustomData.php
+index 82e3fd5..2d50140 100644
+--- a/CRM/Contact/Form/CustomData.php
++++ b/CRM/Contact/Form/CustomData.php
+@@ -122,7 +122,7 @@ class CRM_Contact_Form_CustomData extends CRM_Core_Form {
+       return CRM_Custom_Form_CustomData::preProcess($this);
+     }
+ 
+-    $this->_groupID = CRM_Utils_Request::retrieve('groupID', 'Positive', $this, TRUE);
++    $this->_groupID = CRM_Utils_Request::retrieve('groupId', 'Positive', $this, TRUE);
+     $this->_tableID = CRM_Utils_Request::retrieve('tableId', 'Positive', $this, TRUE);
+ 
+     $this->_contactType = CRM_Contact_BAO_Contact::getContactType($this->_tableID);
+diff --git a/CRM/Contact/Form/Search.php b/CRM/Contact/Form/Search.php
+index 300d92e..36976e8 100644
+--- a/CRM/Contact/Form/Search.php
++++ b/CRM/Contact/Form/Search.php
+@@ -329,6 +329,7 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
+           'taskClassName' => 'CRM_Contact_Task',
+         ),
+       );
++      CRM_Utils_Hook::advancedSearchModes(self::$_modeValues);
+     }
+   }
+ 
+diff --git a/CRM/Contact/Form/Search/Custom/FullText.php b/CRM/Contact/Form/Search/Custom/FullText.php
+index bc76288..229d585 100644
+--- a/CRM/Contact/Form/Search/Custom/FullText.php
++++ b/CRM/Contact/Form/Search/Custom/FullText.php
+@@ -345,7 +345,7 @@ AND        cf.html_type IN ( 'Text', 'TextArea', 'RichTextEditor' )
+   }
+ 
+   function runQueries(&$tables) {
+-    $sql = "TRUNCATE {$this->_entityIDTableName}";
++    $sql = "DELETE FROM {$this->_entityIDTableName}";
+     CRM_Core_DAO::executeQuery($sql);
+ 
+     $maxRowCount = 0;
+diff --git a/CRM/Contact/Page/DedupeFind.php b/CRM/Contact/Page/DedupeFind.php
+index 7a31bbe..f4b7d02 100644
+--- a/CRM/Contact/Page/DedupeFind.php
++++ b/CRM/Contact/Page/DedupeFind.php
+@@ -167,6 +167,12 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
+       $where = "de.id IS NULL";
+       $this->_mainContacts = CRM_Core_BAO_PrevNextCache::retrieve($cacheKeyString, $join, $where);
+       if (empty($this->_mainContacts)) {
++
++if ( empty( $contactIds ) ) {
++    CRM_Core_Session::singleton()->setStatus( "I'm sorry Dave, I can't do that right now.  Crazy deduping of the entire database is not supported at the moment.  Please try merging contacts from the Search Results page, if are feeling that kind of itch." );
++    CRM_Utils_System::redirect( CRM_Utils_System::url( 'civicrm' ) );
++}
++
+         if ($gid) {
+           $foundDupes = $this->get("dedupe_dupes_$gid");
+           if (!$foundDupes) {
+diff --git a/CRM/Contribute/BAO/ContributionRecur.php b/CRM/Contribute/BAO/ContributionRecur.php
+index fecd594..706c45f 100644
+--- a/CRM/Contribute/BAO/ContributionRecur.php
++++ b/CRM/Contribute/BAO/ContributionRecur.php
+@@ -338,6 +338,8 @@ SELECT r.payment_processor_id
+       $params[$recurDAO->id]['next_sched_contribution'] = $recurDAO->next_sched_contribution;
+       $params[$recurDAO->id]['amount'] = $recurDAO->amount;
+       $params[$recurDAO->id]['currency'] = $recurDAO->currency;
++      $params[$recurDAO->id]['failure_count'] = $recurDAO->failure_count;
++      $params[$recurDAO->id]['failure_retry_date'] = $recurDAO->failure_retry_date;
+       $params[$recurDAO->id]['frequency_unit'] = $recurDAO->frequency_unit;
+       $params[$recurDAO->id]['frequency_interval'] = $recurDAO->frequency_interval;
+       $params[$recurDAO->id]['installments'] = $recurDAO->installments;
+diff --git a/CRM/Contribute/Form/Contribution.php b/CRM/Contribute/Form/Contribution.php
+index 8739d36..602d33f 100644
+--- a/CRM/Contribute/Form/Contribution.php
++++ b/CRM/Contribute/Form/Contribution.php
+@@ -1032,7 +1032,7 @@ WHERE  contribution_id = {$this->_id}
+     );
+     $this->assign('outBound_option', $mailingInfo['outBound_option']);
+ 
+-    $this->addButtons(array(
++    $buttons = array(
+         array(
+           'type' => 'upload',
+           'name' => ts('Save'),
+@@ -1052,6 +1052,15 @@ WHERE  contribution_id = {$this->_id}
+       )
+     );
+ 
++    if ($this->_id) {
++      $buttons[] = array (
++        'type' => 'refund',
++        'js' => array( 'onclick' => "document.location = '" . CRM_Utils_System::url( 'civicrm/contribute/refund', "id={$this->_id}", false, null, false ) . "'; return false;" ),
++        'name' => ts('Refund'),
++      ); 
++    }
++    $this->addButtons($buttons);
++
+     $this->addFormRule(array('CRM_Contribute_Form_Contribution', 'formRule'), $this);
+ 
+     if ($this->_action & CRM_Core_Action::VIEW) {
+diff --git a/CRM/Contribute/Form/Refund.php b/CRM/Contribute/Form/Refund.php
+new file mode 100644
+index 0000000..c37c60f
+--- /dev/null
++++ b/CRM/Contribute/Form/Refund.php
+@@ -0,0 +1,98 @@
++<?php
++
++require_once 'CRM/Contribute/Form.php';
++
++class CRM_Contribute_Form_Refund extends CRM_Contribute_Form
++{
++    public function preProcess() 
++    {
++        parent::preProcess();
++
++        $this->_id = CRM_Utils_Request::retrieve( 'id', 'Positive', $this );
++
++        //$session = CRM_Core_Session::singleton();
++        //$this->_userContext = $session->readUserContext( );
++
++        require_once 'CRM/Contribute/BAO/Contribution.php';
++        $this->contribution = new CRM_Contribute_BAO_Contribution();
++        $this->contribution->id = $this->_id;
++        if ( !$this->contribution->find( true ) ) {
++            CRM_Core_Error::fatal( ts("Contribution does not exist: %1", array( 1 => $this->_id ) ) );
++        }
++
++        require_once 'CRM/Contact/BAO/Contact.php';
++        $this->contact = new CRM_Contact_BAO_Contact();
++        $this->contact->id = $this->contribution->contact_id;
++        $this->contact->find( true );
++    }
++
++    function setDefaultValues( ) {
++        $defaults['type'] = "refund";
++
++        return $defaults;
++    }
++
++
++    /**
++     * Function to build the form
++     *
++     * @return None
++     * @access public
++     */
++    public function buildQuickForm( ) 
++    {
++        $this->addButtons(array(
++            array (
++                'type'      => 'next',
++                'name'      => ts('Confirm')
++            ),
++            array (
++                'type'      => 'cancel',
++                'name'      => ts('Cancel')
++            ),
++        ));
++
++        $this->addElement( 'checkbox', 'completed', ts('Refund has been completed') );
++
++        $this->add('select', 'type', ts('Refund type'),array(
++            '' => '- select -',
++            'refund' => 'Refund',
++            'chargeback' => 'Chargeback',
++        ));
++
++        $this->add( 'hidden', 'id', $this->_id );
++        $this->assign( "contribution_id", $this->_id );
++
++        list( $original_currency, $original_amount ) = explode( " ", $this->contribution->source );
++        $this->assign( "original_currency", $original_currency );
++        $this->assign( "original_amount", $original_amount );
++        $this->assign( "receive_date", $this->contribution->receive_date );
++
++        $this->assign( "contact_name", $this->contact->display_name );
++        $this->assign( "view_original_contribution", CRM_Utils_System::url( 'civicrm/contact/view/contribution', "reset=1&action=view&id={$this->_id}&cid={$this->contact->id}" ) );
++    }
++
++    public function postProcess() 
++    {
++        $submittedValues = $this->controller->exportValues( $this->_name );
++
++        $this->type = CRM_Utils_Array::value( 'type', $submittedValues, 'refund' );
++        $this->completed = CRM_Utils_Array::value( 'completed', $submittedValues, false );
++
++        if ( CRM_Utils_Array::value( '_qf_Refund_next', $this->_submitValues ) ) {
++            try {
++                $this->refund_id = module_invoke( 'wmf_civicrm', 'mark_refund', $this->_id, $this->type, $this->completed );
++            } catch (Exception $e) {
++                CRM_Core_Error::fatal( ts("Failed to mark refund: %1", array( 1 => $e->getMessage() ) ) );
++            }
++
++            CRM_Core_Session::setStatus( ts("Your %1 has been recorded. <a href=\"%2\">Edit</a> the refund contribution.", array(
++                    1 => $this->type,
++                    2 => CRM_Utils_System::url( 'civicrm/contact/view/contribution', "reset=1&action=update&id={$this->refund_id}&cid={$this->contact->id}" ),
++            )) );
++        }
++
++        $session = CRM_Core_Session::singleton();
++        $session->replaceUserContext( CRM_Utils_System::url( 'civicrm/contact/view', "reset=1&cid={$this->contact->id}&selectedChild=contribute" ) );
++    }
++}
+diff --git a/CRM/Contribute/Form/Search.php b/CRM/Contribute/Form/Search.php
+index 093f39f..f389303 100644
+--- a/CRM/Contribute/Form/Search.php
++++ b/CRM/Contribute/Form/Search.php
+@@ -159,6 +159,13 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form {
+     $this->_limit   = CRM_Utils_Request::retrieve('limit', 'Positive', $this);
+     $this->_context = CRM_Utils_Request::retrieve('context', 'String', $this, FALSE, 'search');
+ 
++    /*
++     * WMF HACK: "force" causes a search with null criteria.  Disable until this is fixed.
++     */
++    if ( $this->_context === "search" ) {
++      $this->_force = false;
++    }
++
+     $this->assign("context", $this->_context);
+ 
+     // get user submitted values
+diff --git a/CRM/Contribute/xml/Menu/Contribute.xml b/CRM/Contribute/xml/Menu/Contribute.xml
+index d4455e3..356d08a 100644
+--- a/CRM/Contribute/xml/Menu/Contribute.xml
++++ b/CRM/Contribute/xml/Menu/Contribute.xml
+@@ -211,6 +211,11 @@
+      <access_arguments>make online contributions</access_arguments>
+   </item>
+   <item>
++     <path>civicrm/contribute/refund</path>
++     <page_callback>CRM_Contribute_Form_Refund</page_callback>
++     <access_arguments>edit contributions</access_arguments>
++  </item>
++  <item>
+      <path>civicrm/contribute/updatebilling</path>
+      <title>Update Billing Details</title>
+      <page_callback>CRM_Contribute_Form_UpdateBilling</page_callback>
+diff --git a/CRM/Core/BAO/CustomField.php b/CRM/Core/BAO/CustomField.php
+index 0aa9072..19e63aa 100644
+--- a/CRM/Core/BAO/CustomField.php
++++ b/CRM/Core/BAO/CustomField.php
+@@ -275,7 +275,9 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
+       self::createField($customField, 'modify', $indexExist);
+     }
+     else {
+-      $customField->column_name .= "_{$customField->id}";
++      if (!isset($params['column_name'])) {
++        $customField->column_name .= "_{$customField->id}";
++      }
+       $customField->save();
+       // make sure all values are present in the object
+       $customField->find(TRUE);
+diff --git a/CRM/Core/BAO/CustomGroup.php b/CRM/Core/BAO/CustomGroup.php
+index bf09e99..3df400b 100644
+--- a/CRM/Core/BAO/CustomGroup.php
++++ b/CRM/Core/BAO/CustomGroup.php
+@@ -142,7 +142,12 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
+ 
+ 
+       // lets create the table associated with the group and save it
+-      $tableName = $group->table_name = "civicrm_value_" . strtolower(CRM_Utils_String::munge($group->title, '_', 32));
++      if (isset($params['table_name'])) {
++          $tableName = $params['table_name'];
++      } else {
++          $munged_title = strtolower(CRM_Utils_String::munge($group->title, '_', 32));
++          $tableName = "civicrm_value_{$munged_title}_{$group->id}";
++      }
+ 
+       // we do this only once, so name never changes
+       $group->name = CRM_Utils_String::munge($params['title'], '_', 64);
+@@ -159,9 +164,6 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
+ 
+     $group->save();
+     if ($tableName) {
+-      // now append group id to table name, this prevent any name conflicts
+-      // like CRM-2742
+-      $tableName .= "_{$group->id}";
+       $group->table_name = $tableName;
+       CRM_Core_DAO::setFieldValue('CRM_Core_DAO_CustomGroup',
+         $group->id,
+diff --git a/CRM/Core/BAO/Mapping.php b/CRM/Core/BAO/Mapping.php
+index f9eef82..e983cc9 100644
+--- a/CRM/Core/BAO/Mapping.php
++++ b/CRM/Core/BAO/Mapping.php
+@@ -272,13 +272,12 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
+   static
+   function buildMappingForm(&$form, $mappingType = 'Export', $mappingId = NULL, $columnNo, $blockCount = 3, $exportMode = NULL) {
+     if ($mappingType == 'Export') {
+-      $name = "Map";
+       $columnCount = array('1' => $columnNo);
+     }
+     elseif ($mappingType == 'Search Builder') {
+-      $name = "Builder";
+       $columnCount = $columnNo;
+     }
++    $name = $form->getAttribute('id');
+ 
+     //get the saved mapping details
+ 
+diff --git a/CRM/Core/Config.php b/CRM/Core/Config.php
+index 33e3d28..811b42a 100644
+--- a/CRM/Core/Config.php
++++ b/CRM/Core/Config.php
+@@ -655,13 +655,13 @@ class CRM_Core_Config extends CRM_Core_Config_Variables {
+    */
+   function clearDBCache() {
+     $queries = array(
+-      'TRUNCATE TABLE civicrm_acl_cache',
+-      'TRUNCATE TABLE civicrm_acl_contact_cache',
+-      'TRUNCATE TABLE civicrm_cache',
+-      'TRUNCATE TABLE civicrm_prevnext_cache',
++      'DELETE FROM civicrm_acl_cache',
++      'DELETE FROM civicrm_acl_contact_cache',
++      'DELETE FROM civicrm_cache',
++      'DELETE FROM civicrm_prevnext_cache',
+       'UPDATE civicrm_group SET cache_date = NULL',
+-      'TRUNCATE TABLE civicrm_group_contact_cache',
+-      'TRUNCATE TABLE civicrm_menu',
++      'DELETE FROM civicrm_group_contact_cache',
++      'DELETE FROM civicrm_menu',
+       'UPDATE civicrm_setting SET value = NULL WHERE name="navigation" AND contact_id IS NOT NULL',
+       'DELETE FROM civicrm_setting WHERE name="modulePaths"', // CRM-10543
+     );
+diff --git a/CRM/Core/Menu.php b/CRM/Core/Menu.php
+index 90b4c7b..5006b3c 100644
+--- a/CRM/Core/Menu.php
++++ b/CRM/Core/Menu.php
+@@ -235,7 +235,7 @@ class CRM_Core_Menu {
+   static function store($truncate = TRUE) {
+     // first clean up the db
+     if ($truncate) {
+-      $query = 'TRUNCATE civicrm_menu';
++      $query = 'DELETE FROM civicrm_menu';
+       CRM_Core_DAO::executeQuery($query);
+     }
+     $menuArray = self::items();
+diff --git a/CRM/Core/OptionGroup.php b/CRM/Core/OptionGroup.php
+index 9c2e206..06e762b 100644
+--- a/CRM/Core/OptionGroup.php
++++ b/CRM/Core/OptionGroup.php
+@@ -34,6 +34,7 @@
+  */
+ class CRM_Core_OptionGroup {
+   static $_values = array();
++  static $_value_cache = array();
+ 
+   /*
+      * $_domainIDGroups array maintains the list of option groups for whom
+@@ -279,6 +280,11 @@ WHERE  v.option_group_id = g.id
+       return NULL;
+     }
+ 
++    $cache_key = "$groupName-$label-$valueField";
++    if ( array_key_exists( $cache_key, self::$_value_cache ) ) {
++      return self::$_value_cache[ $cache_key ];
++    }
++
+     $query = "
+ SELECT  v.label as label ,v.{$valueField} as value
+ FROM   civicrm_option_value v,
+@@ -295,8 +301,10 @@ WHERE  v.option_group_id = g.id
+     );
+     $dao = CRM_Core_DAO::executeQuery($query, $p);
+     if ($dao->fetch()) {
++      $value = $dao->value;
+       $dao->free();
+-      return $dao->value;
++      self::$_value_cache[ $cache_key ] = $value;
++      return $value;
+     }
+     $dao->free();
+     return NULL;
+diff --git a/CRM/Export/BAO/Export.php b/CRM/Export/BAO/Export.php
+index 18dd005..abfdb8c 100644
+--- a/CRM/Export/BAO/Export.php
++++ b/CRM/Export/BAO/Export.php
+@@ -1060,6 +1060,9 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
+       $sql = "DROP TABLE IF EXISTS {$exportTempTable}";
+       CRM_Core_DAO::executeQuery($sql);
+ 
++      $sql = "DROP TABLE IF EXISTS {$componentTable}";
++      CRM_Core_DAO::executeQuery( $sql );
++
+       CRM_Utils_System::civiExit();
+     }
+     else {
+diff --git a/CRM/Export/Form/Map.php b/CRM/Export/Form/Map.php
+index e0b8a80..680fa1d 100644
+--- a/CRM/Export/Form/Map.php
++++ b/CRM/Export/Form/Map.php
+@@ -152,7 +152,9 @@ class CRM_Export_Form_Map extends CRM_Core_Form {
+    */
+   public function postProcess() {
+     $params = $this->controller->exportValues($this->_name);
+-    $exportParams = $this->controller->exportValues('Select');
++    if (array_search('Select', $this->controller->_pages)) {
++      $exportParams = $this->controller->exportValues('Select');
++    }
+ 
+     $greetingOptions = CRM_Export_Form_Select::getGreetingOptions();
+ 
+diff --git a/CRM/Utils/Hook.php b/CRM/Utils/Hook.php
+index 56bad78..b9c60ea 100644
+--- a/CRM/Utils/Hook.php
++++ b/CRM/Utils/Hook.php
+@@ -940,6 +940,16 @@ abstract class CRM_Utils_Hook {
+   }
+ 
+   /**
++   * This hook is used to add or modify display modes in the Contact Advanced Search form.
++   */
++  static function advancedSearchModes( &$modes ) {
++    return self::singleton( )->invoke( 1, $modes,
++      self::$_nullObject, self::$_nullObject,
++      self::$_nullObject, self::$_nullObject,
++      'civicrm_advancedSearchModes' );
++  }
++
++  /**
+    * This hook is called when we are determining the contactID for a specific
+    * email address
+    *
+diff --git a/api/v3/utils.php b/api/v3/utils.php
+index b24b979..d205516 100644
+--- a/api/v3/utils.php
++++ b/api/v3/utils.php
+@@ -309,22 +309,18 @@ function _civicrm_api3_get_BAO($name) {
+ }
+ 
+ /**
+- *  Recursive function to explode value-separated strings into arrays
++ * explode value-separated strings into arrays
+  *
+  */
+ function _civicrm_api3_separate_values(&$values) {
++  array_walk_recursive($values, "_civicrm_api3_values_to_array");
++}
++
++function _civicrm_api3_values_to_array( &$values, $key ) {
+   $sp = CRM_Core_DAO::VALUE_SEPARATOR;
+-  foreach ($values as $key => & $value) {
+-    if (is_array($value)) {
+-      _civicrm_api3_separate_values($value);
+-    }
+-    elseif (is_string($value)) {
+-      if($key == 'case_type_id'){// this is to honor the way case API was originally written
+-        $value = trim(str_replace($sp, ',', $value), ',');
+-      }
+-      elseif (strpos($value, $sp) !== FALSE) {
+-        $value = explode($sp, trim($value, $sp));
+-      }
++  if (is_string($values)) {
++    if (strpos($values, $sp) !== FALSE) {
++      $values = explode($sp, trim($values, $sp));
+     }
+   }
+ }
+@@ -1077,14 +1073,14 @@ function _civicrm_api3_validate_date(&$params, &$fieldname, &$fieldInfo) {
+   //should we check first to prevent it from being copied if they have passed in sql friendly format?
+   if (CRM_Utils_Array::value($fieldInfo['name'], $params)) {
+     //accept 'whatever strtotime accepts
+-    if (strtotime($params[$fieldInfo['name']]) == 0) {
++    if (strtotime($params[$fieldInfo['name']]) === false) {
+       throw new Exception($fieldInfo['name'] . " is not a valid date: " . $params[$fieldInfo['name']]);
+     }
+     $params[$fieldInfo['name']] = CRM_Utils_Date::processDate($params[$fieldInfo['name']]);
+   }
+   if ((CRM_Utils_Array::value('name', $fieldInfo) != $fieldname) && CRM_Utils_Array::value($fieldname, $params)) {
+     //If the unique field name differs from the db name & is set handle it here
+-    if (strtotime($params[$fieldname]) == 0) {
++    if (strtotime($params[$fieldname]) === false) {
+       throw new Exception($fieldname . " is not a valid date: " . $params[$fieldname]);
+     }
+     $params[$fieldname] = CRM_Utils_Date::processDate($params[$fieldname]);
+diff --git a/css/civicrm.css b/css/civicrm.css
+index bc68d3c..b14e207 100644
+--- a/css/civicrm.css
++++ b/css/civicrm.css
+@@ -3296,7 +3296,6 @@ div#crm-toolTip
+ #crm-container div.finalconf-itemdesc     { font-style:italic; padding:6px 12px 6px 12px; color:#666; float:right; width:60%; }
+ #crm-container h4.finalconf-btm           { border-bottom:1px solid #ccc; margin-bottom:20px; }
+ 
+-
+ /*Screen Reader Accessibility additions*/
+ #crm-container a.whiteanchor{
+   color:white;
+@@ -3464,3 +3463,16 @@ div#crm-toolTip
+ .field-action span.btn-slide{padding-left:0px;padding-right:11px;}
+ /*end crm-10345*/
+ 
++/* recurring payments */
++.failcount {
++  background-color: yellow;
++}
++.failcount1 {
++  color: black;
++}
++.failcount2 {
++  color: purple;
++}
++.failcount1 {
++  color: red;
++}
+diff --git a/packages/DB/common.php b/packages/DB/common.php
+index 8d40312..bafd68f 100644
+--- a/packages/DB/common.php
++++ b/packages/DB/common.php
+@@ -1148,6 +1148,17 @@ class DB_common extends PEAR
+      */
+     function modifyQuery($query)
+     {
++        /**
++         * WMF hack:
++         * Insert diagnostic info such as requesting user.
++         *
++         * Have not found a function to efficiently get uf username.
++         * Not sure if query begin time is already reported by mysql, or would be useful.
++         */
++        $uid = CRM_Utils_System::getLoggedInUfID();
++        $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
++        $query = $prefix . $query;
++
+         return $query;
+     }
+ 
+diff --git a/packages/DB/mysql.php b/packages/DB/mysql.php
+index e9b5e70..303f867 100644
+--- a/packages/DB/mysql.php
++++ b/packages/DB/mysql.php
+@@ -832,6 +832,7 @@ class DB_mysql extends DB_common
+                                       'DELETE FROM \1 WHERE 1=1', $query);
+             }
+         }
++        $query = parent::modifyQuery($query);
+         return $query;
+     }
+ 
+diff --git a/patches/civicrm-4.1.1-drupal6-wmf.patch b/patches/civicrm-4.1.1-drupal6-wmf.patch
+new file mode 100644
+index 0000000..882948d
+--- /dev/null
++++ b/patches/civicrm-4.1.1-drupal6-wmf.patch
+@@ -0,0 +1,846 @@
++diff -urN civicrm-4.1.1-drupal6/api/class.api.php civicrm-4.1.1-drupal6-wmf/api/class.api.php
++--- civicrm-4.1.1-drupal6/api/class.api.php	2011-12-19 00:30:53.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/api/class.api.php	2013-04-03 11:17:12.000000000 -0700
++@@ -80,7 +80,7 @@
++       require_once "api/v3/utils.php";
++       $this->cfg= CRM_Core_Config::singleton();
++       $this->init();
++-      $this->ping();
+++      //$this->ping();
++     } else {
++       $this->cfg= CRM_Core_Config::singleton();
++     }
++diff -urN civicrm-4.1.1-drupal6/api/v3/utils.php civicrm-4.1.1-drupal6-wmf/api/v3/utils.php
++--- civicrm-4.1.1-drupal6/api/v3/utils.php	2012-02-14 18:23:39.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/api/v3/utils.php	2013-04-03 11:17:17.000000000 -0700
++@@ -272,20 +272,20 @@
++ }
++ 
++ /**
++- *  Recursive function to explode value-separated strings into arrays
+++ * explode value-separated strings into arrays
++  *
++  */
++-function _civicrm_api3_separate_values( &$values )
+++function _civicrm_api3_separate_values(&$values) {
+++    array_walk_recursive($values, "_civicrm_api3_values_to_array");
+++}
+++
+++function _civicrm_api3_values_to_array( &$values, $key )
++ {
++     $sp = CRM_Core_DAO::VALUE_SEPARATOR;
++-    foreach ($values as &$value) {
++-        if (is_array($value)) {
++-            _civicrm_api3_separate_values($value);
++-        }
++-        elseif (is_string($value)) {
++-            if (strpos($value, $sp) !== FALSE) {
++-                $value = explode($sp, trim($value, $sp));
++-            }
+++  if (is_string($values))
+++  {
+++    if (strpos($values, $sp) !== FALSE) {
+++      $values = explode($sp, trim($values, $sp));
++         }
++     }
++ }
++@@ -846,14 +846,14 @@
++   	//should we check first to prevent it from being copied if they have passed in sql friendly format?
++     if (CRM_Utils_Array::value ( $fieldInfo ['name'], $params )) {
++         //accept 'whatever strtotime accepts
++-        if (strtotime($params [$fieldInfo ['name']]) ==0) {
+++        if (strtotime($params [$fieldInfo ['name']]) === false) {
++             throw new exception ($fieldInfo ['name']. " is not a valid date: " . $params [$fieldInfo ['name']]);
++         }
++         $params [$fieldInfo ['name']] = CRM_Utils_Date::processDate ( $params [$fieldInfo ['name']] );
++     }
++     if ((CRM_Utils_Array::value ('name', $fieldInfo) != $fieldname ) && CRM_Utils_Array::value ( $fieldname , $params )) {
++         //If the unique field name differs from the db name & is set handle it here
++-        if (strtotime($params [$fieldname]) ==0) {
+++        if (strtotime($params [$fieldname]) === false) {
++             throw new exception ($fieldname. " is not a valid date: " . $params [$fieldname]);
++         }
++         $params [$fieldname] = CRM_Utils_Date::processDate ( $params [$fieldname] );
++diff -urN civicrm-4.1.1-drupal6/CRM/ACL/BAO/ACL.php civicrm-4.1.1-drupal6-wmf/CRM/ACL/BAO/ACL.php
++--- civicrm-4.1.1-drupal6/CRM/ACL/BAO/ACL.php	2011-11-19 10:35:10.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/ACL/BAO/ACL.php	2013-04-03 11:17:12.000000000 -0700
++@@ -44,8 +44,9 @@
++     static $_objectTable = null;
++     static $_operation   = null;
++ 
++-    static $_fieldKeys   = null
++-;
+++    static $_fieldKeys   = null;
+++    static $_group_cache = array();
+++
++     static function entityTable( ) {
++         if ( ! self::$_entityTable ) {
++             self::$_entityTable = array(
++@@ -818,6 +819,11 @@
++             $aclKeys = array_keys( $acls );
++             $aclKeys = implode( ',', $aclKeys );
++ 
+++          $cache_key = "$tableName-$aclKeys";
+++          if ( array_key_exists( $cache_key, self::$_group_cache ) ) {
+++              $ids = self::$_group_cache[ $cache_key ];
+++          } else {
+++
++             $query = "
++ SELECT   a.operation, a.object_id
++   FROM   civicrm_acl_cache c, civicrm_acl a
++@@ -845,6 +851,8 @@
++                     break;
++                 }
++             }
+++            self::$_group_cache[ $cache_key ] = $ids;
+++          }
++         }
++ 
++         require_once 'CRM/Utils/Hook.php';
++diff -urN civicrm-4.1.1-drupal6/CRM/ACL/BAO/Cache.php civicrm-4.1.1-drupal6-wmf/CRM/ACL/BAO/Cache.php
++--- civicrm-4.1.1-drupal6/CRM/ACL/BAO/Cache.php	2011-11-16 05:07:53.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/ACL/BAO/Cache.php	2013-04-03 11:17:12.000000000 -0700
++@@ -147,7 +147,7 @@
++ ";
++         CRM_Core_DAO::singleValueQuery( $query );
++ 
++-        CRM_Core_DAO::singleValueQuery( "TRUNCATE TABLE civicrm_acl_contact_cache" );
+++        CRM_Core_DAO::singleValueQuery( "DELETE FROM civicrm_acl_contact_cache" );
++     }
++ 
++ }
++diff -urN civicrm-4.1.1-drupal6/CRM/Contact/BAO/Contact.php civicrm-4.1.1-drupal6-wmf/CRM/Contact/BAO/Contact.php
++--- civicrm-4.1.1-drupal6/CRM/Contact/BAO/Contact.php	2012-03-01 02:07:28.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contact/BAO/Contact.php	2013-04-03 11:17:12.000000000 -0700
++@@ -440,7 +440,7 @@
++         }
++ 
++         // process greetings CRM-4575, cache greetings
++-        self::processGreetings( $contact );
+++        // NOT: self::processGreetings( $contact );
++         
++         return $contact;
++     }
++diff -urN civicrm-4.1.1-drupal6/CRM/Contact/BAO/GroupContactCache.php civicrm-4.1.1-drupal6-wmf/CRM/Contact/BAO/GroupContactCache.php
++--- civicrm-4.1.1-drupal6/CRM/Contact/BAO/GroupContactCache.php	2012-01-16 10:32:49.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contact/BAO/GroupContactCache.php	2013-04-03 11:17:12.000000000 -0700
++@@ -186,7 +186,7 @@
++ 
++             if ( $smartGroupCacheTimeout == 0 ) {
++                 $query  = "
++-TRUNCATE civicrm_group_contact_cache
+++DELETE FROM civicrm_group_contact_cache
++ ";
++                 $update = "
++ UPDATE civicrm_group g
++diff -urN civicrm-4.1.1-drupal6/CRM/Contact/Form/CustomData.php civicrm-4.1.1-drupal6-wmf/CRM/Contact/Form/CustomData.php
++--- civicrm-4.1.1-drupal6/CRM/Contact/Form/CustomData.php	2011-12-09 02:13:37.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contact/Form/CustomData.php	2013-04-03 11:17:12.000000000 -0700
++@@ -128,7 +128,7 @@
++             return CRM_Custom_Form_CustomData::preProcess( $this );
++         }
++ 
++-		$this->_groupID = CRM_Utils_Request::retrieve( 'groupID', 'Positive', $this, true );
+++		$this->_groupID = CRM_Utils_Request::retrieve( 'groupId', 'Positive', $this, true );
++ 		$this->_tableID  = CRM_Utils_Request::retrieve( 'tableId', 'Positive', $this, true );
++ 
++ 		require_once 'CRM/Contact/BAO/Contact.php';
++diff -urN civicrm-4.1.1-drupal6/CRM/Contact/Form/Search/Custom/FullText.php civicrm-4.1.1-drupal6-wmf/CRM/Contact/Form/Search/Custom/FullText.php
++--- civicrm-4.1.1-drupal6/CRM/Contact/Form/Search/Custom/FullText.php	2011-11-16 05:07:53.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contact/Form/Search/Custom/FullText.php	2013-04-03 11:17:12.000000000 -0700
++@@ -335,7 +335,7 @@
++     }
++ 
++     function runQueries( &$tables ) {
++-        $sql = "TRUNCATE {$this->_entityIDTableName}";
+++        $sql = "DELETE FROM {$this->_entityIDTableName}";
++         CRM_Core_DAO::executeQuery( $sql );
++ 
++         $maxRowCount = 0;
++diff -urN civicrm-4.1.1-drupal6/CRM/Contact/Form/Search.php civicrm-4.1.1-drupal6-wmf/CRM/Contact/Form/Search.php
++--- civicrm-4.1.1-drupal6/CRM/Contact/Form/Search.php	2012-01-07 09:20:19.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contact/Form/Search.php	2013-04-03 11:17:12.000000000 -0700
++@@ -324,6 +324,7 @@
++                                    'resultContext' => null,
++                                    'taskClassName' => 'CRM_Contact_Task' ),
++                        );
+++                       CRM_Utils_Hook::advancedSearchModes(self::$_modeValues);
++         }
++     }        
++     
++diff -urN civicrm-4.1.1-drupal6/CRM/Contact/Page/DedupeFind.php civicrm-4.1.1-drupal6-wmf/CRM/Contact/Page/DedupeFind.php
++--- civicrm-4.1.1-drupal6/CRM/Contact/Page/DedupeFind.php	2011-11-16 05:07:53.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contact/Page/DedupeFind.php	2013-04-03 11:17:12.000000000 -0700
++@@ -115,6 +115,12 @@
++             $where = "de.id IS NULL";     
++             $this->_mainContacts = CRM_Core_BAO_PrevNextCache::retrieve( $cacheKeyString, $join, $where );
++             if ( empty( $this->_mainContacts ) ) {
+++
+++if ( empty( $contactIds ) ) {
+++    CRM_Core_Session::singleton()->setStatus( "I'm sorry Dave, I can't do that right now.  Crazy deduping of the entire database is not supported at the moment.  Please try merging contacts from the Search Results page, if are feeling that kind of itch." );
+++    CRM_Utils_System::redirect( CRM_Utils_System::url( 'civicrm' ) );
+++}
+++
++                 if ( $gid ) {
++                     $foundDupes = $this->get( "dedupe_dupes_$gid" );
++                     if ( !$foundDupes ) {
++diff -urN civicrm-4.1.1-drupal6/CRM/Contribute/BAO/ContributionRecur.php civicrm-4.1.1-drupal6-wmf/CRM/Contribute/BAO/ContributionRecur.php
++--- civicrm-4.1.1-drupal6/CRM/Contribute/BAO/ContributionRecur.php	2011-12-06 07:51:01.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contribute/BAO/ContributionRecur.php	2013-04-03 11:17:12.000000000 -0700
++@@ -46,21 +46,25 @@
++      * pairs
++      *
++      * @param array  $params (reference ) an assoc array of name/value pairs
++-     * @param array $ids    the array that holds all the db ids
++      *
++      * @return object CRM_Contribute_BAO_Contribution object
++      * @access public
++      * @static
++      */
++-    static function add(&$params, &$ids) {
+++    static function add(&$params) {
++       
+++        // pre-processing hooks
++         require_once 'CRM/Utils/Hook.php';
++         if ( CRM_Utils_Array::value( 'id', $params ) ) {
++             CRM_Utils_Hook::pre( 'edit', 'ContributionRecur', $params['id'], $params );
+++            $id = $params['id'];
++         } else {
++             CRM_Utils_Hook::pre( 'create', 'ContributionRecur', null, $params ); 
+++            $id = null;
++         }
++         
+++        // make sure we're not creating a new recurring contribution with the same trasaction ID
+++        // or invoice ID as an existing recurring contribution
++         $duplicates = array( );
++         if ( self::checkDuplicate( $params, $duplicates ) ) {
++             $error = CRM_Core_Error::singleton( ); 
++@@ -72,9 +76,9 @@
++             return $error;
++         }
++ 
++-        $recurring = new CRM_Contribute_BAO_ContributionRecur();
+++        $recurring = new CRM_Contribute_DAO_ContributionRecur();
++         $recurring->copyValues($params);
++-        $recurring->id        = CRM_Utils_Array::value( 'contribution', $ids );
+++        $recurring->id        = $id;
++ 
++ 	// set currency for CRM-1496
++ 	if ( ! isset( $recurring->currency ) ) {
++@@ -83,6 +87,7 @@
++ 	}
++ 	      $result = $recurring->save( );
++         
+++        // create post-processing hooks
++         if ( CRM_Utils_Array::value( 'id', $params ) ) {
++             CRM_Utils_Hook::post( 'edit', 'ContributionRecur', $recurring->id, $recurring );
++         } else {
++@@ -93,7 +98,7 @@
++     }
++ 
++     /**
++-     * Check if there is a contribution with the same trxn_id or invoice_id
+++     * Check if there is a recurring contribution with the same trxn_id or invoice_id
++      *
++      * @param array  $params (reference ) an assoc array of name/value pairs
++      * @param array  $duplicates (reference ) store ids of duplicate contribs
++@@ -160,6 +165,7 @@
++         require_once 'CRM/Core/BAO/PaymentProcessor.php';
++         return CRM_Core_BAO_PaymentProcessor::getPayment( $paymentProcessorID, $mode );
++     }
+++
++     /**
++      * Function to get the number of installment done/completed for each recurring contribution
++      *
++@@ -240,6 +246,7 @@
++             $recur->cancel_date            = date( 'YmdHis' );
++             $recur->save( );
++ 
+++            // if there are associated objects, cancel them as well
++             if ( $objects == CRM_Core_DAO::$_nullObject ) {
++                 $transaction->commit( );
++                 return true;           
++@@ -282,6 +289,9 @@
++             $params[$recurDAO->id]['end_date']                  = $recurDAO->end_date;
++             $params[$recurDAO->id]['next_sched_contribution']   = $recurDAO->next_sched_contribution;
++             $params[$recurDAO->id]['amount']                    = $recurDAO->amount;
+++            $params[$recurDAO->id]['currency']                  = $recurDAO->currency;
+++            $params[$recurDAO->id]['failure_count']             = $recurDAO->failure_count;
+++            $params[$recurDAO->id]['failure_retry_date']        = $recurDAO->failure_retry_date;
++             $params[$recurDAO->id]['frequency_unit']            = $recurDAO->frequency_unit;
++             $params[$recurDAO->id]['frequency_interval']        = $recurDAO->frequency_interval;
++             $params[$recurDAO->id]['installments']              = $recurDAO->installments;
++diff -urN civicrm-4.1.1-drupal6/CRM/Contribute/Form/Contribution.php civicrm-4.1.1-drupal6-wmf/CRM/Contribute/Form/Contribution.php
++--- civicrm-4.1.1-drupal6/CRM/Contribute/Form/Contribution.php	2012-01-12 10:05:13.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contribute/Form/Contribution.php	2013-04-03 11:17:17.000000000 -0700
++@@ -1004,7 +1004,7 @@
++                                                       'mailing_backend' );
++         $this->assign( 'outBound_option', $mailingInfo['outBound_option'] );
++         
++-        $this->addButtons(array( 
+++        $buttons = array( 
++                                 array ( 'type'      => 'upload',
++                                         'name'      => ts('Save'), 
++                                         'js'        => $js,
++@@ -1015,8 +1015,16 @@
++                                         'subName'   => 'new' ), 
++                                 array ( 'type'      => 'cancel', 
++                                         'name'      => ts('Cancel') ), 
++-                                ) 
++-                          );
+++        );
+++
+++        if ( $this->_id ) {
+++            $buttons[] = array (
+++                'type' => 'refund',
+++                'js' => array( 'onclick' => "document.location = '" . CRM_Utils_System::url( 'civicrm/contribute/refund', "id={$this->_id}", false, null, false ) . "'; return false;" ),
+++                'name' => ts('Refund'),
+++            ); 
+++        }
+++        $this->addButtons($buttons);
++         
++         $this->addFormRule( array( 'CRM_Contribute_Form_Contribution', 'formRule' ), $this );
++         
++@@ -1067,7 +1075,7 @@
++                 CRM_Price_BAO_Field::priceSetValidation( $priceSetId, $fields, $errors );
++             }
++         }
++-        
+++
++         // if honor roll fields are populated but no PCP is selected
++         if ( !CRM_Utils_Array::value( 'pcp_made_through_id', $fields ) ) {
++             if ( CRM_Utils_Array::value( 'pcp_display_in_roll', $fields ) ||
++diff -urN civicrm-4.1.1-drupal6/CRM/Contribute/Form/Refund.php civicrm-4.1.1-drupal6-wmf/CRM/Contribute/Form/Refund.php
++--- civicrm-4.1.1-drupal6/CRM/Contribute/Form/Refund.php	1969-12-31 16:00:00.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contribute/Form/Refund.php	2013-04-03 11:17:17.000000000 -0700
++@@ -0,0 +1,98 @@
+++<?php
+++
+++require_once 'CRM/Contribute/Form.php';
+++
+++class CRM_Contribute_Form_Refund extends CRM_Contribute_Form
+++{
+++    public function preProcess() 
+++    {
+++        parent::preProcess();
+++
+++        $this->_id = CRM_Utils_Request::retrieve( 'id', 'Positive', $this );
+++
+++        //$session = CRM_Core_Session::singleton();
+++        //$this->_userContext = $session->readUserContext( );
+++
+++        require_once 'CRM/Contribute/BAO/Contribution.php';
+++        $this->contribution = new CRM_Contribute_BAO_Contribution();
+++        $this->contribution->id = $this->_id;
+++        if ( !$this->contribution->find( true ) ) {
+++            CRM_Core_Error::fatal( ts("Contribution does not exist: %1", array( 1 => $this->_id ) ) );
+++        }
+++
+++        require_once 'CRM/Contact/BAO/Contact.php';
+++        $this->contact = new CRM_Contact_BAO_Contact();
+++        $this->contact->id = $this->contribution->contact_id;
+++        $this->contact->find( true );
+++    }
+++
+++    function setDefaultValues( ) {
+++        $defaults['type'] = "refund";
+++
+++        return $defaults;
+++    }
+++
+++
+++    /**
+++     * Function to build the form
+++     *
+++     * @return None
+++     * @access public
+++     */
+++    public function buildQuickForm( ) 
+++    {
+++        $this->addButtons(array(
+++            array (
+++                'type'      => 'next',
+++                'name'      => ts('Confirm')
+++            ),
+++            array (
+++                'type'      => 'cancel',
+++                'name'      => ts('Cancel')
+++            ),
+++        ));
+++
+++        $this->addElement( 'checkbox', 'completed', ts('Refund has been completed') );
+++
+++        $this->add('select', 'type', ts('Refund type'),array(
+++            '' => '- select -',
+++            'refund' => 'Refund',
+++            'chargeback' => 'Chargeback',
+++        ));
+++
+++        $this->add( 'hidden', 'id', $this->_id );
+++        $this->assign( "contribution_id", $this->_id );
+++
+++        list( $original_currency, $original_amount ) = explode( " ", $this->contribution->source );
+++        $this->assign( "original_currency", $original_currency );
+++        $this->assign( "original_amount", $original_amount );
+++        $this->assign( "receive_date", $this->contribution->receive_date );
+++
+++        $this->assign( "contact_name", $this->contact->display_name );
+++        $this->assign( "view_original_contribution", CRM_Utils_System::url( 'civicrm/contact/view/contribution', "reset=1&action=view&id={$this->_id}&cid={$this->contact->id}" ) );
+++    }
+++
+++    public function postProcess() 
+++    {
+++        $submittedValues = $this->controller->exportValues( $this->_name );
+++
+++        $this->type = CRM_Utils_Array::value( 'type', $submittedValues, 'refund' );
+++        $this->completed = CRM_Utils_Array::value( 'completed', $submittedValues, false );
+++
+++        if ( CRM_Utils_Array::value( '_qf_Refund_next', $this->_submitValues ) ) {
+++            try {
+++                $this->refund_id = module_invoke( 'wmf_civicrm', 'mark_refund', $this->_id, $this->type, $this->completed );
+++            } catch (Exception $e) {
+++                CRM_Core_Error::fatal( ts("Failed to mark refund: %1", array( 1 => $e->getMessage() ) ) );
+++            }
+++
+++            CRM_Core_Session::setStatus( ts("Your %1 has been recorded. <a href=\"%2\">Edit</a> the refund contribution.", array(
+++                    1 => $this->type,
+++                    2 => CRM_Utils_System::url( 'civicrm/contact/view/contribution', "reset=1&action=update&id={$this->refund_id}&cid={$this->contact->id}" ),
+++            )) );
+++        }
+++
+++        $session = CRM_Core_Session::singleton();
+++        $session->replaceUserContext( CRM_Utils_System::url( 'civicrm/contact/view', "reset=1&cid={$this->contact->id}&selectedChild=contribute" ) );
+++    }
+++}
++diff -urN civicrm-4.1.1-drupal6/CRM/Contribute/xml/Menu/Contribute.xml civicrm-4.1.1-drupal6-wmf/CRM/Contribute/xml/Menu/Contribute.xml
++--- civicrm-4.1.1-drupal6/CRM/Contribute/xml/Menu/Contribute.xml	2011-11-01 13:50:34.000000000 -0700
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contribute/xml/Menu/Contribute.xml	2013-04-03 11:17:17.000000000 -0700
++@@ -204,4 +204,9 @@
++      <page_callback>CRM_Contribute_Form_Contribution_OnBehalfOf</page_callback>
++      <access_arguments>make online contributions</access_arguments>
++   </item>
+++  <item>
+++     <path>civicrm/contribute/refund</path>
+++     <page_callback>CRM_Contribute_Form_Refund</page_callback>
+++     <access_arguments>edit contributions</access_arguments>
+++  </item>
++ </menu>
++diff -urN civicrm-4.1.1-drupal6/CRM/Core/BAO/CustomField.php civicrm-4.1.1-drupal6-wmf/CRM/Core/BAO/CustomField.php
++--- civicrm-4.1.1-drupal6/CRM/Core/BAO/CustomField.php	2012-02-22 02:41:05.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Core/BAO/CustomField.php	2013-04-03 11:17:12.000000000 -0700
++@@ -278,7 +278,9 @@
++         if ( CRM_Utils_Array::value( 'id', $params ) ) {
++             self::createField( $customField, 'modify', $indexExist );
++         } else {
+++            if (!isset($params['column_name'])) {
++             $customField->column_name .= "_{$customField->id}";
+++            }
++             $customField->save();
++             // make sure all values are present in the object
++             $customField->find(true);
++diff -urN civicrm-4.1.1-drupal6/CRM/Core/BAO/CustomGroup.php civicrm-4.1.1-drupal6-wmf/CRM/Core/BAO/CustomGroup.php
++--- civicrm-4.1.1-drupal6/CRM/Core/BAO/CustomGroup.php	2012-01-10 04:39:03.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Core/BAO/CustomGroup.php	2013-04-03 11:17:12.000000000 -0700
++@@ -141,8 +141,12 @@
++             require_once 'CRM/Utils/String.php';
++ 
++             // lets create the table associated with the group and save it
++-            $tableName = $group->table_name = "civicrm_value_" .
++-                strtolower( CRM_Utils_String::munge( $group->title, '_', 32 ) );
+++            if (isset($params['table_name'])) {
+++                $tableName = $params['table_name'];
+++            } else {
+++                $munged_title = strtolower(CRM_Utils_String::munge($group->title, '_', 32));
+++                $tableName = "civicrm_value_{$munged_title}_{$group->id}";
+++            }
++ 
++             // we do this only once, so name never changes
++             $group->name  = CRM_Utils_String::munge($params['title'], '_', 64 );
++@@ -159,9 +163,6 @@
++                
++         $group->save();
++         if ( $tableName ) {
++-            // now append group id to table name, this prevent any name conflicts
++-            // like CRM-2742
++-            $tableName .= "_{$group->id}";
++             $group->table_name = $tableName;
++             CRM_Core_DAO::setFieldValue( 'CRM_Core_DAO_CustomGroup',
++                                          $group->id,
++diff -urN civicrm-4.1.1-drupal6/CRM/Core/BAO/Mapping.php civicrm-4.1.1-drupal6-wmf/CRM/Core/BAO/Mapping.php
++--- civicrm-4.1.1-drupal6/CRM/Core/BAO/Mapping.php	2011-11-27 19:32:43.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Core/BAO/Mapping.php	2013-04-03 11:17:12.000000000 -0700
++@@ -278,12 +278,11 @@
++     static function buildMappingForm(&$form, $mappingType = 'Export', $mappingId = null, $columnNo, $blockCount = 3, $exportMode = null ) 
++     {
++         if ($mappingType == 'Export') {
++-            $name = "Map";
++             $columnCount = array ('1' => $columnNo);
++         } else if ($mappingType == 'Search Builder') {
++-            $name = "Builder";
++             $columnCount = $columnNo;
++         }
+++        $name = $form->getAttribute('id');
++ 
++         //get the saved mapping details
++         require_once 'CRM/Core/DAO/Mapping.php';
++diff -urN civicrm-4.1.1-drupal6/CRM/Core/Config.php civicrm-4.1.1-drupal6-wmf/CRM/Core/Config.php
++--- civicrm-4.1.1-drupal6/CRM/Core/Config.php	2012-02-20 05:48:32.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Core/Config.php	2013-04-03 11:17:12.000000000 -0700
++@@ -633,13 +633,13 @@
++      * clear db cache
++      */
++     function clearDBCache( ) {
++-        $queries = array( 'TRUNCATE TABLE civicrm_acl_cache',
++-                          'TRUNCATE TABLE civicrm_acl_contact_cache',
++-                          'TRUNCATE TABLE civicrm_cache',
++-                          'TRUNCATE TABLE civicrm_prevnext_cache',
+++        $queries = array( 'DELETE FROM civicrm_acl_cache',
+++                          'DELETE FROM civicrm_acl_contact_cache',
+++                          'DELETE FROM civicrm_cache',
+++                          'DELETE FROM civicrm_prevnext_cache',
++                           'UPDATE civicrm_group SET cache_date = NULL',
++-                          'TRUNCATE TABLE civicrm_group_contact_cache',
++-                          'TRUNCATE TABLE civicrm_menu',
+++                          'DELETE FROM civicrm_group_contact_cache',
+++                          'DELETE FROM civicrm_menu',
++                           'UPDATE civicrm_setting SET value = NULL WHERE name="navigation" AND contact_id IS NOT NULL'
++                           );
++ 
++diff -urN civicrm-4.1.1-drupal6/CRM/Core/Menu.php civicrm-4.1.1-drupal6-wmf/CRM/Core/Menu.php
++--- civicrm-4.1.1-drupal6/CRM/Core/Menu.php	2011-12-14 19:59:45.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Core/Menu.php	2013-04-03 11:17:12.000000000 -0700
++@@ -230,7 +230,7 @@
++     static function store( $truncate = true ) {
++         // first clean up the db
++         if ( $truncate ) {
++-            $query = 'TRUNCATE civicrm_menu';
+++            $query = 'DELETE FROM civicrm_menu';
++             CRM_Core_DAO::executeQuery( $query );
++         }
++         $menuArray = self::items( );
++diff -urN civicrm-4.1.1-drupal6/CRM/Core/OptionGroup.php civicrm-4.1.1-drupal6-wmf/CRM/Core/OptionGroup.php
++--- civicrm-4.1.1-drupal6/CRM/Core/OptionGroup.php	2012-02-17 18:29:37.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Core/OptionGroup.php	2013-04-03 11:17:12.000000000 -0700
++@@ -37,6 +37,7 @@
++ class CRM_Core_OptionGroup 
++ {
++     static $_values = array( );
+++    static $_value_cache = array();
++ 
++     /*
++      * $_domainIDGroups array maintains the list of option groups for whom 
++@@ -269,6 +270,11 @@
++             return null;
++         }
++ 
+++        $cache_key = "$groupName-$label-$valueField";
+++        if ( array_key_exists( $cache_key, self::$_value_cache ) ) {
+++            return self::$_value_cache[ $cache_key ];
+++        }
+++
++         $query = "
++ SELECT  v.label as label ,v.{$valueField} as value
++ FROM   civicrm_option_value v, 
++@@ -284,8 +290,10 @@
++                     2 => array( $label     , $labelType ) );
++         $dao = CRM_Core_DAO::executeQuery( $query, $p );
++         if ( $dao->fetch( ) ) {
+++            $value = $dao->value;
++             $dao->free( );
++-            return $dao->value;
+++            self::$_value_cache[ $cache_key ] = $value;
+++            return $value;
++         }
++         $dao->free( );
++         return null;
++diff -urN civicrm-4.1.1-drupal6/CRM/Core/Smarty.php civicrm-4.1.1-drupal6-wmf/CRM/Core/Smarty.php
++--- civicrm-4.1.1-drupal6/CRM/Core/Smarty.php	2012-02-17 11:43:44.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Core/Smarty.php	2013-04-03 11:17:12.000000000 -0700
++@@ -88,7 +88,7 @@
++         // else we sometime suppress errors quietly and this results
++         // in blank emails etc
++         if ( ! is_writable( $this->compile_dir ) ) {
++-            echo "CiviCRM doeso not have permission to write temp files in {$smarty->compile_dir}, Exiting";
+++          echo "CiviCRM does not have permission to write temp files in {$this->compile_dir}, Exiting";
++             exit( );
++         }
++         
++diff -urN civicrm-4.1.1-drupal6/CRM/Export/BAO/Export.php civicrm-4.1.1-drupal6-wmf/CRM/Export/BAO/Export.php
++--- civicrm-4.1.1-drupal6/CRM/Export/BAO/Export.php	2012-02-09 19:21:53.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Export/BAO/Export.php	2013-04-03 11:17:12.000000000 -0700
++@@ -957,6 +957,9 @@
++             $sql = "DROP TABLE IF EXISTS {$exportTempTable}";
++             CRM_Core_DAO::executeQuery( $sql );
++             
+++            $sql = "DROP TABLE IF EXISTS {$componentTable}";
+++            CRM_Core_DAO::executeQuery( $sql );
+++            
++             CRM_Utils_System::civiExit( );
++         } else {
++             CRM_Core_Error::fatal( ts( 'No records to export' ) );
++diff -urN civicrm-4.1.1-drupal6/CRM/Export/Form/Map.php civicrm-4.1.1-drupal6-wmf/CRM/Export/Form/Map.php
++--- civicrm-4.1.1-drupal6/CRM/Export/Form/Map.php	2011-11-16 05:07:53.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Export/Form/Map.php	2013-04-03 11:17:12.000000000 -0700
++@@ -151,6 +151,7 @@
++     public function postProcess( )
++     {
++         $params = $this->controller->exportValues( $this->_name );
+++        if (array_search('Select', $this->controller->_pages))
++         $exportParams = $this->controller->exportValues( 'Select' );
++ 
++         require_once 'CRM/Export/Form/Select.php';
++diff -urN civicrm-4.1.1-drupal6/CRM/Report/Form.php civicrm-4.1.1-drupal6-wmf/CRM/Report/Form.php
++--- civicrm-4.1.1-drupal6/CRM/Report/Form.php	2012-01-24 02:37:10.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Report/Form.php	2013-04-03 11:17:17.000000000 -0700
++@@ -1,6 +1,8 @@
++ <?php
++ 
++ /*
+++ !! patched from the future: http://issues.civicrm.org/jira/browse/CRM-9505, https://fisheye2.atlassian.com/rdiff/CiviCRM?csid=38424&u&N
+++ !! plus wmf tweak
++  +--------------------------------------------------------------------+
++  | CiviCRM version 4.1                                                |
++  +--------------------------------------------------------------------+
++@@ -1131,22 +1133,20 @@
++     }
++ 
++     function dateClause( $fieldName,
++-                         $relative, $from, $to ,$type = null ) {
+++                         $relative, $from, $to ,$type = null, $fromTime =  null, $toTime = null ) {
++         $clauses         = array( );
++         if ( in_array( $relative, array_keys( $this->getOperationPair( CRM_Report_FORM::OP_DATE ) ) ) ) {
++             $sqlOP = self::getSQLOperator( $relative );
++             return "( {$fieldName} {$sqlOP} )";
++         }
++ 
++-        list($from, $to) = self::getFromTo($relative, $from, $to);
+++        list($from, $to) = self::getFromTo($relative, $from, $to, $fromTime, $toTime);
++         
++         if ( $from ) {
++-            $from = ($type == CRM_Utils_Type::T_DATE)?substr($from,0,8 ):$from;
++             $clauses[] = "( {$fieldName} >= $from )";
++         }
++ 
++         if ( $to ) {
++-            $to   = ($type == CRM_Utils_Type::T_DATE)?substr($to, 0, 8 ):$to;
++             $clauses[] = "( {$fieldName} <= {$to} )";
++         }
++ 
++@@ -1179,7 +1179,16 @@
++         return null;
++     }
++ 
++-    static function getFromTo( $relative, $from, $to ) {
+++   static function getFromTo( $relative, $from, $to, $fromtime, $totime ) {
+++        if ( empty($fromtime) ) {
+++            $fromtime = '000000';
+++        }
+++        if ( empty($totime) ) {
+++            $totime = '235900';
+++        }
+++        $fromtime = date( 'His', strtotime( $fromtime ) );
+++        $totime = date( 'Hi59', strtotime( $totime ) );
+++
++         require_once 'CRM/Utils/Date.php';
++         //FIX ME not working for relative 
++         if ( $relative ) {
++@@ -1189,10 +1198,8 @@
++             //Take only Date Part, Sometime Time part is also present in 'to'
++             $to   = substr($dateRange['to'], 0, 8);
++         }
++-
++-        $from = CRM_Utils_Date::processDate( $from );
++-        $to   = CRM_Utils_Date::processDate( $to, '235959' );
++-
+++        $from = CRM_Utils_Date::processDate( $from, $fromtime );
+++        $to   = CRM_Utils_Date::processDate( $to, $totime );
++         return array($from, $to);
++     }
++ 
++@@ -1636,9 +1643,10 @@
++                         $relative = CRM_Utils_Array::value( "{$fieldName}_relative", $this->_params );
++                         $from     = CRM_Utils_Array::value( "{$fieldName}_from"    , $this->_params );
++                         $to       = CRM_Utils_Array::value( "{$fieldName}_to"      , $this->_params );
++-
++-                        $clause = $this->dateClause( $field['name'], $relative, $from, $to, $field['type'] );
++-                    } else {
+++                        $fromTime = CRM_Utils_Array::value( "{$fieldName}_from_time"    , $this->_params );
+++                        $toTime   = CRM_Utils_Array::value( "{$fieldName}_to_time"      , $this->_params );
+++                        $clause = $this->dateClause( $field['name'], $relative, $from, $to, $field['type'], $fromTime, $toTime );
+++                   } else{
++                         $op = CRM_Utils_Array::value( "{$fieldName}_op", $this->_params );
++                         if ( $op ) {
++                             $clause = 
++@@ -2020,9 +2028,14 @@
++                         list($from, $to) = 
++                             $this->getFromTo( CRM_Utils_Array::value( "{$fieldName}_relative", $this->_params ), 
++                                               CRM_Utils_Array::value( "{$fieldName}_from"    , $this->_params ),
++-                                              CRM_Utils_Array::value( "{$fieldName}_to"      , $this->_params ) );
++-                        $from = CRM_Utils_Date::customFormat( $from, null, array('d') );
++-                        $to   = CRM_Utils_Date::customFormat( $to,   null, array('d') );
+++                                              CRM_Utils_Array::value( "{$fieldName}_to"      , $this->_params ),
+++                                              CRM_Utils_Array::value( "{$fieldName}_from_time",$this->_params ),
+++                                              CRM_Utils_Array::value( "{$fieldName}_to_time" , $this->_params )
+++                                              );
+++                        $time_format = CRM_Utils_Array::value( "{$fieldName}_from_time", $this->_params ) ? 'h' : 'd';
+++                        $from = CRM_Utils_Date::customFormat( $from, null, array($time_format) );
+++                        $time_format = CRM_Utils_Array::value( "{$fieldName}_to_time", $this->_params ) ? 'h' : 'd';
+++                        $to   = CRM_Utils_Date::customFormat( $to,   null, array($time_format) );
++                         
++                         if ( $from || $to ) {
++                             $statistics['filters'][] = 
++diff -urN civicrm-4.1.1-drupal6/CRM/Utils/Hook.php civicrm-4.1.1-drupal6-wmf/CRM/Utils/Hook.php
++--- civicrm-4.1.1-drupal6/CRM/Utils/Hook.php	2012-01-24 12:03:26.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Utils/Hook.php	2013-04-03 11:17:12.000000000 -0700
++@@ -845,4 +845,10 @@
++                                            'civicrm_alterContent' );
++     }
++ 
+++    static function advancedSearchModes( &$modes ) {
+++        return self::singleton( )->invoke( 1, $modes,
+++                                           self::$_nullObject, self::$_nullObject,
+++                                           self::$_nullObject, self::$_nullObject,
+++                                           'civicrm_advancedSearchModes' );
+++    }
++ }
++diff -urN civicrm-4.1.1-drupal6/css/civicrm.css civicrm-4.1.1-drupal6-wmf/css/civicrm.css
++--- civicrm-4.1.1-drupal6/css/civicrm.css	2012-02-27 03:42:41.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/css/civicrm.css	2013-04-03 11:17:12.000000000 -0700
++@@ -3195,3 +3195,17 @@
++ #crm-container h4.finalconf-item          { border-top:1px solid #ccc; padding:8px 0 8px 10px; margin:0; }
++ #crm-container div.finalconf-itemdesc     { font-style:italic; padding:6px 12px 6px 12px; color:#666; float:right; width:60%; }
++ #crm-container h4.finalconf-btm           { border-bottom:1px solid #ccc; margin-bottom:20px; }
+++
+++/* recurring payments */
+++.failcount {
+++  background-color: yellow;
+++}
+++.failcount1 {
+++  color: black;
+++}
+++.failcount2 {
+++  color: purple;
+++}
+++.failcount1 {
+++  color: red;
+++}
++\ No newline at end of file
++diff -urN civicrm-4.1.1-drupal6/packages/DB/common.php civicrm-4.1.1-drupal6-wmf/packages/DB/common.php
++--- civicrm-4.1.1-drupal6/packages/DB/common.php	2008-02-19 04:48:02.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/packages/DB/common.php	2013-04-03 11:17:17.000000000 -0700
++@@ -1148,6 +1148,17 @@
++      */
++     function modifyQuery($query)
++     {
+++        /**
+++         * WMF hack:
+++         * Insert diagnostic info such as requesting user.
+++         *
+++         * Have not found a function to efficiently get uf username.
+++         * Not sure if query begin time is already reported by mysql, or would be useful.
+++         */
+++        $uid = CRM_Utils_System::getLoggedInUfID();
+++        $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
+++        $query = $prefix . $query;
+++
++         return $query;
++     }
++ 
++diff -urN civicrm-4.1.1-drupal6/packages/DB/mysql.php civicrm-4.1.1-drupal6-wmf/packages/DB/mysql.php
++--- civicrm-4.1.1-drupal6/packages/DB/mysql.php	2008-02-19 04:48:02.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/packages/DB/mysql.php	2013-04-03 11:17:17.000000000 -0700
++@@ -832,6 +832,7 @@
++                                       'DELETE FROM \1 WHERE 1=1', $query);
++             }
++         }
+++        $query = parent::modifyQuery($query);
++         return $query;
++     }
++ 
++diff -urN civicrm-4.1.1-drupal6/settings_location.php civicrm-4.1.1-drupal6-wmf/settings_location.php
++--- civicrm-4.1.1-drupal6/settings_location.php	1969-12-31 16:00:00.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/settings_location.php	2013-04-03 11:17:12.000000000 -0700
++@@ -0,0 +1,3 @@
+++<?php
+++define( 'CIVICRM_CONFDIR', realpath( dirname( __FILE__ ) . "/../../../default" )); 
+++
++diff -urN civicrm-4.1.1-drupal6/templates/CRM/common/jcalendar.tpl civicrm-4.1.1-drupal6-wmf/templates/CRM/common/jcalendar.tpl
++--- civicrm-4.1.1-drupal6/templates/CRM/common/jcalendar.tpl	2011-11-16 05:20:12.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/templates/CRM/common/jcalendar.tpl	2013-04-03 11:17:12.000000000 -0700
++@@ -111,7 +111,10 @@
++       // set default value to display field, setDefault param for datepicker
++       // is not working hence using below logic
++       // parse the date
++-      var displayDateValue = cj.datepicker.parseDate( altDateFormat, dateValue );
+++      var displayDateValue = '';
+++      if (dateValue) {
+++          displayDateValue = new Date(dateValue.replace(" ", "T"));
+++      }
++       
++       // format date according to display field
++       displayDateValue = cj.datepicker.formatDate( date_format, displayDateValue );
++diff -urN civicrm-4.1.1-drupal6/templates/CRM/common/Navigation.tpl civicrm-4.1.1-drupal6-wmf/templates/CRM/common/Navigation.tpl
++--- civicrm-4.1.1-drupal6/templates/CRM/common/Navigation.tpl	2011-11-16 05:20:12.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/templates/CRM/common/Navigation.tpl	2013-04-03 11:17:17.000000000 -0700
++@@ -98,7 +98,8 @@
++         width: 200,
++         selectFirst: false,
++         minChars:1,
++-        matchContains: true 	 
+++        matchContains: true,
+++        delay: 400
++     }).result(function(event, data, formatted) {
++        document.location={/literal}"{crmURL p='civicrm/contact/view' h=0 q='reset=1&cid='}"{literal}+data[1];
++        return false;
++diff -urN civicrm-4.1.1-drupal6/templates/CRM/Contribute/Form/Refund.tpl civicrm-4.1.1-drupal6-wmf/templates/CRM/Contribute/Form/Refund.tpl
++--- civicrm-4.1.1-drupal6/templates/CRM/Contribute/Form/Refund.tpl	1969-12-31 16:00:00.000000000 -0800
+++++ civicrm-4.1.1-drupal6-wmf/templates/CRM/Contribute/Form/Refund.tpl	2013-04-03 11:17:17.000000000 -0700
++@@ -0,0 +1,31 @@
+++{* this template is used for making refund/chargeback contributions *}
+++<fieldset><legend>Refund contribution</legend>
+++<div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="top"}</div>
+++      <div>
+++          <div class="icon inform-icon"></div>
+++          {ts}Please complete to record a refund of:{/ts}
+++          <div style="border: 1px solid black; margin: 10px; padding: 10px;">
+++              {$contact_name}, {$original_currency} {$original_amount} on {$receive_date} (<a href="{$view_original_contribution}">View</a>)
+++          </div>
+++      </div>
+++  <table class="form-layout-compressed">
+++     <tr class="crm-contribution-form-block-type">
+++	<td class="label">{$form.completed.label}
+++	</td>
+++	<td class="html-adjust">{$form.completed.html}
+++	</td>
+++     </tr>
+++     <tr class="crm-contribution-form-block-type">
+++	<td class="label">{$form.type.label}
+++	</td>
+++	<td class="html-adjust">{$form.type.html}
+++	</td>
+++     </tr>
+++  </table>
+++<div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
+++</fieldset>
+++
+++<script type="text/javascript">
+++{literal}
+++{/literal}
+++</script>
++diff -urN civicrm-4.1.1-drupal6/CRM/Contribute/Form/Search.php civicrm-4.1.1-drupal6-wmf/CRM/Contribute/Form/Search.php
++--- civicrm-4.1.1-drupal6/CRM/Contribute/Form/Search.php
+++++ civicrm-4.1.1-drupal6-wmf/CRM/Contribute/Form/Search.php
++@@ -167,6 +167,13 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form
++         $this->_limit   = CRM_Utils_Request::retrieve( 'limit', 'Positive', $this );
++         $this->_context = CRM_Utils_Request::retrieve( 'context', 'String', $this, false, 'search' );
++ 
+++        /*
+++         * WMF HACK: "force" causes a search with null criteria.  Disable until this is fixed.
+++         */
+++        if ( $this->_context === "search" ) {
+++            $this->_force = false;
+++        }
+++
++         $this->assign( "context", $this->_context );
++ 
++         // get user submitted values  
+diff --git a/settings_location.php b/settings_location.php
+new file mode 100644
+index 0000000..e9e9ced
+--- /dev/null
++++ b/settings_location.php
+@@ -0,0 +1,3 @@
++<?php
++define( 'CIVICRM_CONFDIR', realpath( dirname( __FILE__ ) . "/../../../default" )); 
++
+diff --git a/templates/CRM/Contribute/Form/Refund.tpl b/templates/CRM/Contribute/Form/Refund.tpl
+new file mode 100644
+index 0000000..42dbab4
+--- /dev/null
++++ b/templates/CRM/Contribute/Form/Refund.tpl
+@@ -0,0 +1,31 @@
++{* this template is used for making refund/chargeback contributions *}
++<fieldset><legend>Refund contribution</legend>
++<div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="top"}</div>
++      <div>
++          <div class="icon inform-icon"></div>
++          {ts}Please complete to record a refund of:{/ts}
++          <div style="border: 1px solid black; margin: 10px; padding: 10px;">
++              {$contact_name}, {$original_currency} {$original_amount} on {$receive_date} (<a href="{$view_original_contribution}">View</a>)
++          </div>
++      </div>
++  <table class="form-layout-compressed">
++     <tr class="crm-contribution-form-block-type">
++	<td class="label">{$form.completed.label}
++	</td>
++	<td class="html-adjust">{$form.completed.html}
++	</td>
++     </tr>
++     <tr class="crm-contribution-form-block-type">
++	<td class="label">{$form.type.label}
++	</td>
++	<td class="html-adjust">{$form.type.html}
++	</td>
++     </tr>
++  </table>
++<div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
++</fieldset>
++
++<script type="text/javascript">
++{literal}
++{/literal}
++</script>
+diff --git a/templates/CRM/common/jcalendar.tpl b/templates/CRM/common/jcalendar.tpl
+index 44ca5b5..74031a9 100644
+--- a/templates/CRM/common/jcalendar.tpl
++++ b/templates/CRM/common/jcalendar.tpl
+@@ -114,7 +114,10 @@
+       // set default value to display field, setDefault param for datepicker
+       // is not working hence using below logic
+       // parse the date
+-      var displayDateValue = cj.datepicker.parseDate( altDateFormat, dateValue );
++      var displayDateValue = '';
++      if (dateValue) {
++          displayDateValue = new Date(dateValue.replace(" ", "T"));
++      }
+       
+       // format date according to display field
+       displayDateValue = cj.datepicker.formatDate( date_format, displayDateValue );
