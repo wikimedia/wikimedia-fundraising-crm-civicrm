@@ -845,4 +845,10 @@ abstract class CRM_Utils_Hook {
                                            'civicrm_alterContent' );
     }
 
+    static function advancedSearchModes( &$modes ) {
+        return self::singleton( )->invoke( 1, $modes,
+                                           self::$_nullObject, self::$_nullObject,
+                                           self::$_nullObject, self::$_nullObject,
+                                           'civicrm_advancedSearchModes' );
+    }
 }

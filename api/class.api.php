@@ -80,7 +80,7 @@ class civicrm_api3  {
       require_once "api/v3/utils.php";
       $this->cfg= CRM_Core_Config::singleton();
       $this->init();
-      $this->ping();
+      //$this->ping();
     } else {
       $this->cfg= CRM_Core_Config::singleton();
     }

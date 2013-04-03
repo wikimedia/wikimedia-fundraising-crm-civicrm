@@ -230,7 +230,7 @@ class CRM_Core_Menu
     static function store( $truncate = true ) {
         // first clean up the db
         if ( $truncate ) {
-            $query = 'TRUNCATE civicrm_menu';
+            $query = 'DELETE FROM civicrm_menu';
             CRM_Core_DAO::executeQuery( $query );
         }
         $menuArray = self::items( );

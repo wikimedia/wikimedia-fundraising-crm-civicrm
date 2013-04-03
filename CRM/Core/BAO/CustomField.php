@@ -278,7 +278,9 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField
         if ( CRM_Utils_Array::value( 'id', $params ) ) {
             self::createField( $customField, 'modify', $indexExist );
         } else {
+            if (!isset($params['column_name'])) {
             $customField->column_name .= "_{$customField->id}";
+            }
             $customField->save();
             // make sure all values are present in the object
             $customField->find(true);

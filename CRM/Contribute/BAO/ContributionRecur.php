@@ -46,21 +46,25 @@ class CRM_Contribute_BAO_ContributionRecur extends CRM_Contribute_DAO_Contributi
      * pairs
      *
      * @param array  $params (reference ) an assoc array of name/value pairs
-     * @param array $ids    the array that holds all the db ids
      *
      * @return object CRM_Contribute_BAO_Contribution object
      * @access public
      * @static
      */
-    static function add(&$params, &$ids) {
+    static function add(&$params) {
       
+        // pre-processing hooks
         require_once 'CRM/Utils/Hook.php';
         if ( CRM_Utils_Array::value( 'id', $params ) ) {
             CRM_Utils_Hook::pre( 'edit', 'ContributionRecur', $params['id'], $params );
+            $id = $params['id'];
         } else {
             CRM_Utils_Hook::pre( 'create', 'ContributionRecur', null, $params ); 
+            $id = null;
         }
         
+        // make sure we're not creating a new recurring contribution with the same trasaction ID
+        // or invoice ID as an existing recurring contribution
         $duplicates = array( );
         if ( self::checkDuplicate( $params, $duplicates ) ) {
             $error = CRM_Core_Error::singleton( ); 
@@ -72,9 +76,9 @@ class CRM_Contribute_BAO_ContributionRecur extends CRM_Contribute_DAO_Contributi
             return $error;
         }
 
-        $recurring = new CRM_Contribute_BAO_ContributionRecur();
+        $recurring = new CRM_Contribute_DAO_ContributionRecur();
         $recurring->copyValues($params);
-        $recurring->id        = CRM_Utils_Array::value( 'contribution', $ids );
+        $recurring->id        = $id;
 
 	// set currency for CRM-1496
 	if ( ! isset( $recurring->currency ) ) {
@@ -83,6 +87,7 @@ class CRM_Contribute_BAO_ContributionRecur extends CRM_Contribute_DAO_Contributi
 	}
 	      $result = $recurring->save( );
         
+        // create post-processing hooks
         if ( CRM_Utils_Array::value( 'id', $params ) ) {
             CRM_Utils_Hook::post( 'edit', 'ContributionRecur', $recurring->id, $recurring );
         } else {
@@ -93,7 +98,7 @@ class CRM_Contribute_BAO_ContributionRecur extends CRM_Contribute_DAO_Contributi
     }
 
     /**
-     * Check if there is a contribution with the same trxn_id or invoice_id
+     * Check if there is a recurring contribution with the same trxn_id or invoice_id
      *
      * @param array  $params (reference ) an assoc array of name/value pairs
      * @param array  $duplicates (reference ) store ids of duplicate contribs
@@ -160,6 +165,7 @@ SELECT p.payment_processor_id
         require_once 'CRM/Core/BAO/PaymentProcessor.php';
         return CRM_Core_BAO_PaymentProcessor::getPayment( $paymentProcessorID, $mode );
     }
+
     /**
      * Function to get the number of installment done/completed for each recurring contribution
      *
@@ -240,6 +246,7 @@ SELECT p.payment_processor_id
             $recur->cancel_date            = date( 'YmdHis' );
             $recur->save( );
 
+            // if there are associated objects, cancel them as well
             if ( $objects == CRM_Core_DAO::$_nullObject ) {
                 $transaction->commit( );
                 return true;           
@@ -282,6 +289,9 @@ SELECT p.payment_processor_id
             $params[$recurDAO->id]['end_date']                  = $recurDAO->end_date;
             $params[$recurDAO->id]['next_sched_contribution']   = $recurDAO->next_sched_contribution;
             $params[$recurDAO->id]['amount']                    = $recurDAO->amount;
+            $params[$recurDAO->id]['currency']                  = $recurDAO->currency;
+            $params[$recurDAO->id]['failure_count']             = $recurDAO->failure_count;
+            $params[$recurDAO->id]['failure_retry_date']        = $recurDAO->failure_retry_date;
             $params[$recurDAO->id]['frequency_unit']            = $recurDAO->frequency_unit;
             $params[$recurDAO->id]['frequency_interval']        = $recurDAO->frequency_interval;
             $params[$recurDAO->id]['installments']              = $recurDAO->installments;

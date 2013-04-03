@@ -204,4 +204,9 @@
      <page_callback>CRM_Contribute_Form_Contribution_OnBehalfOf</page_callback>
      <access_arguments>make online contributions</access_arguments>
   </item>
+  <item>
+     <path>civicrm/contribute/refund</path>
+     <page_callback>CRM_Contribute_Form_Refund</page_callback>
+     <access_arguments>edit contributions</access_arguments>
+  </item>
 </menu>

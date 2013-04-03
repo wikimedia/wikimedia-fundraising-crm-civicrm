@@ -440,7 +440,7 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact
         }
 
         // process greetings CRM-4575, cache greetings
-        self::processGreetings( $contact );
+        // NOT: self::processGreetings( $contact );
         
         return $contact;
     }

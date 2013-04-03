@@ -141,8 +141,12 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup
             require_once 'CRM/Utils/String.php';
 
             // lets create the table associated with the group and save it
-            $tableName = $group->table_name = "civicrm_value_" .
-                strtolower( CRM_Utils_String::munge( $group->title, '_', 32 ) );
+            if (isset($params['table_name'])) {
+                $tableName = $params['table_name'];
+            } else {
+                $munged_title = strtolower(CRM_Utils_String::munge($group->title, '_', 32));
+                $tableName = "civicrm_value_{$munged_title}_{$group->id}";
+            }
 
             // we do this only once, so name never changes
             $group->name  = CRM_Utils_String::munge($params['title'], '_', 64 );
@@ -159,9 +163,6 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup
                
         $group->save();
         if ( $tableName ) {
-            // now append group id to table name, this prevent any name conflicts
-            // like CRM-2742
-            $tableName .= "_{$group->id}";
             $group->table_name = $tableName;
             CRM_Core_DAO::setFieldValue( 'CRM_Core_DAO_CustomGroup',
                                          $group->id,

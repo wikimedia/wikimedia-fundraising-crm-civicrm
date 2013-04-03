@@ -151,6 +151,7 @@ class CRM_Export_Form_Map extends CRM_Core_Form
     public function postProcess( )
     {
         $params = $this->controller->exportValues( $this->_name );
+        if (array_search('Select', $this->controller->_pages))
         $exportParams = $this->controller->exportValues( 'Select' );
 
         require_once 'CRM/Export/Form/Select.php';

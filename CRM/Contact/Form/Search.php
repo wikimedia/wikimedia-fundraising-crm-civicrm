@@ -324,6 +324,7 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
                                    'resultContext' => null,
                                    'taskClassName' => 'CRM_Contact_Task' ),
                        );
+                       CRM_Utils_Hook::advancedSearchModes(self::$_modeValues);
         }
     }        
     

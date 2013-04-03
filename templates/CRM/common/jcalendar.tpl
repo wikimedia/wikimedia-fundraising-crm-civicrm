@@ -111,7 +111,10 @@
       // set default value to display field, setDefault param for datepicker
       // is not working hence using below logic
       // parse the date
-      var displayDateValue = cj.datepicker.parseDate( altDateFormat, dateValue );
+      var displayDateValue = '';
+      if (dateValue) {
+          displayDateValue = new Date(dateValue.replace(" ", "T"));
+      }
       
       // format date according to display field
       displayDateValue = cj.datepicker.formatDate( date_format, displayDateValue );

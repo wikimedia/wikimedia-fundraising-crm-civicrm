@@ -44,8 +44,9 @@ class CRM_ACL_BAO_ACL extends CRM_ACL_DAO_ACL {
     static $_objectTable = null;
     static $_operation   = null;
 
-    static $_fieldKeys   = null
-;
+    static $_fieldKeys   = null;
+    static $_group_cache = array();
+
     static function entityTable( ) {
         if ( ! self::$_entityTable ) {
             self::$_entityTable = array(
@@ -818,6 +819,11 @@ SELECT g.*
             $aclKeys = array_keys( $acls );
             $aclKeys = implode( ',', $aclKeys );
 
+          $cache_key = "$tableName-$aclKeys";
+          if ( array_key_exists( $cache_key, self::$_group_cache ) ) {
+              $ids = self::$_group_cache[ $cache_key ];
+          } else {
+
             $query = "
 SELECT   a.operation, a.object_id
   FROM   civicrm_acl_cache c, civicrm_acl a
@@ -845,6 +851,8 @@ ORDER BY a.object_id
                     break;
                 }
             }
+            self::$_group_cache[ $cache_key ] = $ids;
+          }
         }
 
         require_once 'CRM/Utils/Hook.php';

@@ -272,20 +272,20 @@ function _civicrm_api3_get_BAO ($name) {
 }
 
 /**
- *  Recursive function to explode value-separated strings into arrays
+ * explode value-separated strings into arrays
  *
  */
-function _civicrm_api3_separate_values( &$values )
+function _civicrm_api3_separate_values(&$values) {
+    array_walk_recursive($values, "_civicrm_api3_values_to_array");
+}
+
+function _civicrm_api3_values_to_array( &$values, $key )
 {
     $sp = CRM_Core_DAO::VALUE_SEPARATOR;
-    foreach ($values as &$value) {
-        if (is_array($value)) {
-            _civicrm_api3_separate_values($value);
-        }
-        elseif (is_string($value)) {
-            if (strpos($value, $sp) !== FALSE) {
-                $value = explode($sp, trim($value, $sp));
-            }
+  if (is_string($values))
+  {
+    if (strpos($values, $sp) !== FALSE) {
+      $values = explode($sp, trim($values, $sp));
         }
     }
 }
@@ -846,14 +846,14 @@ function _civicrm_api3_validate_date(&$params,&$fieldname,&$fieldInfo){
   	//should we check first to prevent it from being copied if they have passed in sql friendly format?
     if (CRM_Utils_Array::value ( $fieldInfo ['name'], $params )) {
         //accept 'whatever strtotime accepts
-        if (strtotime($params [$fieldInfo ['name']]) ==0) {
+        if (strtotime($params [$fieldInfo ['name']]) === false) {
             throw new exception ($fieldInfo ['name']. " is not a valid date: " . $params [$fieldInfo ['name']]);
         }
         $params [$fieldInfo ['name']] = CRM_Utils_Date::processDate ( $params [$fieldInfo ['name']] );
     }
     if ((CRM_Utils_Array::value ('name', $fieldInfo) != $fieldname ) && CRM_Utils_Array::value ( $fieldname , $params )) {
         //If the unique field name differs from the db name & is set handle it here
-        if (strtotime($params [$fieldname]) ==0) {
+        if (strtotime($params [$fieldname]) === false) {
             throw new exception ($fieldname. " is not a valid date: " . $params [$fieldname]);
         }
         $params [$fieldname] = CRM_Utils_Date::processDate ( $params [$fieldname] );

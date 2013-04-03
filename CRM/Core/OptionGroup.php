@@ -37,6 +37,7 @@
 class CRM_Core_OptionGroup 
 {
     static $_values = array( );
+    static $_value_cache = array();
 
     /*
      * $_domainIDGroups array maintains the list of option groups for whom 
@@ -269,6 +270,11 @@ WHERE  v.option_group_id = g.id
             return null;
         }
 
+        $cache_key = "$groupName-$label-$valueField";
+        if ( array_key_exists( $cache_key, self::$_value_cache ) ) {
+            return self::$_value_cache[ $cache_key ];
+        }
+
         $query = "
 SELECT  v.label as label ,v.{$valueField} as value
 FROM   civicrm_option_value v, 
@@ -284,8 +290,10 @@ WHERE  v.option_group_id = g.id
                     2 => array( $label     , $labelType ) );
         $dao = CRM_Core_DAO::executeQuery( $query, $p );
         if ( $dao->fetch( ) ) {
+            $value = $dao->value;
             $dao->free( );
-            return $dao->value;
+            self::$_value_cache[ $cache_key ] = $value;
+            return $value;
         }
         $dao->free( );
         return null;

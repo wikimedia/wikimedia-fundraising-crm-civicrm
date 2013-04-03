@@ -335,7 +335,7 @@ AND        cf.html_type IN ( 'Text', 'TextArea', 'RichTextEditor' )
     }
 
     function runQueries( &$tables ) {
-        $sql = "TRUNCATE {$this->_entityIDTableName}";
+        $sql = "DELETE FROM {$this->_entityIDTableName}";
         CRM_Core_DAO::executeQuery( $sql );
 
         $maxRowCount = 0;

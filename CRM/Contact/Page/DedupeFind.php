@@ -115,6 +115,12 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic
             $where = "de.id IS NULL";     
             $this->_mainContacts = CRM_Core_BAO_PrevNextCache::retrieve( $cacheKeyString, $join, $where );
             if ( empty( $this->_mainContacts ) ) {
+
+if ( empty( $contactIds ) ) {
+    CRM_Core_Session::singleton()->setStatus( "I'm sorry Dave, I can't do that right now.  Crazy deduping of the entire database is not supported at the moment.  Please try merging contacts from the Search Results page, if are feeling that kind of itch." );
+    CRM_Utils_System::redirect( CRM_Utils_System::url( 'civicrm' ) );
+}
+
                 if ( $gid ) {
                     $foundDupes = $this->get( "dedupe_dupes_$gid" );
                     if ( !$foundDupes ) {

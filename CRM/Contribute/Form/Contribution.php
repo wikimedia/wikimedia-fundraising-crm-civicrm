@@ -1004,7 +1004,7 @@ WHERE  contribution_id = {$this->_id}
                                                       'mailing_backend' );
         $this->assign( 'outBound_option', $mailingInfo['outBound_option'] );
         
-        $this->addButtons(array( 
+        $buttons = array( 
                                 array ( 'type'      => 'upload',
                                         'name'      => ts('Save'), 
                                         'js'        => $js,
@@ -1015,8 +1015,16 @@ WHERE  contribution_id = {$this->_id}
                                         'subName'   => 'new' ), 
                                 array ( 'type'      => 'cancel', 
                                         'name'      => ts('Cancel') ), 
-                                ) 
-                          );
+        );
+
+        if ( $this->_id ) {
+            $buttons[] = array (
+                'type' => 'refund',
+                'js' => array( 'onclick' => "document.location = '" . CRM_Utils_System::url( 'civicrm/contribute/refund', "id={$this->_id}", false, null, false ) . "'; return false;" ),
+                'name' => ts('Refund'),
+            ); 
+        }
+        $this->addButtons($buttons);
         
         $this->addFormRule( array( 'CRM_Contribute_Form_Contribution', 'formRule' ), $this );
         
@@ -1067,7 +1075,7 @@ WHERE  contribution_id = {$this->_id}
                 CRM_Price_BAO_Field::priceSetValidation( $priceSetId, $fields, $errors );
             }
         }
-        
+
         // if honor roll fields are populated but no PCP is selected
         if ( !CRM_Utils_Array::value( 'pcp_made_through_id', $fields ) ) {
             if ( CRM_Utils_Array::value( 'pcp_display_in_roll', $fields ) ||

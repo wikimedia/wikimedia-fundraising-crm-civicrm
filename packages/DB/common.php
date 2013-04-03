@@ -1148,6 +1148,17 @@ class DB_common extends PEAR
      */
     function modifyQuery($query)
     {
+        /**
+         * WMF hack:
+         * Insert diagnostic info such as requesting user.
+         *
+         * Have not found a function to efficiently get uf username.
+         * Not sure if query begin time is already reported by mysql, or would be useful.
+         */
+        $uid = CRM_Utils_System::getLoggedInUfID();
+        $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
+        $query = $prefix . $query;
+
         return $query;
     }
 
