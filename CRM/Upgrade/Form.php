@@ -205,6 +205,7 @@ class CRM_Upgrade_Form extends CRM_Core_Form {
   }
 
   function runQuery($query) {
+    error_log($query);
     return CRM_Core_DAO::executeQuery($query,
       CRM_Core_DAO::$_nullArray
     );
