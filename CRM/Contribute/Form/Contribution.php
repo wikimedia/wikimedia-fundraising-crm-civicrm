@@ -1049,7 +1049,6 @@ WHERE  contribution_id = {$this->_id}
           'type' => 'cancel',
           'name' => ts('Cancel'),
         ),
-      )
     );
 
     if ($this->_id) {
