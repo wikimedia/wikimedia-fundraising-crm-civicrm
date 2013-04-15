@@ -1,11 +1,9 @@
 <?php
-// $Id$
-
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 3.4                                                |
+ | CiviCRM version 4.2                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2011                                |
+ | Copyright CiviCRM LLC (c) 2004-2012                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +27,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2011
+ * @copyright CiviCRM LLC (c) 2004-2012
  * $Id$
  *
  */
@@ -97,11 +95,11 @@ function civicrm_engage_add_contact_subtypes() {
       'name' => 'Foundation',
     ),
   );
-  require_once("CRM/Contact/BAO/ContactType.php");
+  require_once ("CRM/Contact/BAO/ContactType.php");
   $existing_types = CRM_Contact_BAO_ContactType::subTypeInfo();
   while (list($k) = each($existing_types)) {
     if (array_key_exists($k, $create)) {
-      drupal_set_message(t("Not creating $k, already exists."));
+      drupal_set_message(t("Not creating @type, already exists.", array("@type" => $k)));
       unset($create[$k]);
     }
   }
@@ -119,12 +117,16 @@ function civicrm_engage_add_contact_subtypes() {
  * can divide the task between two people with two different lists.
  */
 function civcrm_engage_enable_street_address_parsing() {
-  include_once 'CRM/Core/BAO/Preferences.php';
-  $address_options = CRM_Core_BAO_Preferences::valueOptions('address_options',
+  include_once 'CRM/Core/BAO/Setting.php';
+  $address_options = CRM_Core_BAO_Setting::valueOptions(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+    'address_options',
     TRUE, NULL, TRUE
   );
   $address_options['street_address_parsing'] = 1;
-  CRM_Core_BAO_Preferences::setValue('address_options', $address_options);
+  CRM_Core_BAO_Setting::setValueOption(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+    'address_options',
+    $address_options
+  );
 }
 
 /**
@@ -133,13 +135,17 @@ function civcrm_engage_enable_street_address_parsing() {
  * to have the phone number included.
  */
 function civcrm_engage_set_autocomplete_options() {
-  include_once 'CRM/Core/BAO/Preferences.php';
-  $contact_autocomplete_options = CRM_Core_BAO_Preferences::valueOptions(
-    'contact_autocomplete_options', TRUE, NULL, TRUE
+  include_once 'CRM/Core/BAO/Setting.php';
+  $contact_autocomplete_options = CRM_Core_BAO_Setting::valueOptions(
+    CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+    'contact_autocomplete_options',
+    TRUE, NULL, TRUE
   );
   $contact_autocomplete_options['phone'] = 1;
-  CRM_Core_BAO_Preferences::setValue(
-    'contact_autocomplete_options', $contact_autocomplete_options
+  CRM_Core_BAO_Setting::setValueOption(
+    CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+    'contact_autocomplete_options',
+    $contact_autocomplete_options
   );
 }
 
@@ -161,3 +167,15 @@ function civicrm_engage_load_configuration() {
   $import->run($xml_file);
 }
 
+/**
+ * Fix the Participant Role field in the Update Event Invite Responses 
+ **/
+function civicrm_engage_update_7001() {
+  civicrm_initialize();
+  $sql = "UPDATE civicrm_uf_field SET field_name = 'participant_role' WHERE ".
+    "field_name = 'participant_role_id' AND uf_group_id IN (SELECT id FROM ".
+    "civicrm_uf_group WHERE name = 'update_event_invite_responses') ";
+
+  CRM_Core_DAO::executeQuery($sql);
+
+}

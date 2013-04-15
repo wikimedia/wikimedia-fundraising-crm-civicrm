@@ -1,6 +1,4 @@
 <?php
-// $Id$
-
 
 /**
  * @file
@@ -47,6 +45,7 @@ class civicrm_handler_relationship extends views_handler_relationship {
   }
 
   function construct() {
+    parent::construct();
     if (!civicrm_initialize()) {
       return;
     }
@@ -73,7 +72,7 @@ class civicrm_handler_relationship extends views_handler_relationship {
    */
   function label() {
     if (!isset($this->options['label'])) {
-      return $this->ui_name();
+      return '';
     }
     return $this->options['label'];
   }
