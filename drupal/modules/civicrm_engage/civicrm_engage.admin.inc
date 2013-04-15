@@ -1,6 +1,4 @@
 <?php
-// $Id$
-
 #http://pastebin.com/U32jjBVu - D7 has renamed admin settings
 function civicrm_engage_admin_settings($form_state = NULL) {
   $form['last_donate'] = array(

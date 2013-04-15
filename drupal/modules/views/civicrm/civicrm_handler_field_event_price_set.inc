@@ -1,9 +1,7 @@
 <?php
-// $Id$
-
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 3.4                                                |
+ | CiviCRM version 4.2                                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -88,8 +86,8 @@ class civicrm_handler_field_event_price_set extends views_handler_field_prerende
         }
 
 
-        for ($i = 1; $i <= count($priceSet['label']); $i++) {
-          $this->items[$eventPageID][] = $priceSet['label'][$i] . " " . CRM_Utils_Money::format($priceSet['value'][$i]);
+        for ($i = 1; $i <= count($priceSet[label]); $i++) {
+          $this->items[$eventPageID][] = $priceSet[label][$i] . " " . CRM_Utils_Money::format($priceSet[value][$i]);
         }
       }
     }
