@@ -1155,13 +1155,8 @@ class DB_common extends PEAR
          * Have not found a function to efficiently get uf username.
          * Not sure if query begin time is already reported by mysql, or would be useful.
          */
-        global $installType;
-        if ( isset( $installType ) ) {
-            $prefix = "/* Civi utils not available during installation */";
-        } else {
-            $uid = CRM_Utils_System::getLoggedInUfID();
-            $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
-        }
+        $uid = CRM_Utils_System::getLoggedInUfID();
+        $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
         $query = $prefix . $query;
 
         return $query;
