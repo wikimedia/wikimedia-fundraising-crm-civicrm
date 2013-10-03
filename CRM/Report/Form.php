@@ -63,6 +63,7 @@ class CRM_Report_Form extends CRM_Core_Form {
    * @var integer;
    */
   protected $_templateID;
+  protected $_noFields = FALSE;
 
   /**
    * The report title
@@ -1892,6 +1893,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
 
   function beginPostProcess() {
     $this->_params = $this->controller->exportValues($this->_name);
+
     if (empty($this->_params) &&
       $this->_force
     ) {
@@ -1901,7 +1903,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
     // hack to fix params when submitted from dashboard, CRM-8532
     // fields array is missing because form building etc is skipped
     // in dashboard mode for report
-    if (!CRM_Utils_Array::value('fields', $this->_params)) {
+    if (!CRM_Utils_Array::value('fields', $this->_params) && !$this->_noFields) {
       $this->_params = $this->_formValues;
     }
 
@@ -2384,6 +2386,38 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
     }
   }
 
+
+  function storeResultSet() {
+    $this->_storeResultSet = TRUE;
+  }
+
+  function getResultSet() {
+    return $this->_resultSet;
+  }
+
+  /*
+   * Get Template file name - use default form template if a specific one has not been set up for this report
+   *
+   */
+  function getTemplateFileName(){
+    $defaultTpl = parent::getTemplateFileName();
+    $template   = CRM_Core_Smarty::singleton();
+    if (!$template->template_exists($defaultTpl)) {
+      $defaultTpl = 'CRM/Report/Form.tpl';
+    }
+    return $defaultTpl;
+  }
+
+  /*
+   * Compile the report content
+   *
+   *  Although this function is super-short it is useful to keep separate so it can be over-ridden by report classes.
+   */
+  function compileContent(){
+    $templateFile = $this->getHookedTemplateFileName();
+    return $this->_formValues['report_header'] . CRM_Core_Form::$_template->fetch($templateFile) . $this->_formValues['report_footer'];
+  }
+
   function postProcess() {
     // get ready with post process params
     $this->beginPostProcess();
@@ -2754,8 +2788,10 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
         foreach (array(
             'value', 'min', 'max', 'relative', 'from', 'to') as $attach) {
           if (isset($this->_params[$fieldAlias . '_' . $attach]) &&
-            (!empty($this->_params[$fieldAlias . '_' . $attach]) || $this->_params[$fieldAlias . '_' . $attach] == '0')
-          ) {
+            (!empty($this->_params[$fieldAlias . '_' . $attach])
+              || ($attach != 'relative' && $this->_params[$fieldAlias . '_' . $attach] == '0')
+            )
+          ){
             return TRUE;
           }
         }
@@ -2871,7 +2907,10 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
     return $this->_selectedTables;
   }
 
-  /*
+  /**
+   * @deprecated - use getAddressColumns which is a more accurate description
+   * and also accepts an array of options rather than a long list
+   *
    * function for adding address fields to construct function in reports
    * @param bool $groupBy Add GroupBy? Not appropriate for detail report
    * @param bool $orderBy Add GroupBy? Not appropriate for detail report
@@ -3109,6 +3148,77 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
                                {$this->_aliases['civicrm_address']}.contact_id) AND
                                {$this->_aliases['civicrm_address']}.is_primary = 1\n";
     }
+  }
+
+  /**
+   * Add Phone into From Table if required
+   */
+  function addPhoneFromClause() {
+    // include address field if address column is to be included
+    if ($this->isTableSelected('civicrm_phone')
+    ) {
+      $this->_from .= "
+      LEFT JOIN civicrm_phone {$this->_aliases['civicrm_phone']}
+      ON ({$this->_aliases['civicrm_contact']}.id =
+      {$this->_aliases['civicrm_phone']}.contact_id) AND
+      {$this->_aliases['civicrm_phone']}.is_primary = 1\n";
+    }
+  }
+
+  /**
+   * Get phone columns to add to array
+   * @param array $options
+   *  - prefix Prefix to add to table (in case of more than one instance of the table)
+   *  - prefix_label Label to give columns from this phone table instance
+   * @return array phone columns definition
+   */
+  function getPhoneColumns($options = array()){
+    $defaultOptions = array(
+      'prefix' => '',
+      'prefix_label' => '',
+    );
+
+    $options = array_merge($defaultOptions,$options);
+
+    $fields = array(
+      $options['prefix'] . 'civicrm_phone' => array(
+        'dao'    => 'CRM_Core_DAO_Phone',
+        'fields' => array(
+          $options['prefix'] . 'phone' => array(
+            'title' => ts($options['prefix_label'] . 'Phone'),
+            'name'  => 'phone'
+          ),
+        ),
+      ),
+    );
+    return $fields;
+  }
+
+  /**
+   * Get address columns to add to array
+   * @param array $options
+   *  - prefix Prefix to add to table (in case of more than one instance of the table)
+   *  - prefix_label Label to give columns from this address table instance
+   * @return array address columns definition
+   */
+  function getAddressColumns($options = array()){
+    $defaultOptions = array(
+      'prefix' => '',
+      'prefix_label' => '',
+      'group_by' => TRUE,
+      'order_by' => TRUE,
+      'filters' => TRUE,
+      'defaults' => array(
+       ),
+    );
+    $options = array_merge($defaultOptions,$options);
+    return $this->addAddressFields(
+      $options['group_by'],
+      $options['order_by'],
+      $options['filters'],
+      $options['defaults']
+    );
+
   }
 
   function add2group($groupID) {
