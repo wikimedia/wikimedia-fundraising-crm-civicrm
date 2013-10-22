@@ -208,7 +208,7 @@ class CRM_Core_DAO_Email extends CRM_Core_DAO
                     'type' => CRM_Utils_Type::T_STRING,
                     'title' => ts('Email') ,
                     'maxlength' => 254,
-                    'size' => CRM_Utils_Type::BIG,
+                    'size' => CRM_Utils_Type::HUGE,
                     'import' => true,
                     'where' => 'civicrm_email.email',
                     'headerPattern' => '/e.?mail/i',
