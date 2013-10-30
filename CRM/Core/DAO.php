@@ -1476,7 +1476,6 @@ SELECT contact_id
 
     if ($trigger) {
       //$dao->query('CREATE TRIGGER civicrm_domain_trigger BEFORE INSERT ON civicrm_domain FOR EACH ROW BEGIN END');
-      error_log('CREATE TRIGGER civicrm_domain_trigger BEFORE INSERT ON civicrm_domain FOR EACH ROW BEGIN END');
 
       if (PEAR::getStaticProperty('DB_DataObject', 'lastError')) {
         CRM_Core_Error::setCallback();
@@ -1487,7 +1486,6 @@ SELECT contact_id
       }
 
       //$dao->query('DROP TRIGGER IF EXISTS civicrm_domain_trigger');
-      error_log('DROP TRIGGER IF EXISTS civicrm_domain_trigger');
       if (PEAR::getStaticProperty('DB_DataObject', 'lastError')) {
         CRM_Core_Error::setCallback();
         if ($view) {
@@ -1637,8 +1635,6 @@ SELECT contact_id
             FALSE
           );
 		  */
-          error_log("DROP TRIGGER IF EXISTS $triggerName");
-          error_log($triggerSQL);
         }
       }
     }

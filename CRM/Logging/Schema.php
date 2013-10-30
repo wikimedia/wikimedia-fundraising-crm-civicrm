@@ -120,14 +120,14 @@ AND    TABLE_NAME LIKE 'log_civicrm_%'
 
     foreach ($tableNames as $table) {
       // before triggers
-      error_log("DROP TRIGGER IF EXISTS {$table}_before_insert");
-      error_log("DROP TRIGGER IF EXISTS {$table}_before_update");
-      error_log("DROP TRIGGER IF EXISTS {$table}_before_delete");
+      //error_log("DROP TRIGGER IF EXISTS {$table}_before_insert");
+      //error_log("DROP TRIGGER IF EXISTS {$table}_before_update");
+      //error_log("DROP TRIGGER IF EXISTS {$table}_before_delete");
 
      // after triggers
-      error_log("DROP TRIGGER IF EXISTS {$table}_after_insert");
-      error_log("DROP TRIGGER IF EXISTS {$table}_after_update");
-      error_log("DROP TRIGGER IF EXISTS {$table}_after_delete");
+      //error_log("DROP TRIGGER IF EXISTS {$table}_after_insert");
+      //error_log("DROP TRIGGER IF EXISTS {$table}_after_update");
+      //error_log("DROP TRIGGER IF EXISTS {$table}_after_delete");
     }
   }
 
