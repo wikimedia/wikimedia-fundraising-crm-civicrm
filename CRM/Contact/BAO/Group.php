@@ -686,8 +686,8 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
     }
 
     $orderBy = ' ORDER BY groups.title asc';
-    if (CRM_Utils_Array::value('sort', $params)) {
-      $orderBy = ' ORDER BY ' . CRM_Utils_Array::value('sort', $params);
+    if (!empty($params['sort'])) {
+      $orderBy = ' ORDER BY ' . CRM_Utils_Type::escape($params['sort'], 'String');
     }
 
     $select = $from = $where = "";
@@ -906,6 +906,14 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
 
     if ($excludeHidden) {
       $clauses[] = 'groups.is_hidden = 0';
+    }
+    if (!CRM_Core_Permission::check('view all contacts')) {
+      //get the allowed groups for the current user
+      $groups = CRM_ACL_API::group(CRM_ACL_API::VIEW);
+      if (!empty( $groups)) {
+        $groupList = implode( ', ', array_values( $groups ) );
+        $clauses[] = "groups.id IN ( $groupList ) ";
+      }
     }
 
     return implode(' AND ', $clauses);

@@ -741,7 +741,8 @@ class CRM_Activity_BAO_Activity extends CRM_Activity_DAO_Activity {
         }
       }
       elseif (trim($input['sort'])) {
-        $order = " ORDER BY {$input['sort']}";
+        $orderBy = CRM_Utils_Type::escape($input['sort'], 'String');
+        $order = " ORDER BY $orderBy";
       }
     }
 
@@ -2502,6 +2503,7 @@ INNER JOIN  civicrm_option_group grp ON ( grp.id = val.option_group_id AND grp.n
         }
         elseif (!empty($values['assignee_contact_name'])) {
           $count = 0;
+          $contactActivities[$activityId]['assignee_contact'] = '';
           foreach ($values['assignee_contact_name'] as $acID => $acName) {
             if ($acID && $count < 5) {
               $contactActivities[$activityId]['assignee_contact'] .= CRM_Utils_System::href($acName, 'civicrm/contact/view', "reset=1&cid={$acID}");

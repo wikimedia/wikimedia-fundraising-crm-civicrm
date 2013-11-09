@@ -203,7 +203,11 @@ class CRM_Core_Error extends PEAR_ErrorStack {
       echo "Sorry. A non-recoverable error has occurred. The error trace below might help to resolve the issue<p>";
       CRM_Core_Error::debug(NULL, $error);
     }
-
+    static $runOnce = FALSE;
+    if ($runOnce) {
+      exit;
+    }
+    $runOnce = TRUE;
     self::abend(1);
   }
 
@@ -546,7 +550,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
       $comp = $comp . '.';
     }
 
-    $fileName = "{$config->configAndLogDir}CiviCRM." . $comp . md5($config->dsn . $config->userFrameworkResourceURL) . '.log';
+    $fileName = "{$config->configAndLogDir}CiviCRM." . $comp . md5($config->dsn) . '.log';
 
     // Roll log file monthly or if greater than 256M
     // note that PHP file functions have a limit of 2G and hence

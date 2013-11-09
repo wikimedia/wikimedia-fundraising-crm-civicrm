@@ -34,8 +34,12 @@
  */
 class CRM_Contact_Form_Search_Custom_TagContributions implements CRM_Contact_Form_Search_Interface {
 
-  protected $_formValues; function __construct(&$formValues) {
+  protected $_formValues;
+  public $_permissionedComponent;
+
+  function __construct(&$formValues) {
     $this->_formValues = $formValues;
+    $this->_permissionedComponent = 'CiviContribute';
 
     /**
      * Define the columns for search result rows
@@ -118,6 +122,7 @@ WHERE  $where
       // Define ORDER BY for query in $sort, with default value
       if (!empty($sort)) {
         if (is_string($sort)) {
+          $sort = CRM_Utils_Type::escape($sort, 'String');
           $sql .= " ORDER BY $sort ";
         }
         else {

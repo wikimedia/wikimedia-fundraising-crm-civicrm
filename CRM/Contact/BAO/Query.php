@@ -3669,24 +3669,46 @@ civicrm_relationship.start_date > {$today}
     $sort             = NULL,
     $offset           = 0,
     $row_count        = 25,
-    $smartGroupCache  = TRUE
+    $smartGroupCache  = TRUE,
+    $count = FALSE,
+    $skipPermissions = TRUE
   ) {
+
     $query = new CRM_Contact_BAO_Query($params, $returnProperties,
       NULL, TRUE, FALSE, 1,
-      FALSE, TRUE, $smartGroupCache
+      $skipPermissions,
+      TRUE, $smartGroupCache
     );
+   //this should add a check for view deleted if permissions are enabled
+   if($skipPermissions){
+     $query->_skipDeleteClause = True;
+   }
+    $query->generatePermissionClause(False, $count);
+    list($select, $from, $where, $having) = $query->query($count);
 
-    list($select, $from, $where, $having) = $query->query();
     $options = $query->_options;
+    if(!empty($query->_permissionWhereClause)){
+      if (empty($where)) {
+        $where = "WHERE $query->_permissionWhereClause";
+      }
+      else {
+        $where = "$where AND $query->_permissionWhereClause";
+      }
+    }
+
     $sql = "$select $from $where $having";
+
     // add group by
     if ($query->_useGroupBy) {
       $sql .= ' GROUP BY contact_a.id';
     }
     if (!empty($sort)) {
+      $sort = CRM_Utils_Type::escape($sort, 'String');
       $sql .= " ORDER BY $sort ";
     }
     if ($row_count > 0 && $offset >= 0) {
+      $offset = CRM_Utils_Type::escape($offset, 'Int');
+      $row_count = CRM_Utils_Type::escape($row_count, 'Int');
       $sql .= " LIMIT $offset, $row_count ";
     }
 
@@ -3694,6 +3716,11 @@ civicrm_relationship.start_date > {$today}
 
     $values = array();
     while ($dao->fetch()) {
+      if($count){
+        $noRows = $dao->rowCount;
+        $dao->free();
+        return array($noRows,NULL);
+      }
       $values[$dao->contact_id] = $query->store($dao);
     }
     $dao->free();
@@ -3709,7 +3736,7 @@ civicrm_relationship.start_date > {$today}
    * @param boolean  $count    is this a count only query ?
    * @param boolean  $includeContactIds should we include contact ids?
    * @param boolean  $sortByChar if true returns the distinct array of first characters for search results
-   * @param boolean  $groupContacts if true, use a single mysql group_concat statement to get the contact ids
+   * @param boolean  $groupContacts if true, return only the contact ids
    * @param boolean  $returnQuery   should we return the query as a string
    * @param string   $additionalWhereClause if the caller wants to further restrict the search (used for components)
    * @param string   $additionalFromClause should be clause with proper joins, effective to reduce where clause load.
@@ -3839,9 +3866,11 @@ civicrm_relationship.start_date > {$today}
               $orderBy = str_replace('sort_name', 'contact_a.sort_name', $orderBy);
             }
 
+            $orderBy = CRM_Utils_Type::escape($orderBy, 'String');
             $order = " ORDER BY $orderBy";
 
             if ($sortOrder) {
+              $sortOrder = CRM_Utils_Type::escape($sortOrder, 'String');
               $order .= " $sortOrder";
             }
 
@@ -3900,6 +3929,8 @@ civicrm_relationship.start_date > {$today}
 
 
       if ($rowCount > 0 && $offset >= 0) {
+        $offset = CRM_Utils_Type::escape($offset, 'Int');
+        $rowCount = CRM_Utils_Type::escape($rowCount, 'Int');
         $limit = " LIMIT $offset, $rowCount ";
 
         // ok here is a first hack at an optimization, lets get all the contact ids
@@ -3992,6 +4023,55 @@ civicrm_relationship.start_date > {$today}
     }
 
     return $dao;
+  }
+  /**
+   * Populate $this->_permissionWhereClause with permission related clause and update other
+   * query related properties.
+   *
+   * Function calls ACL permission class and hooks to filter the query appropriately
+   *
+   * Note that these 2 params were in the code when extracted from another function
+   * and a second round extraction would be to make them properties of the class
+   *
+   * @param bool $onlyDeleted Only get deleted contacts
+   * @param bool $count Return Count only
+   *
+   * @return null
+   */
+  function generatePermissionClause($onlyDeleted = false, $count = false){
+
+    if (!$this->_skipPermission) {
+      $this->_permissionWhereClause = CRM_ACL_API::whereClause(CRM_Core_Permission::VIEW,
+        $this->_tables,
+        $this->_whereTables,
+        NULL,
+        $onlyDeleted,
+        $this->_skipDeleteClause
+      );
+
+      // regenerate fromClause since permission might have added tables
+      if ($this->_permissionWhereClause) {
+        //fix for row count in qill (in contribute/membership find)
+        if (!$count) {
+          $this->_useDistinct = TRUE;
+        }
+        $this->_fromClause = self::fromClause($this->_tables, NULL, NULL, $this->_primaryLocation, $this->_mode);
+        $this->_simpleFromClause = self::fromClause($this->_whereTables, NULL, NULL, $this->_primaryLocation, $this->_mode);
+      }
+    }
+    else {
+      // add delete clause if needed even if we are skipping permission
+      // CRM-7639
+      if (!$this->_skipDeleteClause) {
+        if (CRM_Core_Permission::check('access deleted contacts') and $onlyDeleted) {
+          $this->_permissionWhereClause = '(contact_a.is_deleted)';
+        }
+        else {
+          // CRM-6181
+          $this->_permissionWhereClause = '(contact_a.is_deleted = 0)';
+        }
+      }
+    }
   }
 
   function setSkipPermission($val) {

@@ -92,6 +92,16 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
    */
   protected $_membershipIDs = array( );
 
+  /**
+   * An array to hold a list of datefields on the form
+   * so that they can be converted to ISO in a consistent manner
+   *
+   * @var array
+   */
+  protected $_dateFields = array(
+    'receive_date' => array('default' => 'now'),
+  );
+
   public function preProcess() {
     //custom data related code
     $this->_cdType = CRM_Utils_Array::value('type', $_GET);
@@ -656,7 +666,7 @@ WHERE   id IN ( ' . implode(' , ', array_keys($membershipType)) . ' )';
       $this->add('text', 'total_amount', ts('Amount'));
       $this->addRule('total_amount', ts('Please enter a valid amount.'), 'money');
 
-      $this->addDate('receive_date', ts('Received'), FALSE, array('formatType' => 'activityDate'));
+      $this->addDate('receive_date', ts('Received'), FALSE, array('formatType' => 'activityDateTime'));
 
       $this->add('select', 'payment_instrument_id',
         ts('Paid By'),
@@ -997,6 +1007,7 @@ WHERE   id IN ( ' . implode(' , ', array_keys($membershipType)) . ' )';
     $config = CRM_Core_Config::singleton();
     // get the submitted form values.
     $this->_params = $formValues = $this->controller->exportValues($this->_name);
+    $this->convertDateFieldsToMySQL($formValues);
 
     $params = $ids = array();
 
@@ -1041,7 +1052,10 @@ WHERE   id IN ( ' . implode(' , ', array_keys($membershipType)) . ' )';
     if (!$priceSetId = CRM_Utils_Array::value('price_set_id', $formValues)) {
       CRM_Member_BAO_Membership::createLineItems($this, $formValues['membership_type_id'], $priceSetId);
     }
-
+    $isQuickConfig = 0;
+    if ($this->_priceSetId && CRM_Core_DAO::getFieldValue('CRM_Price_DAO_Set', $this->_priceSetId, 'is_quick_config')) {
+      $isQuickConfig = 1;
+    }
     if ($priceSetId) {
       CRM_Price_BAO_Set::processAmount($this->_priceSet['fields'],
         $this->_params, $lineItem[$priceSetId]);
@@ -1179,11 +1193,8 @@ WHERE   id IN ( ' . implode(' , ', array_keys($membershipType)) . ' )';
         $this->assign('is_pay_later', 1);
       }
 
-      if (CRM_Utils_Array::value('receive_date', $params)) {
-        $formValues['receive_date'] = $params['receive_date'] = CRM_Utils_Date::processDate($params['receive_date']);
-      }
       if (CRM_Utils_Array::value('send_receipt', $formValues)) {
-        $params['receipt_date'] = CRM_Utils_Array::value('receive_date', $params);
+        $params['receipt_date'] = CRM_Utils_Array::value('receive_date', $formValues);
       }
 
       //insert contribution type name in receipt.
@@ -1212,7 +1223,7 @@ WHERE   id IN ( ' . implode(' , ', array_keys($membershipType)) . ' )';
         $params['total_amount'] = CRM_Utils_Array::value('total_amount', $formValues, 0);
       }
 
-      if ($priceSetId) {
+      if ($priceSetId && !$isQuickConfig) {
         $params['contribution_type_id'] = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_Set',
           $priceSetId,
           'contribution_type_id'
