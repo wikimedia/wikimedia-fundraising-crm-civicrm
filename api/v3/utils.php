@@ -152,7 +152,21 @@ function civicrm_api3_create_error($msg, $data = array(
     }
   }
   $data['is_error'] = 1;
-  $data['error_message'] = $msg;
+  if (is_callable(array($msg, 'getMessage'))) {
+    $data['error_message'] = $msg->getMessage();
+
+    // Digging into causes is an unfortunate hack.  begin hack.
+    if (is_callable(array($msg, 'getCause'))) {
+      $msg = $msg->getCause();
+
+      if (is_callable(array($msg, 'getDebugInfo'))) {
+        $data['debuginfo'] = json_encode($msg->getDebugInfo());
+      }
+    }
+    // </hack>
+  } else {
+    $data['error_message'] = $msg;
+  }
   if (is_array($dao) && isset($dao['params']) && is_array($dao['params']) && CRM_Utils_Array::value('api.has_parent', $dao['params'])) {
     throw new Exception('Error in call to ' . $dao['entity'] . '_' . $dao['action'] . ' : ' . $msg);
   }
@@ -1193,13 +1207,9 @@ function _civicrm_api3_generic_replace($entity, $params) {
 
     return civicrm_api3_create_success($creates, $params);
   }
-  catch(PEAR_Exception$e) {
-    $tx->rollback();
-    return civicrm_api3_create_error($e->getMessage());
-  }
   catch(Exception$e) {
     $tx->rollback();
-    return civicrm_api3_create_error($e->getMessage());
+    return civicrm_api3_create_error($e);
   }
 }
 

@@ -158,6 +158,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     $error['type']       = $pearError->getType();
     $error['user_info']  = $pearError->getUserInfo();
     $error['to_string']  = $pearError->toString();
+    # FIXME: db-specific error codes are already captured in PEAR_Error.userInfo
     if (function_exists('mysql_error') &&
       mysql_error()
     ) {
