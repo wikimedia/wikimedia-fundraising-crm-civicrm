@@ -77,7 +77,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * If modeException == true, errors are raised as exception instead of returning civicrm_errors
    * @static
    */
-  public static $modeException = NULL;
+  public static $modeException = true;
 
   /**
    * singleton function used to manage this object.
@@ -780,7 +780,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    */
   public static function setCallback($callback = NULL) {
     if (!$callback) {
-      $callback = array('CRM_Core_Error', 'handle');
+      $callback = array('CRM_Core_Error', 'exceptionHandler');
     }
     $GLOBALS['_PEAR_default_error_mode'] = PEAR_ERROR_CALLBACK;
     $GLOBALS['_PEAR_default_error_options'] = $callback;
