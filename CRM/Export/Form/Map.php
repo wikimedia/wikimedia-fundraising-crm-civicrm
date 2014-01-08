@@ -152,8 +152,10 @@ class CRM_Export_Form_Map extends CRM_Core_Form {
    */
   public function postProcess() {
     $params = $this->controller->exportValues($this->_name);
-    if (array_search('Select', $this->controller->_pages)) {
+    if (array_key_exists('Select', $this->controller->_pages)) {
       $exportParams = $this->controller->exportValues('Select');
+    } else {
+      $exportParams = array();
     }
 
     $greetingOptions = CRM_Export_Form_Select::getGreetingOptions();
