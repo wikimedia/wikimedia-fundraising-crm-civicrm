@@ -465,7 +465,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    */
   static function debug_var($variable_name,
     $variable,
-    $print = TRUE,
+    $print = FALSE,
     $log   = TRUE,
     $comp  = ''
   ) {
