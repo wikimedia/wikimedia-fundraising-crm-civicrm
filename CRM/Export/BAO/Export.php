@@ -59,6 +59,8 @@ class CRM_Export_BAO_Export {
    * @param string $componentTable component table
    * @param bool   $mergeSameAddress merge records if they have same address
    * @param bool   $mergeSameHousehold merge records if they belong to the same household
+   * @param array  $exportParams options passed from the mapper, also used to cache static data
+   * @param string $queryOperator binary SQL operator used to join WHERE clauses
    *
    * @static
    * @access public
@@ -385,9 +387,8 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
     }
 
     $exportParams['postal_mailing_export']['temp_columns'] = array();
-    if ($exportParams['exportOption'] == 2 &&
-      isset($exportParams['postal_mailing_export']) &&
-      CRM_Utils_Array::value('postal_mailing_export', $exportParams['postal_mailing_export']) == 1
+    if (CRM_Utils_Array::value('exportOption', $exportParams) == 2 &&
+      CRM_Utils_Array::value('postal_mailing_export', $exportParams) == 1
     ) {
       $postalColumns = array('is_deceased', 'do_not_mail', 'street_address', 'supplemental_address_1');
       foreach ($postalColumns as $column) {
@@ -1060,8 +1061,10 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
       $sql = "DROP TABLE IF EXISTS {$exportTempTable}";
       CRM_Core_DAO::executeQuery($sql);
 
-      $sql = "DROP TABLE IF EXISTS {$componentTable}";
-      CRM_Core_DAO::executeQuery( $sql );
+      if ($componentTable) {
+        $sql = "DROP TABLE IF EXISTS {$componentTable}";
+        CRM_Core_DAO::executeQuery( $sql );
+      }
 
       CRM_Utils_System::civiExit();
     }
