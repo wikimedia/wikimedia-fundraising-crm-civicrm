@@ -818,10 +818,11 @@ SELECT @option_group_id_cs := MAX(id) FROM civicrm_option_group WHERE name = 'co
 
 SELECT @max_weight := MAX(weight) FROM civicrm_option_value WHERE option_group_id = @option_group_id_cs;
 
-INSERT INTO
-  `civicrm_option_value` (`option_group_id`, {localize field='label'}label{/localize}, `value`, `name`, `grouping`, `filter`, `is_default`, `weight`, `is_optgroup`, `is_reserved`, `is_active`, `component_id`, `visibility_id`)
+SET @existing_refunded_id_cs = (SELECT id FROM civicrm_option_value WHERE option_group_id = @option_group_id_cs AND name = 'Refunded');
+REPLACE INTO
+  `civicrm_option_value` (`id`, `option_group_id`, {localize field='label'}label{/localize}, `value`, `name`, `grouping`, `filter`, `is_default`, `weight`, `is_optgroup`, `is_reserved`, `is_active`, `component_id`, `visibility_id`)
 VALUES
-  (@option_group_id_cs, {localize}'{ts escape="sql"}Refunded{/ts}'{/localize}, @max_weight + 1, 'Refunded', NULL, 0, NULL, @max_weight + 1, 0, 1, 1, NULL, NULL);
+  (@existing_refunded_id_cs, @option_group_id_cs, {localize}'{ts escape="sql"}Refunded{/ts}'{/localize}, @max_weight + 1, 'Refunded', NULL, 0, NULL, @max_weight + 1, 0, 1, 1, NULL, NULL);
 
 -- Payprocs from extensions may have long titles
 ALTER TABLE civicrm_payment_processor_type MODIFY COLUMN title varchar(127);
