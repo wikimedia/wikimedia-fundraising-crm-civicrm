@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -37,15 +37,10 @@
     {if $smarty.get.snippet eq 2}
     {include file="CRM/common/print.tpl"}
     {else}
-    <div id="crm-container-snippet" bgColor="white">
+    <div class="crm-container-snippet" bgColor="white">
 
     {* Check for Status message for the page (stored in session->getStatus). Status is cleared on retrieval. *}
-    {if $session->getStatus(false)}
-    <div class="messages status">
-      <div class="icon alert-icon"></div>
-      {$session->getStatus(true)}
-    </div>
-    {/if}
+    {include file="CRM/common/status.tpl"}
 
     <!-- .tpl file invoked: {$tplFile}. Call via form.tpl if we have a form in the page. -->
     {if !empty($isForm)}
@@ -54,7 +49,6 @@
         {include file=$tplFile}
     {/if}
 
-    {include file="CRM/common/action.tpl" isSnippet = true}
     </div> {* end crm-container-snippet div *}
     {/if}
 {/if}

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id: Selector.php 11510 2007-09-18 09:21:34Z lobo $
  *
  */
@@ -131,7 +131,7 @@ class CRM_Contact_Selector_Custom extends CRM_Contact_Selector {
     $this->_formValues = $formValues;
     $this->_includeContactIds = $includeContactIds;
 
-    $ext = new CRM_Core_Extensions();
+    $ext = CRM_Extension_System::singleton()->getMapper();
 
     if (!$ext->isExtensionKey($customSearchClass)) {
       if ($ext->isExtensionClass($customSearchClass)) {
@@ -141,12 +141,13 @@ class CRM_Contact_Selector_Custom extends CRM_Contact_Selector {
       else {
         require_once (str_replace('_', DIRECTORY_SEPARATOR, $customSearchClass) . '.php');
       }
-      eval('$this->_search = new ' . $customSearchClass . '( $formValues );');
+      $this->_search = new $customSearchClass( $formValues );
     }
     else {
-      $customSearchFile = $ext->keyToPath($customSearchClass, 'search');
-      require_once ($customSearchFile);
-      eval('$this->_search = new ' . $ext->keyToClass($customSearchClass, 'search') . '( $formValues );');
+      $fnName = $ext->keyToPath;
+      $customSearchFile = $fnName($customSearchClass, 'search');
+      $className = $ext->keyToClass($customSearchClass, 'search');
+      $this->_search = new $className($formValues);
     }
   }
   //end of constructor
@@ -162,9 +163,7 @@ class CRM_Contact_Selector_Custom extends CRM_Contact_Selector {
    * @access public
    *
    */
-  static
-  function &links() {
-
+  static function &links() {
     if (!(self::$_links)) {
       self::$_links = array(
         CRM_Core_Action::VIEW => array(
@@ -279,6 +278,12 @@ class CRM_Contact_Selector_Custom extends CRM_Contact_Selector {
     }
 
     $sql = $this->_search->all($offset, $rowCount, $sort, $includeContactIDs);
+    // contact query object used for creating $sql
+    $contactQueryObj = NULL;
+    if (method_exists($this->_search, 'getQueryObj') &&
+      is_a($this->_search->getQueryObj(), 'CRM_Contact_BAO_Query')) {
+      $contactQueryObj = $this->_search->getQueryObj();
+    }
 
     $dao = CRM_Core_DAO::executeQuery($sql, CRM_Core_DAO::$_nullArray);
 
@@ -307,6 +312,12 @@ class CRM_Contact_Selector_Custom extends CRM_Contact_Selector {
     while ($dao->fetch()) {
       $row = array();
       $empty = TRUE;
+
+      // if contact query object present
+      // process pseudo constants
+      if ($contactQueryObj) {
+        $contactQueryObj->convertToPseudoNames($dao);
+      }
 
       // the columns we are interested in
       foreach ($columnNames as $property) {
@@ -376,7 +387,7 @@ class CRM_Contact_Selector_Custom extends CRM_Contact_Selector {
     return NULL;
   }
 
-  function &contactIDQuery() {
+  function &contactIDQuery($params, $action, $sortID, $displayRelationshipType = NULL, $queryOperator = 'AND') {
     $params = array();
     $sql = $this->_search->contactIDs($params);
 
@@ -406,5 +417,4 @@ class CRM_Contact_Selector_Custom extends CRM_Contact_Selector {
     }
   }
 }
-//end of class
 

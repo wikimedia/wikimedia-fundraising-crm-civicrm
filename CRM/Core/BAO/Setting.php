@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -55,7 +55,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
     CONTRIBUTE_PREFERENCES_NAME = 'Contribute Preferences',
     MEMBER_PREFERENCES_NAME = 'Member Preferences',
     MULTISITE_PREFERENCES_NAME = 'Multi Site Preferences',
-    NAVIGATION_NAME = 'Navigation Menu',
+    PERSONAL_PREFERENCES_NAME = 'Personal Preferences',
     SYSTEM_PREFERENCES_NAME = 'CiviCRM Preferences',
     URL_PREFERENCES_NAME = 'URL Preferences',
     LOCALIZATION_PREFERENCES_NAME = 'Localization Preferences',
@@ -90,7 +90,8 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
 
     $cacheKey = "CRM_Setting_{$group}_{$componentID}_{$contactID}_{$domainID}";
 
-    if ($load &&
+    if (
+      $load &&
       ($force || !isset(self::$_cache[$cacheKey]))
     ) {
 
@@ -142,7 +143,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
     $domainID = NULL
   ) {
     if (self::isUpgradeFromPreFourOneAlpha1()) {
-      // civicrm_setting table is not going to be present. For now we'll just 
+      // civicrm_setting table is not going to be present. For now we'll just
       // return a dummy object
       $dao = new CRM_Core_DAO_Domain();
       $dao->id = -1; // so ->find() doesn't fetch any data later on
@@ -185,7 +186,8 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
    * @static
    * @access public
    */
-  static function getItem($group,
+  static function getItem(
+    $group,
     $name         = NULL,
     $componentID  = NULL,
     $defaultValue = NULL,
@@ -233,7 +235,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
    * @static
    * @access public
    */
-  static function getItems(&$params, $domains = null, $settingsToReturn) {
+  static function getItems(&$params, $domains = NULL, $settingsToReturn) {
     $originalDomain = CRM_Core_Config::domainID();
     if (empty($domains)) {
       $domains[] = $originalDomain;
@@ -271,7 +273,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
             $fields['values'][$name]['group_name'],
             $name,
             CRM_Utils_Array::value('component_id', $params),
-            null,
+            NULL,
             CRM_Utils_Array::value('contact_id', $params),
             $domainID
           );
@@ -289,6 +291,8 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
 
   /**
    * Store an item in the setting table
+   *
+   * _setItem() is the common logic shared by setItem() and setItems().
    *
    * @param object $value (required) The value that will be serialized and stored
    * @param string $group (required) The group name of the item
@@ -309,12 +313,52 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
     $createdID   = NULL,
     $domainID    = NULL
   ) {
+    $fields = array();
+    $fieldsToSet = self::validateSettingsInput(array($name => $value), $fields);
+    //We haven't traditionally validated inputs to setItem, so this breaks things.
+    //foreach ($fieldsToSet as $settingField => &$settingValue) {
+    //  self::validateSetting($settingValue, $fields['values'][$settingField]);
+    //}
+
+    return self::_setItem($fields['values'][$name], $value, $group, $name, $componentID, $contactID, $createdID, $domainID);
+  }
+
+  /**
+   * Store an item in a setting table
+   *
+   * _setItem() is the common logic shared by setItem() and setItems().
+   *
+   * @param array $metadata metadata describing this field
+   * @param $value
+   * @param $group
+   * @param $name
+   * @param null $componentID
+   * @param null $contactID
+   * @param null $createdID
+   * @param null $domainID
+   */
+  static function _setItem(
+    $metadata,
+    $value,
+    $group,
+    $name,
+    $componentID = NULL,
+    $contactID   = NULL,
+    $createdID   = NULL,
+    $domainID    = NULL
+  ) {
     if (empty($domainID)) {
       $domainID = CRM_Core_Config::domainID();
     }
 
     $dao = self::dao($group, $name, $componentID, $contactID, $domainID);
     $dao->find(TRUE);
+
+    if (isset($metadata['on_change'])) {
+      foreach ($metadata['on_change'] as $callback) {
+        call_user_func($callback, unserialize($dao->value), $value, $metadata);
+      }
+    }
 
     if (CRM_Utils_System::isNull($value)) {
       $dao->value = 'null';
@@ -364,13 +408,15 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
    *  'config_key' = the config key is different to the settings key - e.g. debug where there was a conflict
    *  'legacy_key' = rename from config or setting with this name
    *
+   * _setItem() is the common logic shared by setItem() and setItems().
+   *
    * @param array $params (required) An api formatted array of keys and values
    * @domains array an array of domains to get settings for. Default is the current domain
    * @return void
    * @static
    * @access public
    */
-  static function setItems(&$params, $domains = null) {
+  static function setItems(&$params, $domains = NULL) {
     $originalDomain = CRM_Core_Config::domainID();
     if (empty($domains)) {
       $domains[] = $originalDomain;
@@ -391,15 +437,16 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
       $result[$domainID] = array();
       foreach ($fieldsToSet as $name => $value) {
         if(empty($fields['values'][$name]['config_only'])){
-          CRM_Core_BAO_Setting::setItem(
-          $value,
-          $fields['values'][$name]['group_name'],
-          $name,
-          CRM_Utils_Array::value('component_id', $params),
-          CRM_Utils_Array::value('contact_id', $params),
-          CRM_Utils_Array::value('created_id', $params),
-          $domainID
-         );
+          CRM_Core_BAO_Setting::_setItem(
+            $fields['values'][$name],
+            $value,
+            $fields['values'][$name]['group_name'],
+            $name,
+            CRM_Utils_Array::value('component_id', $params),
+            CRM_Utils_Array::value('contact_id', $params),
+            CRM_Utils_Array::value('created_id', $params),
+            $domainID
+          );
         }
         if(!empty($fields['values'][$name]['prefetch'])){
           if(!empty($fields['values'][$name]['config_key'])){
@@ -487,7 +534,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
       $value = CRM_Core_DAO::VALUE_SEPARATOR . implode(CRM_Core_DAO::VALUE_SEPARATOR,$value) . CRM_Core_DAO::VALUE_SEPARATOR;
     }
     if (empty($fieldSpec['validate_callback'])) {
-      return true;
+      return TRUE;
     }
     else {
       list($class,$fn) = explode('::',$fieldSpec['validate_callback']);
@@ -573,16 +620,18 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
    * - help_text
    */
   static function getSettingSpecification(
-    $componentID = null,
+    $componentID = NULL,
     $filters = array(),
-    $domainID = null,
-    $profile = null
+    $domainID = NULL,
+    $profile = NULL
   ) {
     $cacheString = 'settingsMetadata_' . $domainID . '_' . $profile;
     foreach ($filters as $filterField => $filterString) {
       $cacheString .= "_{$filterField}_{$filterString}";
     }
     $cached = 1;
+    // the caching into 'All' seems to be a duplicate of caching to
+    // settingsMetadata__ - I think the reason was to cache all settings as defined & then those altered by a hook
     $settingsMetadata = CRM_Core_BAO_Cache::getItem('CiviCRM setting Specs', $cacheString, $componentID);
     if ($settingsMetadata === NULL) {
       $settingsMetadata = CRM_Core_BAO_Cache::getItem('CiviCRM setting Spec', 'All', $componentID);
@@ -599,12 +648,19 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
       $cached = 0;
     }
 
-    $hookCacheString = CRM_Utils_Hook::alterSettingsMetaData($settingsMetadata, $domainID, $profile);
+    CRM_Utils_Hook::alterSettingsMetaData($settingsMetadata, $domainID, $profile);
     self::_filterSettingsSpecification($filters, $settingsMetadata);
-    if(!$cached || !empty($hookCacheString)){
-      // this is a bit 'heavy' if you are using hooks but this function is expected to only be called during setting administration
+
+    if (!$cached) {
+      // this is a bit 'heavy' if you are using hooks but this function
+      // is expected to only be called during setting administration
       // it should not be called by 'getvalue' or 'getitem
-      CRM_Core_BAO_Cache::setItem($settingsMetadata,'CiviCRM setting Specs', $cacheString . $hookCacheString, $componentID);
+      CRM_Core_BAO_Cache::setItem(
+        $settingsMetadata,
+        'CiviCRM setting Specs',
+        $cacheString,
+        $componentID
+      );
     }
     return $settingsMetadata;
 
@@ -636,7 +692,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
       return;
     }
     else if (array_keys($filters) == array('name')) {
-      $settingSpec = array($filters['name'] => $settingSpec[$filters['name']]);
+      $settingSpec = array($filters['name'] => CRM_Utils_Array::value($filters['name'], $settingSpec, ''));
       return;
     }
     else {
@@ -683,7 +739,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
    *
    * Note that where the key name is being changed the 'legacy_key' will give us the old name
    */
-  static function convertConfigToSetting($name, $domainID = null) {
+  static function convertConfigToSetting($name, $domainID = NULL) {
     // we have to force this here in case more than one domain is in play.
     // whenever there is a possibility of more than one domain we must force it
     $config = CRM_Core_Config::singleton();
@@ -698,7 +754,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
     } else {
       $values = array();
     }
-    $spec = self::getSettingSpecification(null, array('name' => $name), $domainID);
+    $spec = self::getSettingSpecification(NULL, array('name' => $name), $domainID);
     $configKey = CRM_Utils_Array::value('config_key', $spec[$name], CRM_Utils_Array::value('legacy_key', $spec[$name], $name));
     //if the key is set to config_only we don't need to do anything
     if(empty($spec[$name]['config_only'])){
@@ -804,7 +860,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
     self::setItem($optionValue, $group, $name);
   }
 
-  static function fixAndStoreDirAndURL(&$params, $domainID = null) {
+  static function fixAndStoreDirAndURL(&$params, $domainID = NULL) {
     if (self::isUpgradeFromPreFourOneAlpha1()) {
       return;
     }

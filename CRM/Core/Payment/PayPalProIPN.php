@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -186,16 +186,16 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
     $subscriptionPaymentStatus = NULL;
     //List of Transaction Type
     /*
-         recurring_payment_profile_created    			RP Profile Created
-         recurring_payment 					RP Sucessful Payment
+         recurring_payment_profile_created          RP Profile Created
+         recurring_payment           RP Sucessful Payment
          recurring_payment_failed                               RP Failed Payment
-         recurring_payment_profile_cancel     			RP Profile Cancelled
-         recurring_payment_expired 				RP Profile Expired
-         recurring_payment_skipped				RP Profile Skipped
-         recurring_payment_outstanding_payment			RP Sucessful Outstanding Payment
-         recurring_payment_outstanding_payment_failed	        RP Failed Outstanding Payment
-         recurring_payment_suspended				RP Profile Suspended
-         recurring_payment_suspended_due_to_max_failed_payment	RP Profile Suspended due to Max Failed Payment
+         recurring_payment_profile_cancel           RP Profile Cancelled
+         recurring_payment_expired         RP Profile Expired
+         recurring_payment_skipped        RP Profile Skipped
+         recurring_payment_outstanding_payment      RP Sucessful Outstanding Payment
+         recurring_payment_outstanding_payment_failed          RP Failed Outstanding Payment
+         recurring_payment_suspended        RP Profile Suspended
+         recurring_payment_suspended_due_to_max_failed_payment  RP Profile Suspended due to Max Failed Payment
         */
 
 
@@ -207,7 +207,7 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
       case 'recurring_payment_profile_created':
         $recur->create_date = $now;
         $recur->contribution_status_id = 2;
-        $recur->processor_id = $this->retrieve('recurring_payment_id', 'Integer');
+        $recur->processor_id = $this->retrieve('recurring_payment_id', 'String');
         $recur->trxn_id = $recur->processor_id;
         $subscriptionPaymentStatus = CRM_Core_Payment::RECURRING_PAYMENT_START;
         $sendNotification = TRUE;
@@ -260,22 +260,30 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
     }
 
     if (!$first) {
-      // create a contribution and then get it processed
+      //check if this contribution transaction is already processed
+      //if not create a contribution and then get it processed
       $contribution = new CRM_Contribute_BAO_Contribution();
-      $contribution->contact_id = $ids['contact'];
-      $contribution->contribution_type_id = $objects['contributionType']->id;
+      $contribution->trxn_id = $input['trxn_id'];
+      if ($contribution->trxn_id && $contribution->find()) {
+        CRM_Core_Error::debug_log_message("returning since contribution has already been handled");
+        echo "Success: Contribution has already been handled<p>";
+        return TRUE;
+      }
+
+      $contribution->contact_id = $recur->contact_id;
+      $contribution->financial_type_id  = $objects['contributionType']->id;
       $contribution->contribution_page_id = $ids['contributionPage'];
       $contribution->contribution_recur_id = $ids['contributionRecur'];
-      $contribution->receive_date = $now;
       $contribution->currency = $objects['contribution']->currency;
       $contribution->payment_instrument_id = $objects['contribution']->payment_instrument_id;
       $contribution->amount_level = $objects['contribution']->amount_level;
       $contribution->honor_contact_id = $objects['contribution']->honor_contact_id;
       $contribution->honor_type_id = $objects['contribution']->honor_type_id;
       $contribution->campaign_id = $objects['contribution']->campaign_id;
-
       $objects['contribution'] = &$contribution;
     }
+    // CRM-13737 - am not aware of any reason why payment_date would not be set - this if is a belt & braces
+    $objects['contribution']->receive_date = !empty($input['payment_date']) ? date('YmdHis', strtotime($input['payment_date'])): $now;
 
     $this->single($input, $ids, $objects,
       TRUE, $first
@@ -309,11 +317,6 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
     }
 
     $transaction = new CRM_Core_Transaction();
-
-    // fix for CRM-2842
-    //  if ( ! $this->createContact( $input, $ids, $objects ) ) {
-    //       return false;
-    //  }
 
     $participant = &$objects['participant'];
     $membership = &$objects['membership'];
@@ -397,7 +400,7 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
       }
     }
 
-    $paymentProcessorID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_PaymentProcessorType',
+    $paymentProcessorID = CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_PaymentProcessorType',
       'PayPal', 'id', 'name'
     );
 
@@ -459,6 +462,7 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
     $input['fee_amount'] = self::retrieve('mc_fee', 'Money', 'POST', FALSE);
     $input['net_amount'] = self::retrieve('settle_amount', 'Money', 'POST', FALSE);
     $input['trxn_id']    = self::retrieve('txn_id', 'String', 'POST', FALSE);
+    $input['payment_date'] = self::retrieve('payment_date', 'String', 'POST', FALSE);
   }
 
   /**

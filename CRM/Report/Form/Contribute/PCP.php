@@ -1,11 +1,10 @@
 <?php
-// $Id$
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -51,6 +50,14 @@ class CRM_Report_Form_Contribute_PCP extends CRM_Report_Form {
           array(
             'required' => TRUE,
             'no_display' => TRUE,
+          ),
+          'contact_type' =>
+          array(
+            'title' => ts('Supporter Contact Type'),
+          ),
+          'contact_sub_type' =>
+          array(
+            'title' => ts('Supporter Contact SubType'),
           ),
         ),
         'filters' =>
@@ -183,20 +190,20 @@ class CRM_Report_Form_Contribute_PCP extends CRM_Report_Form {
     $this->_from = "
 FROM civicrm_pcp {$this->_aliases['civicrm_pcp']}
 
-LEFT JOIN civicrm_contribution_soft {$this->_aliases['civicrm_contribution_soft']} 
-          ON {$this->_aliases['civicrm_pcp']}.id = 
+LEFT JOIN civicrm_contribution_soft {$this->_aliases['civicrm_contribution_soft']}
+          ON {$this->_aliases['civicrm_pcp']}.id =
              {$this->_aliases['civicrm_contribution_soft']}.pcp_id
 
-LEFT JOIN civicrm_contribution {$this->_aliases['civicrm_contribution']} 
-          ON {$this->_aliases['civicrm_contribution_soft']}.contribution_id = 
+LEFT JOIN civicrm_contribution {$this->_aliases['civicrm_contribution']}
+          ON {$this->_aliases['civicrm_contribution_soft']}.contribution_id =
              {$this->_aliases['civicrm_contribution']}.id
 
-LEFT JOIN civicrm_contact {$this->_aliases['civicrm_contact']} 
-          ON {$this->_aliases['civicrm_pcp']}.contact_id = 
-             {$this->_aliases['civicrm_contact']}.id 
+LEFT JOIN civicrm_contact {$this->_aliases['civicrm_contact']}
+          ON {$this->_aliases['civicrm_pcp']}.contact_id =
+             {$this->_aliases['civicrm_contact']}.id
 
 LEFT JOIN civicrm_contribution_page {$this->_aliases['civicrm_contribution_page']}
-          ON {$this->_aliases['civicrm_pcp']}.page_id = 
+          ON {$this->_aliases['civicrm_pcp']}.page_id =
              {$this->_aliases['civicrm_contribution_page']}.id";
   }
 
@@ -264,6 +271,38 @@ LEFT JOIN civicrm_contribution_page {$this->_aliases['civicrm_contribution_page'
     }
   }
 
+  function statistics(&$rows) {
+    $statistics = parent::statistics($rows);
+
+    $select = "SELECT SUM({$this->_aliases['civicrm_pcp']}.goal_amount) as goal_total, ".
+      "SUM({$this->_aliases['civicrm_contribution_soft']}.amount) as committed_total, ".
+      "COUNT({$this->_aliases['civicrm_contribution_soft']}.id) as donors_total, ".
+      "SUM(IF( contribution_civireport.contribution_status_id > 1, 0, contribution_soft_civireport.amount)) AS received_total ";
+    $sql = "{$select} {$this->_from} {$this->_where}";
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    $dao->fetch();
+    $statistics['counts']['goal_total'] = array(
+      'title' => ts('Goal Total'),
+      'value' => $dao->goal_total,
+      'type' => CRM_Utils_Type::T_MONEY
+    );
+    $statistics['counts']['committed_total'] = array(
+      'title' => ts('Total Committed'),
+      'value' => $dao->committed_total,
+      'type' => CRM_Utils_Type::T_MONEY
+    );
+    $statistics['counts']['received_total'] = array(
+      'title' => ts('Total Received'),
+      'value' => $dao->received_total,
+      'type' => CRM_Utils_Type::T_MONEY
+    );
+    $statistics['counts']['donors_total'] = array(
+      'title' => ts('Total Donors'),
+      'value' => $dao->donors_total,
+      'type' => CRM_Utils_Type::T_INT
+    );
+    return $statistics;
+  }
   function alterDisplay(&$rows) {
     // custom code to alter rows
     $entryFound = FALSE;

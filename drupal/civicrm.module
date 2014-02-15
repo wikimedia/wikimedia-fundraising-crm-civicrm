@@ -24,11 +24,11 @@
  * Drupal module file.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2013
  */
 require_once 'civicrm_user.inc';
+
+define('CIVICRM_UF_HEAD', TRUE);
 
 /**
  * Utilities
@@ -45,77 +45,16 @@ function civicrm_html_head() {
     return;
   }
 
-  $head = NULL;
   if (arg(0) == 'civicrm') {
-    require_once 'CRM/Core/Config.php';
-    $config = CRM_Core_Config::singleton();
-
-    $template = CRM_Core_Smarty::singleton();
-    $buffer   = $template->fetch('CRM/common/jquery.files.tpl');
-    $lines    = preg_split('/\s+/', $buffer);
-    foreach ($lines as $line) {
-      $line = trim($line);
-      if (empty($line)) {
-        continue;
-      }
-      if (strpos($line, '.js') !== FALSE) {
-        drupal_add_js(drupal_get_path('module', 'civicrm') . '/../' . $line, array(
-            'group' => JS_LIBRARY,
-            'weight' => 10,
-            'scope' => 'header',
-          ));
-      }
-      elseif (strpos($line, '.css') !== FALSE) {
-        drupal_add_css(drupal_get_path('module', 'civicrm') . '/../' . $line);
-      }
-    }
-
-    // add localized calendar js
-    $localisation = explode('_', $config->lcMessages);
-    $localizationFile = drupal_get_path('module', 'civicrm') . '/../packages/jquery/jquery-ui-1.8.16/development-bundle/ui/i18n/jquery.ui.datepicker-' . $localisation[0] . '.js';
-
-    if (file_exists($localizationFile)) {
-      drupal_add_js($localizationFile, array(
-          'group' => JS_LIBRARY,
-          'weight' => 11,
-          'scope' => 'header',
-        ));
-    }
-
-    // add the final assignment
-    drupal_add_js('var cj = jQuery.noConflict(true);', array(
-        'type' => 'inline',
-        'group' => JS_LIBRARY,
-        'weight' => 12,
-        'scope' => 'header',
-      ));
+    // Add our standard css & js
+    CRM_Core_Resources::singleton()->addCoreResources();
+  } else {
+    CRM_Core_Resources::singleton()->addCoreStyles();
   }
-
-  if (isset($config->customCSSURL) && !empty($config->customCSSURL)) {
-    $head = "<style type=\"text/css\">@import url({$config->customCSSURL});</style>\n";
-  }
-  else {
-    drupal_add_css(drupal_get_path('module', 'civicrm') . '/../css/deprecate.css');
-    drupal_add_css(drupal_get_path('module', 'civicrm') . '/../css/civicrm.css');
-    drupal_add_css(drupal_get_path('module', 'civicrm') . '/../css/extras.css');
-  }
-  return $head;
 }
 
 /**
- * @file
- * This is an example outlining how a module can be used to display a
- * custom page at a given URL.
- */
-
-/**
- * Implementation of hook_help().
- *
- * Throughout Drupal, hook_help() is used to display help text at the top of
- * pages. Some other parts of Drupal pages get explanatory text from these hooks
- * as well. We use it here to provide a description of the module on the
- * module administration page. This example also illustrates how to add help
- * text to the pages your module defines.
+ * Implements hook_help().
  */
 function civicrm_help($section) {
   switch ($section) {
@@ -124,7 +63,6 @@ function civicrm_help($section) {
 
     // FIXME - should not invoke any civicrm stuff here
     // way too expensive
-    require_once 'CRM/Utils/System.php';
     $docLinkAdmin  = CRM_Utils_System::docURL2("Administrator's Guide", TRUE);
     $docLinkAccess = CRM_Utils_System::docURL2("Access Control", TRUE);
     $output        = '<p>' . t('The CiviCRM module stores information on the universe of people associated with a community and on their interactions such as emails, donations, petitions, events, etc. It can act as a stand alone contact management system or it can be integrated with mass mailer, volunteer management, petition, and event finding. CiviCRM enables organizations to maintain all these activities in a single database, creating efficiencies and new opportunities for communities to better communicate and benefit from relationships with their community members.') . '</p>';
@@ -169,13 +107,7 @@ function civicrm_help($section) {
 }
 
 /**
- * Implementation of hook_permissions(). (D7 and after)
- g *
- * Since the access to our new custom pages will be granted based on
- * special permissions, we need to define what those permissions are here.
- * This ensures that they are available to enable on the user role
- * administration pages.
- *
+ * Implements hook_permissions().
  */
 function civicrm_permission() {
   // make sure the system is initialized
@@ -185,7 +117,6 @@ function civicrm_permission() {
 
   $config = CRM_Core_Config::singleton();
 
-  require_once 'CRM/Core/Permission.php';
   $permissions = CRM_Core_Permission::basicPermissions();
   $perms_array = array();
   foreach ($permissions as $perm => $title) {
@@ -196,44 +127,29 @@ function civicrm_permission() {
 }
 
 /**
- * Implementation of hook_block_info (D7)
+ * Implements hook_block_info
  */
 function civicrm_block_info() {
   if (!civicrm_initialize()) {
     return;
   }
-  require_once 'CRM/Core/Block.php';
   $block = CRM_Core_Block::getInfo();
   return $block;
 }
 
 /**
- * Implementation of hook_block_view (D7)
+ * Implements hook_block_view
  */
 function civicrm_block_view($delta = '0') {
   if (!civicrm_initialize()) {
     return;
   }
-  require_once 'CRM/Core/Block.php';
   $block = CRM_Core_Block::getContent($delta);
   return $block;
 }
 
 /**
- * Implementation of hook_menu().
- *
- * You must implement hook_menu() to emit items to place in the main menu.
- * This is a required step for modules wishing to display their own pages,
- * because the process of creating the links also tells Drupal what
- * callback function to use for a given URL. The menu items returned
- * here provide this information to the menu system.
- *
- * With the below menu definitions, URLs will be interpreted as follows:
- *
- * If the user accesses http://example.com/?q=foo, then the menu system
- * will first look for a menu item with that path. In this case it will
- * find a match, and execute civicrm_foo().
- *
+ * Implements hook_menu().
  */
 function civicrm_menu() {
   if (!civicrm_initialize()) {
@@ -263,20 +179,31 @@ function civicrm_menu() {
 }
 
 /**
+ * Implementation of hook_page_build
+ */
+function civicrm_page_build($page) {
+  // CRM-11823 - If Civi bootstrapped, then merge its HTML header with the CMS's header
+  global $civicrm_root;
+  if (empty($civicrm_root)) {
+    return;
+  }
+  if ($region = CRM_Core_Region::instance('html-header', FALSE)) {
+    CRM_Utils_System::addHTMLHead($region->render(''));
+  }
+}
+
+/**
  * Initialize CiviCRM. Call this function from other modules too if
  * they use the CiviCRM API.
- *
  */
 function civicrm_initialize() {
-  // Check for php version and ensure its greater than 5.
-  // do a fatal exit if
-  if ((int ) substr(PHP_VERSION, 0, 1) < 5) {
-    echo "CiviCRM requires PHP Version 5.2 or greater. You are running PHP Version " . PHP_VERSION . "<p>";
+  // Check for php version and ensure its greater than minPhpVersion
+  $minPhpVersion = '5.3.3';
+  if (version_compare(PHP_VERSION, $minPhpVersion) < 0) {
+    echo "CiviCRM requires PHP Version $minPhpVersion or greater. You are running PHP Version " . PHP_VERSION . "<p>";
     exit();
   }
-
-  require_once dirname(__FILE__) . '/../CRM/Core/ClassLoader.php';
-  CRM_Core_ClassLoader::singleton()->register();
+  _civicrm_registerClassLoader();
 
   static $initialized = FALSE;
   static $failure = FALSE;
@@ -292,7 +219,9 @@ function civicrm_initialize() {
     else {
       $settingsFile = conf_init() . '/civicrm.settings.php';
     }
-    define('CIVICRM_SETTINGS_PATH', $settingsFile);
+    if (!defined('CIVICRM_SETTINGS_PATH')) {
+      define('CIVICRM_SETTINGS_PATH', $settingsFile);
+    }
     $error = include_once ($settingsFile);
 
     // get ready for problems
@@ -303,7 +232,6 @@ function civicrm_initialize() {
     $errorMsgAdd = t("Please review the <a href='!1'>Drupal Installation Guide</a> and the <a href='!2'>Trouble-shooting page</a> for assistance. If you still need help installing, you can often find solutions to your issue by searching for the error message in the <a href='!3'>installation support section of the community forum</a>.</strong></p>",
       array('!1' => $docLinkInstall, '!2' => $docLinkTrouble, '!3' => $forumLink)
     );
-
 
     if ($error == FALSE) {
       $failure = TRUE;
@@ -341,38 +269,71 @@ function civicrm_initialize() {
     if (!empty($header)) {
       drupal_add_html_head($header);
     }
-    require_once 'CRM/Core/BAO/Preferences.php';
 
-    // fixme - after 3.4 is discontinued remove 3.4 support
-    // As this file may be shared between 3.4 & 4.1 releases use the BAO_Preferences::value legacy function if it exists
-    // in future only CRM_Core_BAO_Setting::getItem will be required
     $args = explode('/', $_GET['q']);
     if (
-	(!isset($args[1]) || $args[1] != 'upgrade') &&
-	((method_exists('CRM_Core_BAO_Preferences', 'value') &&
-	  CRM_Core_BAO_Preferences::value('editor_id') == 4)
-	 || (method_exists('CRM_Core_BAO_Setting', 'getItem') &&
-	     CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
-					   // drupal wysiwyg
-					   'editor_id'
-					   ) == 4)
-	 )
-	) {
-      //we have to ensure that wysiwyg is loaded since
-      //pages load only with ajax callbacks
-      $formats = filter_formats();
-      foreach ($formats as $id => $format) {
-        wysiwyg_get_profile($id);
+      (!isset($args[1]) || $args[1] != 'upgrade') &&
+      // drupal wysiwyg
+      CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'editor_id') == 4
+    ) {
+      // CRM-12164
+      if (!function_exists('wysiwyg_get_profile')) {
+        // reset the editor choice so the warning is not displayed all the time
+        CRM_Core_BAO_Setting::setItem(NULL, CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'editor_id');
+
+        // display warning and url to fix
+        $url = CRM_Utils_System::url('civicrm/admin/setting/preferences/display', 'reset=1');
+        $msg = ts(
+          'You had configured CiviCRM to use Drupal default editor but the WYSIWYG module is disabled. Please goto <a href="%1">display preferences</a> and choose another editor',
+          array(1 => $url)
+        );
+        CRM_Core_Session::setStatus($msg);
       }
-      $path = drupal_get_path('module', 'filter');
-      drupal_add_js($path . '/filter.js');
-      drupal_add_css($path . '/filter.css');
+      else {
+        //we have to ensure that wysiwyg is loaded since
+        //pages load only with ajax callbacks
+        $formats = filter_formats();
+        foreach ($formats as $id => $format) {
+          wysiwyg_get_profile($id);
+        }
+        $path = drupal_get_path('module', 'filter');
+        drupal_add_js($path . '/filter.js');
+        drupal_add_css($path . '/filter.css');
+      }
     }
+    CRM_Core_Config::singleton()->userSystem->setMySQLTimeZone();
   }
 
   return TRUE;
 }
 
+/**
+ * Find & register classloader and store location in Drupal variable.
+ * Per CRM-13737 this allows for drupal code to be outside the core directory
+ * which makes it easier for sites managing their own installation methods that
+ * may need to cover different drupal versions
+ */
+function _civicrm_registerClassLoader() {
+  $path = variable_get('civicrm_class_loader');
+  if (empty($path) || !file_exists($path)) {
+    $candidates = array(
+        dirname(__FILE__) . '/../CRM/Core/ClassLoader.php',
+        dirname(__FILE__) . '/../civicrm-core/CRM/Core/ClassLoader.php',
+        dirname(__FILE__) . '/../core/CRM/Core/ClassLoader.php',
+        // ... ad nauseum ...
+    );
+    foreach ($candidates as $candidate) {
+      if (file_exists($candidate)) {
+        $path = $candidate;
+        variable_set('civicrm_class_loader', $candidate);
+        break;
+      }
+    }
+  }
+
+  require_once $path;
+  CRM_Core_ClassLoader::singleton()->register();
+}
 /**
  * Function to get the contact type
  *
@@ -406,8 +367,7 @@ function civicrm_get_ctype($default = NULL) {
 }
 
 /**
- * This is the main function that is called on any civicrm click
- *
+ * This is the main function that is called on any civicrm page
  */
 function civicrm_invoke() {
   // check if this is a redirect and maybe a user login?
@@ -430,8 +390,6 @@ function civicrm_invoke() {
 
   civicrm_cache_disable();
 
-  require_once 'CRM/Core/Error.php';
-
   $args = explode('/', $_GET['q']);
 
   // synchronize the drupal uid with the contacts db
@@ -444,7 +402,7 @@ function civicrm_invoke() {
   if (!isset($args[1]) ||
     $args[1] != 'upgrade'
   ) {
-    require_once 'CRM/Core/BAO/UFMatch.php';
+
     CRM_Core_BAO_UFMatch::synchronize($user, FALSE, 'Drupal',
       civicrm_get_ctype('Individual')
     );
@@ -454,7 +412,6 @@ function civicrm_invoke() {
   $urlAlias = FALSE;
   foreach ($args as $index => $arg) {
     if (strpos($arg, '=') !== FALSE) {
-      require_once 'CRM/Utils/System.php';
 
       $keepArg = NULL;
 
@@ -475,7 +432,7 @@ function civicrm_invoke() {
         // finally split on =
         list($key, $value) = CRM_Utils_System::explode('=', $element, 2);
         if ($value) {
-          $_GET[$key] = $value;
+          $_REQUEST[$key] = $value;
         }
       }
 
@@ -496,7 +453,6 @@ function civicrm_invoke() {
   $printedContent = NULL;
   ob_start();
 
-  require_once 'CRM/Core/Invoke.php';
   $pageContent = CRM_Core_Invoke::invoke($args);
 
   $printedContent = ob_get_clean();
@@ -520,10 +476,8 @@ function _civicrm_categories_access($profile_id) {
     return FALSE;
   }
 
-  require_once 'CRM/Core/BAO/UFGroup.php';
-  $allUFGroups = CRM_Core_BAO_UFGroup::getModuleUFGroup('User Account', 0, FALSE);
+  $allUFGroups = CRM_Core_BAO_UFGroup::getModuleUFGroup('User Account', 0, TRUE);
 
-  require_once 'CRM/Utils/Array.php';
   if (is_array(CRM_Utils_Array::value($profile_id, $allUFGroups))) {
     return TRUE;
   }
@@ -533,9 +487,6 @@ function civicrm_register_data($edit, &$user, $category, $reset, $doNotProcess =
   // lets suppress key generation for all registration forms
   civicrm_key_disable();
 
-  require_once 'CRM/Core/BAO/UFMatch.php';
-  require_once 'CRM/Core/BAO/UFGroup.php';
-  require_once 'CRM/Core/Action.php';
 
   $ctype = civicrm_get_ctype('Individual');
   if ($user->uid) {
@@ -587,9 +538,6 @@ function civicrm_form_data($edit, &$user, $category, $reset, $doNotProcess = FAL
   // lets suppress key generation for all CMS forms
   civicrm_key_disable();
 
-  require_once 'CRM/Core/BAO/UFMatch.php';
-  require_once 'CRM/Core/BAO/UFGroup.php';
-
   $output = array();
 
   $userID = CRM_Core_BAO_UFMatch::getContactId($user->uid);
@@ -610,10 +558,8 @@ function civicrm_form_data($edit, &$user, $category, $reset, $doNotProcess = FAL
   $session = CRM_Core_Session::singleton();
   $sessionUserID = $session->get('userID');
 
-  require_once 'CRM/Contact/BAO/Contact/Utils.php';
   if ($sessionUserID != $userID) {
     // do not allow edit for anon users in joomla frontend, CRM-4668, unless u have checksum CRM-5228
-    require_once 'CRM/Contact/BAO/Contact/Permission.php';
     $config = CRM_Core_Config::singleton();
     if ($config->userFrameworkFrontend) {
       CRM_Contact_BAO_Contact_Permission::validateOnlyChecksum($userID, $this);
@@ -627,7 +573,6 @@ function civicrm_form_data($edit, &$user, $category, $reset, $doNotProcess = FAL
 
   //to allow Edit any profile if user have permission
   $profileID = CRM_Core_DAO::getFieldValue("CRM_Core_DAO_UFGroup", $category, 'id', 'title');
-  require_once 'CRM/Core/Permission.php';
   $ufGroupIDs = CRM_Core_Permission::ufGroupClause(CRM_Core_Permission::EDIT, NULL, TRUE);
 
   if (in_array($profileID, $ufGroupIDs)) {
@@ -641,8 +586,8 @@ function civicrm_form_data($edit, &$user, $category, $reset, $doNotProcess = FAL
   }
 
   if ($html) {
-    $html             = civicrm_add_jquery($html);
-    $index            = empty($category) ? 'civicrm-profile-my-account' : $category;
+    $html = civicrm_add_jquery($html);
+    $index = empty($category) ? 'civicrm-profile-my-account' : $category;
     $output[$index][] = array(
       '#title' => $category,
       '#value' => $html,
@@ -671,29 +616,19 @@ function civicrm_user_form_validate($form, &$form_state) {
 
   $validated = TRUE;
 
-  require_once 'CRM/Utils/Array.php';
-
-  require_once 'CRM/Core/BAO/UFMatch.php';
-  require_once 'CRM/Core/BAO/UFGroup.php';
-
   // check for either user/register or admin/people/create
   $register =
     ((arg(0) == 'user' && arg(1) == 'register') ||
-      (arg(0) == 'admin' && arg(1) == 'people' && arg(2) == 'create')
-    ) ? TRUE : FALSE;
+    (arg(0) == 'admin' && arg(1) == 'people' && arg(2) == 'create')
+  ) ? TRUE : FALSE;
   $userID = NULL;
-  if ($form['#user']) {
+  if (!empty($form['#user'])) {
     $userID = CRM_Core_BAO_UFMatch::getContactId($form['#user']->uid);
   }
   $errors = CRM_Core_BAO_UFGroup::isValid($userID, $form['#user_category'], $register);
-  if (is_array($errors)) {
-    if ($register) {
-      foreach ($errors as $name => $error) {
-        form_set_error($name, $error);
-      }
-    }
-    else {
-      form_set_error('error', "Please complete and save required values in the tab $title");
+  if ($errors && is_array($errors)) {
+    foreach ($errors as $name => $error) {
+      form_set_error($name, $error);
     }
     return FALSE;
   }
@@ -744,7 +679,6 @@ function civicrm_enable() {
   }
 
   // also invoke civicrm menu rebuild
-  require_once 'CRM/Core/Menu.php';
   CRM_Core_Menu::store();
 
   //Update the 'blocks' DB table with the blocks
@@ -752,10 +686,10 @@ function civicrm_enable() {
 }
 
 /**
- * An implementation of hook_translated_menu_item_alter(). This is a hack
+ * An Implements hook_translated_menu_item_alter(). This is a hack
  * to hide the CiviCRM menu from the drupal navigation block for folks
  * who dont have access CiviCRM permissions
- **/
+ */
 function civicrm_translated_menu_link_alter(&$item) {
   if ($item['router_path'] == 'civicrm' &&
     $item['module'] == 'civicrm' &&
@@ -787,7 +721,7 @@ function civicrm_admin_menu_output_alter(&$content) {
 }
 
 /**
- * Implementation of hook_views_api().
+ * Implements hook_views_api().
  */
 function civicrm_views_api() {
   return array(
@@ -796,9 +730,38 @@ function civicrm_views_api() {
   );
 }
 
+function civicrm_views_query_alter(&$view, &$query) {
+
+  if ( ! civicrm_initialize( ) ) {
+    return;
+  }
+
+  // check if we are in multilingual mode, otherwise return
+  // TODO: should be a simple call - is_multiligual ?
+  $domain = new CRM_Core_DAO_Domain();
+  $domain->find(true);
+
+  $multilingual = (bool) $domain->locales;
+
+  if ($multilingual) {
+    global $dbLocale;
+    $columns = CRM_Core_I18n_SchemaStructure::columns();
+
+    // TODO: for better performance, loop on $query->fields instead
+    foreach ($columns as $table => $hash) {
+      foreach ($hash as $column => $type) {
+        if (array_key_exists("{$table}_{$column}", $query->fields)) {
+          $query->fields["{$table}_{$column}"]['field'] = "{$column}{$dbLocale}";
+        }
+      }
+    }
+  }
+}
+
 function civicrm_add_jquery(&$html) {
-  require_once 'CRM/Utils/String.php';
-  return CRM_Utils_String::addJqueryFiles($html);
+  CRM_Core_Resources::singleton()->addCoreResources('html-header');
+  // JS/CSS markup will be rendered in theme('page') by preprocess function
+  return $html;
 }
 
 function civicrm_form_alter(&$form, $formValues, $formID) {
@@ -810,7 +773,6 @@ function civicrm_form_alter(&$form, $formValues, $formID) {
         if (!civicrm_initialize()) {
           return;
         }
-        require_once 'CRM/Core/BAO/Navigation.php';
         CRM_Core_BAO_Navigation::resetNavigation();
       }
       break;
@@ -862,7 +824,7 @@ function civicrm_form_alter(&$form, $formValues, $formID) {
 
 /*
  *
- * Implementation of hook_theme_registry_alter().
+ * Implements hook_theme_registry_alter().
  * Based on the jquery_update module.
  *
  * Make sure this page preprocess function runs last
@@ -880,7 +842,7 @@ function civicrm_theme_registry_alter(&$theme_registry) {
 }
 
 /**
- * Implementation of moduleName_preprocess_hook().
+ * Implements moduleName_preprocess_hook().
  * Based on the jquery_update module functions.
  *
  * Strips out JS and CSS for a path.
@@ -897,9 +859,9 @@ function civicrm_preprocess_page(&$variables) {
      *
      * // Only do this for pages that have JavaScript on them.
      *  if (!empty($variables['scripts'])) {
-     *  	$path = drupal_get_path('module', 'date_popup');
-     *  	unset($scripts['module'][$path . '/lib/ui.datepicker.js']);
-     *  	$variables['scripts'] = drupal_get_js('header', $scripts);
+     *    $path = drupal_get_path('module', 'date_popup');
+     *    unset($scripts['module'][$path . '/lib/ui.datepicker.js']);
+     *    $variables['scripts'] = drupal_get_js('header', $scripts);
      *  }
      */
 
@@ -917,7 +879,6 @@ function civicrm_preprocess_page(&$variables) {
  * Supporting functions to allow using drupal input formats and WYSIWYG API
  * as a CiviCRM rich text editor. This code is in the Drupal module because it's
  * Drupal-version dependent.
- *
  */
 function civicrm_drupal_get_wysiwyg_html($attributes, $value = '', $format = NULL) {
   $form = drupal_get_form('civicrm_drupal_wysiwyg_form', $attributes, $value, $format);
@@ -996,7 +957,7 @@ function civicrm_drupal_wysiwyg_update_value($element, $caller) {
 }
 
 /**
- * Implementation of hook_filter_tips
+ * Implements hook_filter_tips
  */
 function civicrm_filter_info() {
   $filters = array();
@@ -1012,7 +973,7 @@ function civicrm_filter_info() {
 }
 
 /**
- * Implementation of hook_filter_FILTER_tips
+ * Implements hook_filter_FILTER_tips
  */
 function _civicrm_filter_tips($filter, $format, $long = FALSE) {
   return t('Evaluate <a target="_blank" href="@smarty">Smarty</a> and <a target="_blank" href="@civiapi">CiviCRM API</a> codes',
@@ -1024,12 +985,13 @@ function _civicrm_filter_tips($filter, $format, $long = FALSE) {
 }
 
 /**
- * Implementation of hook_filter_FILTER_process
+ * Implements hook_filter_FILTER_process
  */
 function _civicrm_filter_process($text, $filter, $format, $langcode, $cache, $cache_id) {
   civicrm_initialize();
   $config = CRM_Core_Config::singleton();
   $smarty = CRM_Core_Smarty::singleton();
+  // as this file is not a class (not sure why) we need the require once
   require_once 'CRM/Core/Smarty/resources/String.php';
   civicrm_smarty_register_string_resource();
 
@@ -1048,6 +1010,9 @@ function _civicrm_filter_process($text, $filter, $format, $langcode, $cache, $ca
   return $text;
 }
 
+/**
+ * Implements hook_civicrm_postProcess
+ */
 function civicrm_civicrm_postProcess($formName, $form) {
   // Reset Views Cache when CiviCRM components page is saved
   if ($form instanceof CRM_Admin_Form_Setting_Component || $form instanceof CRM_Custom_Form_Group || $form instanceof CRM_Custom_Form_Field) {
@@ -1057,6 +1022,9 @@ function civicrm_civicrm_postProcess($formName, $form) {
   }
 }
 
+/**
+ * Implements hook_civicrm_merge
+ */
 function civicrm_civicrm_merge($type, &$data, $mainId, $otherId, $tables) {
   if ($mainId == 2311 && $otherId == 5686 && $type == 'batch') {
     $conflicts = &$data['fields_in_conflict'];
@@ -1250,3 +1218,4 @@ function civicrm_modules_uninstalled($modules) {
   civicrm_initialize();
   CRM_Core_Invoke::rebuildMenuAndCaches(TRUE);
 }
+

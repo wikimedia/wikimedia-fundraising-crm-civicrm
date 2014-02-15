@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,13 +31,14 @@
  * PEAR_ErrorStack and use that framework
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
 
 require_once 'PEAR/ErrorStack.php';
 require_once 'PEAR/Exception.php';
+require_once 'CRM/Core/Exception.php';
 
 require_once 'Log.php';
 class CRM_Exception extends PEAR_Exception {
@@ -77,7 +78,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * If modeException == true, errors are raised as exception instead of returning civicrm_errors
    * @static
    */
-  public static $modeException = true;
+  public static $modeException = NULL;
 
   /**
    * singleton function used to manage this object.
@@ -158,7 +159,6 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     $error['type']       = $pearError->getType();
     $error['user_info']  = $pearError->getUserInfo();
     $error['to_string']  = $pearError->toString();
-    # FIXME: db-specific error codes are already captured in PEAR_Error.userInfo
     if (function_exists('mysql_error') &&
       mysql_error()
     ) {
@@ -198,7 +198,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
 
     if ($config->initialized) {
       $content = $template->fetch('CRM/common/fatal.tpl');
-      echo CRM_Utils_System::theme('page', $content, TRUE);
+      echo CRM_Utils_System::theme($content);
     }
     else {
       echo "Sorry. A non-recoverable error has occurred. The error trace below might help to resolve the issue<p>";
@@ -228,7 +228,9 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     $error['user_info']  = $pearError->getUserInfo();
     $error['to_string']  = $pearError->toString();
 
-    CRM_Core_Error::debug('Initialization Error', $error);
+    // ensure that debug does not check permissions since we are in bootstrap
+    // mode and need to print a decent message to help the user
+    CRM_Core_Error::debug('Initialization Error', $error, TRUE, TRUE, FALSE);
 
     // always log the backtrace to a file
     self::backtrace('backTrace', TRUE);
@@ -278,7 +280,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
       $details = 'A fatal error was triggered';
       if ($message) {
         $details .= ': ' . $message;
-      }
+    }
       throw new Exception($details, $code);
     }
 
@@ -290,7 +292,8 @@ class CRM_Core_Error extends PEAR_ErrorStack {
       print ("Sorry. A non-recoverable error has occurred.\n$message \n$code\n$email\n\n");
       debug_print_backtrace();
       die("\n");
-      // FIXME: Why doesn't this call abend()? Difference: abend() will cleanup transaction and (via civiExit) store session state
+      // FIXME: Why doesn't this call abend()?
+      // Difference: abend() will cleanup transaction and (via civiExit) store session state
       // self::abend(CRM_Core_Error::FATAL_ERROR);
     }
 
@@ -318,13 +321,17 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     CRM_Core_Error::debug_var('Fatal Error Details', $vars);
     CRM_Core_Error::backtrace('backTrace', TRUE);
     $content = $template->fetch($config->fatalErrorTemplate);
-    if ($config->userFramework == 'Joomla' &&
-      class_exists('JError')
-    ) {
+    // JErrorPage exists only in 3.x and not 2.x
+    // CRM-13714
+    if ($config->userFramework == 'Joomla' && class_exists('JErrorPage')) {
+      $error = new Exception($content);
+      JErrorPage::render($error);
+    }
+    else if ($config->userFramework == 'Joomla' && class_exists('JError')) {
       JError::raiseError('CiviCRM-001', $content);
     }
     else {
-      echo CRM_Utils_System::theme('page', $content);
+      echo CRM_Utils_System::theme($content);
     }
 
     self::abend(CRM_Core_Error::FATAL_ERROR);
@@ -359,7 +366,8 @@ class CRM_Core_Error extends PEAR_ErrorStack {
       printf("Sorry. A non-recoverable error has occurred.\n%s\n", $vars['message']);
       print self::formatTextException($exception);
       die("\n");
-      // FIXME: Why doesn't this call abend()? Difference: abend() will cleanup transaction and (via civiExit) store session state
+      // FIXME: Why doesn't this call abend()?
+      // Difference: abend() will cleanup transaction and (via civiExit) store session state
       // self::abend(CRM_Core_Error::FATAL_ERROR);
     }
 
@@ -395,7 +403,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
       JError::raiseError('CiviCRM-001', $content);
     }
     else {
-      echo CRM_Utils_System::theme('page', $content);
+      echo CRM_Utils_System::theme($content);
     }
 
     // fin
@@ -410,12 +418,15 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * @param  mixed  reference to variables that we need a trace of
    * @param  bool   should we log or return the output
    * @param  bool   whether to generate a HTML-escaped output
+   * @param  bool   should we check permissions before displaying output
+   *                useful when we die during initialization and permissioning
+   *                subsystem is not initialized - CRM-13765
    *
    * @return string the generated output
    * @access public
    * @static
    */
-  static function debug($name, $variable = NULL, $log = TRUE, $html = TRUE) {
+  static function debug($name, $variable = NULL, $log = TRUE, $html = TRUE, $checkPermission = TRUE) {
     $error = self::singleton();
 
     if ($variable === NULL) {
@@ -438,7 +449,10 @@ class CRM_Core_Error extends PEAR_ErrorStack {
       }
       $out = "{$prefix}$out\n";
     }
-    if ($log) {
+    if (
+      $log &&
+      (!$checkPermission || CRM_Core_Permission::check('view debug output'))
+    ) {
       echo $out;
     }
 
@@ -465,7 +479,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    */
   static function debug_var($variable_name,
     $variable,
-    $print = FALSE,
+    $print = TRUE,
     $log   = TRUE,
     $comp  = ''
   ) {
@@ -512,7 +526,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     $file_log = self::createDebugLogger($comp);
     $file_log->log("$message\n");
     $str = "<p/><code>$message</code>";
-    if ($out) {
+    if ($out && CRM_Core_Permission::check('view debug output')) {
       echo $str;
     }
     $file_log->close();
@@ -672,11 +686,11 @@ class CRM_Core_Error extends PEAR_ErrorStack {
           $msg .= '<tbody>';
           foreach (array('Type', 'Code', 'Message', 'Mode', 'UserInfo', 'DebugInfo') as $f) {
             $msg .= sprintf('<tr><td>%s</td><td>%s</td></tr>', $f, call_user_func(array($ei->getCause(), "get$f")));
-          }
+    }
           $msg .= '</tbody></table>';
-        }
+    }
         $ei = $ei->getCause();
-      }
+  }
       $msg .= $e->toHtml();
     } else {
       $msg .= '<p><b>' . get_class($e) . ': "' . htmlentities($e->getMessage()) . '"</b></p>';
@@ -722,12 +736,12 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * @access public
    * @static
    */
-  public static function statusBounce($status, $redirect = NULL) {
+  public static function statusBounce($status, $redirect = NULL, $title = '') {
     $session = CRM_Core_Session::singleton();
     if (!$redirect) {
       $redirect = $session->readUserContext();
     }
-    $session->setStatus($status);
+    $session->setStatus($status, $title);
     CRM_Utils_System::redirect($redirect);
   }
 
@@ -753,6 +767,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
   }
 
   public static function exceptionHandler($pearError) {
+    CRM_Core_Error::backtrace('backTrace', TRUE);
     throw new PEAR_Exception($pearError->getMessage(), $pearError);
   }
 
@@ -780,18 +795,17 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    */
   public static function setCallback($callback = NULL) {
     if (!$callback) {
-      $callback = array('CRM_Core_Error', 'exceptionHandler');
+      $callback = array('CRM_Core_Error', 'handle');
     }
     $GLOBALS['_PEAR_default_error_mode'] = PEAR_ERROR_CALLBACK;
     $GLOBALS['_PEAR_default_error_options'] = $callback;
   }
+
   /*
- * @deprecated
- * This function is no longer used by v3 api.
- * @fixme Some core files call it but it should be re-thought & renamed or removed
- */
-
-
+   * @deprecated
+   * This function is no longer used by v3 api.
+   * @fixme Some core files call it but it should be re-thought & renamed or removed
+   */
   public static function &createAPIError($msg, $data = NULL) {
     if (self::$modeException) {
       throw new Exception($msg, $data);
@@ -806,7 +820,6 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     }
     return $values;
   }
-
 
   public static function movedSiteError($file) {
     $url = CRM_Utils_System::url('civicrm/admin/setting/updateConfigBackend',

@@ -472,7 +472,7 @@ class DB_common extends PEAR
     function quoteBoolean($boolean) {
         return $boolean ? '1' : '0';
     }
-     
+
     // }}}
     // {{{ quoteFloat()
 
@@ -488,7 +488,7 @@ class DB_common extends PEAR
     function quoteFloat($float) {
         return "'".$this->escapeSimple(str_replace(',', '.', strval(floatval($float))))."'";
     }
-     
+
     // }}}
     // {{{ escapeSimple()
 
@@ -1148,22 +1148,6 @@ class DB_common extends PEAR
      */
     function modifyQuery($query)
     {
-        /**
-         * WMF hack:
-         * Insert diagnostic info such as requesting user.
-         *
-         * Have not found a function to efficiently get uf username.
-         * Not sure if query begin time is already reported by mysql, or would be useful.
-         */
-        global $installType;
-        if ( isset( $installType ) ) {
-            $prefix = "/* Civi utils not available during installation */";
-        } else {
-            $uid = CRM_Utils_System::getLoggedInUfID();
-            $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
-        }
-        $query = $prefix . $query;
-
         return $query;
     }
 
@@ -1890,7 +1874,9 @@ class DB_common extends PEAR
      * @see PEAR_Error
      */
     function &raiseError($code = DB_ERROR, $mode = null, $options = null,
-                         $userinfo = null, $nativecode = null)
+        $userinfo = null, $nativecode = null,
+        $argToMatchParentSignature1 = null,
+        $argToMatchParentSignature2 = null)
     {
         // The error is yet a DB error object
         if (is_object($code)) {

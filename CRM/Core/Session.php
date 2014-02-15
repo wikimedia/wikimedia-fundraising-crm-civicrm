@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -88,7 +88,7 @@ class CRM_Core_Session {
   /**
    * singleton function used to manage this object
    *
-   * @return CRM_CoreSession
+   * @return CRM_Core_Session
    * @static
    */
   static function &singleton() {
@@ -108,7 +108,7 @@ class CRM_Core_Session {
    *
    * @return void
    */
-    function initialize($isRead = FALSE) {
+  function initialize($isRead = FALSE) {
     // lets initialize the _session variable just before we need it
     // hopefully any bootstrapping code will actually load the session from the CMS
     if (!isset($this->_session)) {
@@ -127,6 +127,7 @@ class CRM_Core_Session {
       }
       $this->_session =& $_SESSION;
     }
+
     if ($isRead) {
       return;
     }
@@ -307,6 +308,29 @@ class CRM_Core_Session {
   }
 
   /**
+   * Set and check a timer. If it's expired, it will be set again.
+   * Good for showing a message to the user every hour or day (so not bugging them on every page)
+   * Returns true-ish values if the timer is not set or expired, and false if the timer is still running
+   * If you want to get more nuanced, you can check the type of the return to see if it's 'not set' or actually expired at a certain time
+   *
+   * @access public
+   *
+   * @param  string name : name of the timer
+   * @param  int expire  : expiry time (in seconds)
+   *
+   * @return mixed
+   *
+   */
+  function timer($name, $expire) {
+    $ts = $this->get($name, 'timer');
+    if (!$ts || $ts < time() - $expire) {
+      $this->set($name, time(), 'timer');
+      return $ts ? $ts : 'not set';
+    }
+    return false;
+  }
+
+  /**
    * adds a userContext to the stack
    *
    * @param string  $userContext the url to return to when done
@@ -344,7 +368,6 @@ class CRM_Core_Session {
       }
       array_push($this->_session[$this->_key][self::USER_CONTEXT], $userContext);
     }
-    // CRM_Core_Error::debug( 'UC', $this->_session[$this->_key][self::USER_CONTEXT] );
   }
 
   /**
@@ -412,7 +435,7 @@ class CRM_Core_Session {
   }
 
   /**
-   * stores a status message, resets status if asked to
+   * Fetches status messages
    *
    * @param $reset boolean should we reset the status variable?
    *
@@ -433,43 +456,61 @@ class CRM_Core_Session {
   }
 
   /**
-   * stores the status message in the session
+   * Stores an alert to be displayed to the user via crm-messages
    *
-   * @param $status string the status message
-   * @param $append boolean if you want to append or set new status
+   * @param $text string
+   *   The status message
+   *
+   * @param $title string
+   *   The optional title of this message
+   *
+   * @param $type string
+   *   The type of this message (printed as a css class). Possible options:
+   *     - 'alert' (default)
+   *     - 'info'
+   *     - 'success'
+   *     - 'error' (this message type by default will remain on the screen
+   *               until the user dismisses it)
+   *     - 'no-popup' (will display in the document like old-school)
+   *
+   * @param $options array
+   *   Additional options. Possible values:
+   *     - 'unique' (default: true) Check if this message was already set before adding
+   *     - 'expires' how long to display this message before fadeout (in ms)
+   *                 set to 0 for no expiration
+   *                 defaults to 10 seconds for most messages, 5 if it has a title but no body,
+   *                 or 0 for errors or messages containing links
    *
    * @static
    *
    * @return void
    */
-  static function setStatus($status, $append = TRUE) {
+  static function setStatus($text, $title = '', $type = 'alert', $options = array()) {
     // make sure session is initialized, CRM-8120
     $session = self::singleton();
     $session->initialize();
 
-    if (isset(self::$_singleton->_session[self::$_singleton->_key]['status'])) {
-      if ($append) {
-        if (is_array($status)) {
-          if (is_array(self::$_singleton->_session[self::$_singleton->_key]['status'])) {
-            self::$_singleton->_session[self::$_singleton->_key]['status'] += $status;
-          }
-          else {
-            $currentStatus = self::$_singleton->_session[self::$_singleton->_key]['status'];
-            // add an empty element to the beginning which will go in the <h3>
-            self::$_singleton->_session[self::$_singleton->_key]['status'] = array(
-              '', $currentStatus) + $status;
-          }
-        }
-        else {
-          self::$_singleton->_session[self::$_singleton->_key]['status'] .= " $status";
-        }
-      }
-      else {
-        self::$_singleton->_session[self::$_singleton->_key]['status'] = " $status";
-      }
+    // default options
+    $options += array('unique' => TRUE);
+
+    if (!isset(self::$_singleton->_session[self::$_singleton->_key]['status'])) {
+      self::$_singleton->_session[self::$_singleton->_key]['status'] = array();
     }
-    else {
-      self::$_singleton->_session[self::$_singleton->_key]['status'] = $status;
+    if ($text || $title) {
+      if ($options['unique']) {
+        foreach (self::$_singleton->_session[self::$_singleton->_key]['status'] as $msg) {
+          if ($msg['text'] == $text && $msg['title'] == $title) {
+            return;
+          }
+        }
+      }
+      unset($options['unique']);
+      self::$_singleton->_session[self::$_singleton->_key]['status'][] = array(
+        'text' => $text,
+        'title' => $title,
+        'type' => $type,
+        'options' => $options ? json_encode($options) : NULL,
+      );
     }
   }
 

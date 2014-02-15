@@ -71,9 +71,9 @@ class CRM_Case_Audit_AuditConfig {
         $fields = $region->getElementsByTagName("field");
         foreach ($fields as $field) {
           /* Storing them this way, which is backwards to how you might normally
-					have arrays with a numeric key and a text value, ends up making things better
-					in the other functions, in particular the sorting and also inRegion should end
-					up being more efficient (searching for a key instead of a value). */
+          have arrays with a numeric key and a text value, ends up making things better
+          in the other functions, in particular the sorting and also inRegion should end
+          up being more efficient (searching for a key instead of a value). */
 
           $this->regionFieldList[$regionName][$field->nodeValue] = $fieldCount;
 
@@ -114,9 +114,9 @@ class CRM_Case_Audit_AuditConfig {
   }
 
   /* inRegion
-	 *
-	 * Check if label $n is explicitly listed in region $r in the config.
-	 */
+   *
+   * Check if label $n is explicitly listed in region $r in the config.
+   */
 
   public function inRegion($n, $r) {
     if (empty($this->regionFieldList[$r])) {
@@ -128,9 +128,9 @@ class CRM_Case_Audit_AuditConfig {
   }
 
   /* includeInRegion
-	 *
-	 * Should field $n be included in region $r, taking into account exclusion rules.
-	 */
+   *
+   * Should field $n be included in region $r, taking into account exclusion rules.
+   */
 
   public function includeInRegion($n, $r) {
     $add_it = FALSE;
@@ -147,9 +147,9 @@ class CRM_Case_Audit_AuditConfig {
   }
 
   /* includeTime
-	 *
-	 * Should the time component of field $n in region $r be displayed?
-	 */
+   *
+   * Should the time component of field $n in region $r be displayed?
+   */
 
   public function includeTime($n, $r) {
     $retval = FALSE;
@@ -175,19 +175,19 @@ class CRM_Case_Audit_AuditConfig {
   }
 
   /* getRegions
-	 *
-	 * Return a list of all the regions in the config file.
-	 */
+   *
+   * Return a list of all the regions in the config file.
+   */
 
   public function getRegions() {
     return array_keys($this->regionFieldList);
   }
 
   /* sort
-	 *
-	 * Sort a group of fields for a given region according to the order in the config.
-	 * The array to be sorted should have elements that have a member with a key of 'label', and the value should be the field label.
-	 */
+   *
+   * Sort a group of fields for a given region according to the order in the config.
+   * The array to be sorted should have elements that have a member with a key of 'label', and the value should be the field label.
+   */
 
   public function sort(&$f, $r) {
     // For exclusion-type regions, there's nothing to do, because we won't have been given any ordering.
@@ -200,10 +200,10 @@ class CRM_Case_Audit_AuditConfig {
   }
 
   /* compareFields
-	 *
-	 * This is intended to be called as a sort callback function, returning whether a field in a region comes before or after another one.
-	 * See also PHP's usort().
-	 */
+   *
+   * This is intended to be called as a sort callback function, returning whether a field in a region comes before or after another one.
+   * See also PHP's usort().
+   */
 
   public function compareFields($a, $b) {
     if (empty($this->regionFieldList[$this->sortRegion][$a['label']])) {
