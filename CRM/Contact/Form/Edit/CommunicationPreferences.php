@@ -80,12 +80,8 @@ class CRM_Contact_Form_Edit_CommunicationPreferences {
     }
     $form->addGroup($commPreff, 'preferred_communication_method', ts('Preferred Method(s)'));
 
-    $form->add('select', 'preferred_language',
-      ts('Preferred Language'),
-      array(
-        '' => ts('- select -')) +
-      CRM_Core_PseudoConstant::languages()
-    );
+    $form->addElement('text', 'preferred_language', ts('Preferred Language'),
+          CRM_Core_DAO::getAttribute('CRM_Contact_DAO_Contact', 'preferred_language'));
 
     if (!empty($privacyOptions)) {
       $commPreference['privacy'] = $privacyOptions;

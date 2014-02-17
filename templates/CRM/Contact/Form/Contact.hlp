@@ -43,6 +43,13 @@
 {ts}Select the preferred method(s) of communicating with this contact.{/ts}
 {/htxt}
 
+{htxt id="id-preferred_language-title"}
+  {ts}Preferred language{/ts}
+{/htxt}
+{htxt id="id-preferred_language"}
+  {ts}Languages spoken by this contact, in descending order of preference. Language tags can be given as BCP-47 or using a legacy syntax. An empty value is acceptable, and is interpreted to mean that we have no preference information for this contact. Multiple values are separated by a comma and an optional space.{/ts}
+{/htxt}
+
 {htxt id="id-privacy"}
 {ts}Select the preferred method for Privacy.{/ts}
 {/htxt}

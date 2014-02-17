@@ -1,0 +1,3 @@
+[submodule "packages/Bcp47"]
+	path = packages/Bcp47
+	url = https://github.com/adamwight/Bcp47.git

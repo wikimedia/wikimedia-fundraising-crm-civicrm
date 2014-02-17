@@ -572,6 +572,9 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
             $countryName = CRM_Core_PseudoConstant::countryIsoCode($value);
             $value = $countryName;
           }
+          elseif ($name == 'preferred_language') {
+            # XXX
+          }
           // ensure value is not an array
           // CRM-4174
           if (!is_array($value)) {

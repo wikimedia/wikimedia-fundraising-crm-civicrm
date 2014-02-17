@@ -230,8 +230,10 @@ class CRM_Contact_Form_Search_Criteria {
     $form->addGroup($commPreff, 'preferred_communication_method', ts('Preferred Communication Method'));
 
     //CRM-6138 Preferred Language
-    $langPreff = CRM_Core_PseudoConstant::languages();
-    $form->add('select', 'preferred_language', ts('Preferred Language'), array('' => ts('- select language -')) + $langPreff);
+    $form->addElement('text', 'preferred_language',
+        ts('Preferred Language'),
+        CRM_Core_DAO::getAttribute('CRM_Contact_DAO_Contact', 'preferred_language')
+    );
   }
 
 

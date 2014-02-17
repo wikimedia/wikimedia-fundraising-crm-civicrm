@@ -561,7 +561,7 @@ class CRM_Profile_Selector_Listings extends CRM_Core_Selector_Base implements CR
           }
         }
         elseif ($name == 'preferred_language') {
-          $row[] = $languages[$result->$name];
+          $row[] = $result->$name;
         }
         elseif ($multipleSelectFields &&
           array_key_exists($name, $multipleSelectFields)
