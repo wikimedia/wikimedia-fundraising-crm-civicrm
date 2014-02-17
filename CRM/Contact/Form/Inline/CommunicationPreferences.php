@@ -118,12 +118,6 @@ class CRM_Contact_Form_Inline_CommunicationPreferences extends CRM_Core_Form {
       $defaults['preferred_language'] = $languages[$defaults['preferred_language']];
     }
 
-    // CRM-7119: set preferred_language to default if unset
-    if (empty($defaults['preferred_language'])) {
-      $config = CRM_Core_Config::singleton();
-      $defaults['preferred_language'] = $config->lcMessages;
-    }
-
     foreach (CRM_Contact_BAO_Contact::$_greetingTypes as $greeting) {
       $name = "{$greeting}_display";
       $this->assign($name, CRM_Utils_Array::value($name, $defaults));
