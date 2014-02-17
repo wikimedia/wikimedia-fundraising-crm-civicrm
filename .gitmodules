@@ -1,0 +1,3 @@
+[submodule "packages/LanguageTag"]
+	path = packages/LanguageTag
+	url = https://github.com/adamwight/Bcp47.git

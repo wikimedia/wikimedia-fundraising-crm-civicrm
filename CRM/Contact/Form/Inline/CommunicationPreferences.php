@@ -113,11 +113,6 @@ class CRM_Contact_Form_Inline_CommunicationPreferences extends CRM_Core_Form {
     
     $this->_contactType = CRM_Utils_Array::value('contact_type', $defaults);
  
-    if (!empty($defaults['preferred_language'])) {
-      $languages = array_flip(CRM_Core_PseudoConstant::languages());
-      $defaults['preferred_language'] = $languages[$defaults['preferred_language']];
-    }
-
     // CRM-7119: set preferred_language to default if unset
     if ($config->contactLanguageHasDefault) {
       if (empty($defaults['preferred_language'])) {

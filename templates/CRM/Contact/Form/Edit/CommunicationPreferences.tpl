@@ -105,7 +105,7 @@
                 </td>
             {/foreach}
                  <td>
-                     <br /><span class="label">{$form.preferred_language.label}</span>
+                     <br /><span class="label">{$form.preferred_language.label}</span> {help id="id-preferred_language" file="CRM/Contact/Form/Contact.hlp"}
                      <br />{$form.preferred_language.html}
                 </td>
         </tr>

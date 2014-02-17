@@ -80,12 +80,8 @@ class CRM_Contact_Form_Edit_CommunicationPreferences {
     }
     $form->addGroup($commPreff, 'preferred_communication_method', ts('Preferred Method(s)'));
 
-    $form->add('select', 'preferred_language',
-      ts('Preferred Language'),
-      array(
-        '' => ts('- unknown -')) +
-      CRM_Core_PseudoConstant::languages()
-    );
+    $form->addElement('text', 'preferred_language', ts('Preferred Language'),
+          CRM_Core_DAO::getAttribute('CRM_Contact_DAO_Contact', 'preferred_language'));
 
     if (!empty($privacyOptions)) {
       $commPreference['privacy'] = $privacyOptions;
@@ -163,15 +159,10 @@ class CRM_Contact_Form_Edit_CommunicationPreferences {
    */
   function setDefaultValues(&$form, &$defaults) {
 
-    if (!empty($defaults['preferred_language'])) {
-      $languages = array_flip(CRM_Core_PseudoConstant::languages());
-      $defaults['preferred_language'] = $languages[$defaults['preferred_language']];
-    }
-
+    $config = CRM_Core_Config::singleton();
     // CRM-7119: set preferred_language to default if unset
     if ($config->contactLanguageHasDefault) {
       if (empty($defaults['preferred_language'])) {
-        $config = CRM_Core_Config::singleton();
         $defaults['preferred_language'] = $config->lcMessages;
       }
     }

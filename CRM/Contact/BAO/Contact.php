@@ -25,6 +25,8 @@
  +--------------------------------------------------------------------+
 */
 
+use LanguageTag\LanguageTag;
+
 /**
  *
  * @package CRM
@@ -272,6 +274,9 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
           $params['preferred_language'] = $config->lcMessages;
         }
     }
+
+    require_once 'packages/LanguageTag/vendor/autoload.php';
+    $params['preferred_language'] = LanguageTag::fromRaw($params['preferred_language'])->getCanonical();
 
     // CRM-9739: set greeting & addressee if unset and we’re creating a contact
     if (empty($params['contact_id'])) {
