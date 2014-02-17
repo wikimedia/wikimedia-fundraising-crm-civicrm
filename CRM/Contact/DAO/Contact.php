@@ -186,7 +186,7 @@ class CRM_Contact_DAO_Contact extends CRM_Core_DAO
    */
   public $preferred_communication_method;
   /**
-   * Which language is preferred for communication. FK to languages in civicrm_option_value.
+   * Which language is preferred for communication.
    *
    * @var string
    */
@@ -627,17 +627,13 @@ class CRM_Contact_DAO_Contact extends CRM_Core_DAO
           'name' => 'preferred_language',
           'type' => CRM_Utils_Type::T_STRING,
           'title' => ts('Preferred Language') ,
-          'maxlength' => 5,
-          'size' => CRM_Utils_Type::SIX,
+          'maxlength' => 255,
+          'size' => CRM_Utils_Type::HUGE,
           'import' => true,
           'where' => 'civicrm_contact.preferred_language',
           'headerPattern' => '/^lang/i',
           'dataPattern' => '',
           'export' => true,
-          'pseudoconstant' => array(
-            'optionGroupName' => 'languages',
-            'keyColumn' => 'name',
-          )
         ) ,
         'preferred_mail_format' => array(
           'name' => 'preferred_mail_format',

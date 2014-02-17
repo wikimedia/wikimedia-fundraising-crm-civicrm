@@ -157,3 +157,6 @@ WHERE uf.field_name IN ('join_date', 'membership_start_date', 'membership_end_da
 ALTER TABLE `civicrm_contribution_recur`
  CHANGE COLUMN `next_sched_contribution` `next_sched_contribution_date` DATETIME NULL DEFAULT NULL COMMENT 'At Groundspring this was used by the cron job which triggered payments. If we\'re not doing that but we know about payments, it might still be useful to store for display to org andor contributors.' AFTER `cycle_day`;
 
+-- CRM-14232 - preferred_language is nullable and freeform
+ALTER TABLE `civicrm_contact`
+  MODIFY COLUMN `preferred_language` VARCHAR(255) NULL DEFAULT NULL COMMENT 'User preferred languages, as a BCP-47 language priority list';

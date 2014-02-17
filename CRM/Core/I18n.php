@@ -125,12 +125,14 @@ class CRM_Core_I18n {
         closedir($dir);
       }
 
-      // drop the unavailable languages (except en_US)
-      foreach (array_keys($all) as $code) {
-        if ($code == 'en_US') {
-          continue;
+      if ($all) {
+        // drop the unavailable languages (except en_US)
+        foreach (array_keys($all) as $code) {
+          if ($code == 'en_US') {
+            continue;
+          }
+          if (!in_array($code, $codes))unset($all[$code]);
         }
-        if (!in_array($code, $codes))unset($all[$code]);
       }
     }
 

@@ -59,17 +59,6 @@ class CRM_Contact_Form_Inline_CommunicationPreferences extends CRM_Contact_Form_
   public function setDefaultValues() {
     $defaults = parent::setDefaultValues();
 
-    if (!empty($defaults['preferred_language'])) {
-      $languages = CRM_Contact_BAO_Contact::buildOptions('preferred_language');
-      $defaults['preferred_language'] = CRM_Utils_Array::key($defaults['preferred_language'], $languages);
-    }
-
-    // CRM-7119: set preferred_language to default if unset
-    if (empty($defaults['preferred_language'])) {
-      $config = CRM_Core_Config::singleton();
-      $defaults['preferred_language'] = $config->lcMessages;
-    }
-
     foreach (CRM_Contact_BAO_Contact::$_greetingTypes as $greeting) {
       $name = "{$greeting}_display";
       $this->assign($name, CRM_Utils_Array::value($name, $defaults));
