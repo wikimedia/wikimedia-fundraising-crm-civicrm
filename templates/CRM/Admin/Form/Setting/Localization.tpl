@@ -32,6 +32,11 @@
                 <td>{$form.lcMessages.html}<br />
                 <span class="description">{ts}Default language used for this installation.{/ts}</span></td>
             </tr>
+            <tr class="crm-localization-form-block-contactLanguageHasDefault">
+                <td class="label">{$form.contactLanguageHasDefault.label}</td>
+                <td>{$form.contactLanguageHasDefault.html}<br />
+                <span class="description">{ts}New contacts without an explicit preferred_language will default to the site default language when this box is checked.  Otherwise, the contact language will default to empty, meaning it is unknown.{/ts}</span></td>
+            </tr>
            {if $form.languageLimit}
              <tr class="crm-localization-form-block-languageLimit"> 
                  <td class="label">{$form.languageLimit.label}</td>

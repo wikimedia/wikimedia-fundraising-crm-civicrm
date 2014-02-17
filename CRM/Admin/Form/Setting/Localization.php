@@ -97,6 +97,8 @@ class CRM_Admin_Form_Setting_Localization extends CRM_Admin_Form_Setting {
       }
     }
 
+    $this->addElement('checkbox', 'contactLanguageHasDefault', ts('New contacts have default language'));
+
     $this->addElement('checkbox', 'inheritLocale', ts('Inherit CMS Language'));
     $this->addElement('text', 'monetaryThousandSeparator', ts('Thousands Separator'), array('size' => 2));
     $this->addElement('text', 'monetaryDecimalPoint', ts('Decimal Delimiter'), array('size' => 2));
@@ -225,6 +227,10 @@ class CRM_Admin_Form_Setting_Localization extends CRM_Admin_Form_Setting {
     // FIXME: stupid QF not submitting unchecked checkboxen…
     if (!isset($values['inheritLocale'])) {
       $values['inheritLocale'] = 0;
+    }
+
+    if (!isset($values['contactLanguageHasDefault'])) {
+      $values['contactLanguageHasDefault'] = 0;
     }
 
     //cache contact fields retaining localized titles
