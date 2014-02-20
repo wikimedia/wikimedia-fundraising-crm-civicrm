@@ -1320,6 +1320,7 @@ class HTML_QuickForm extends HTML_Common
     * @param    array   $b  array which will be merged into first one
     * @return   array   merged array
     */
+    static
     function arrayMerge($a, $b)
     {
         foreach ($b as $k => $v) {
