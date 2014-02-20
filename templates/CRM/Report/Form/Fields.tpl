@@ -72,6 +72,20 @@
 {/if}
 {/if} {* settings section ends *}
 
+<div class="crm-accordion-wrapper crm-report_query-accordion crm-accordion_title-accordion crm-accordion-closed">
+ <div class="crm-accordion-header">
+  <div class="icon crm-accordion-pointer"></div> 
+  	{ts}Report SQL{/ts}
+ </div><!-- /.crm-accordion-header -->
+ <div class="crm-accordion-body">
+     <div id="query_{$instanceForm}">
+        <pre>
+            {$reportSql}
+        </pre>
+     </div>
+ </div>
+</div>
+
 {literal}
 <script type="text/javascript">
 cj(function() {
