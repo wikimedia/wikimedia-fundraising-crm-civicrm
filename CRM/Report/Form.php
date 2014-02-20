@@ -2143,6 +2143,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
   function doTemplateAssignment(&$rows) {
     $this->assign_by_ref('columnHeaders', $this->_columnHeaders);
     $this->assign_by_ref('rows', $rows);
+    $this->assign('reportSql', $this->sql);
     $this->assign('statistics', $this->statistics($rows));
   }
 
@@ -2421,11 +2422,11 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
     $this->beginPostProcess();
 
     // build query
-    $sql = $this->buildQuery();
+    $this->sql = $this->buildQuery();
 
     // build array of result based on column headers. This method also allows
     // modifying column headers before using it to build result set i.e $rows.
-    $this->buildRows($sql, $rows);
+    $this->buildRows($this->sql, $rows);
 
     // format result set.
     $this->formatDisplay($rows);
