@@ -267,8 +267,10 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
     $config = CRM_Core_Config::singleton();
 
     // CRM-6942: set preferred language to the current language if it’s unset (and we’re creating a contact)
-    if (empty($params['contact_id']) && empty($params['preferred_language'])) {
-      $params['preferred_language'] = $config->lcMessages;
+    if ($config->contactLanguageHasDefault) {
+        if (empty($params['contact_id']) && empty($params['preferred_language'])) {
+          $params['preferred_language'] = $config->lcMessages;
+        }
     }
 
     // CRM-9739: set greeting & addressee if unset and we’re creating a contact

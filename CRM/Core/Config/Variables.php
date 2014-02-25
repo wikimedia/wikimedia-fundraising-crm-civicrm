@@ -129,6 +129,12 @@ class CRM_Core_Config_Variables extends CRM_Core_Config_Defaults {
   public $lcMessages = 'en_US';
 
   /**
+   * Whether new contacts default to $lcMessages (if config is true), or null.
+   * @var boolean
+   */
+  public $contactLanguageHasDefault = true;
+
+  /**
    * String format for date+time
    * @var string
    */
