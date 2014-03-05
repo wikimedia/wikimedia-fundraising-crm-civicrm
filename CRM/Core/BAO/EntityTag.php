@@ -64,6 +64,42 @@ class CRM_Core_BAO_EntityTag extends CRM_Core_DAO_EntityTag {
     return $tags;
   }
 
+    /**
+     *
+     * Given a contact id, it returns an array of tag details the
+     * contact belongs to.
+     *
+     * @param int $entityID id of the entity usually the contactID.
+     * @param string $entityTable name of the entity table usually 'civicrm_contact'
+     *
+     * @return array reference with keys being the tag id
+     *
+     * @access public
+     * @static
+     */
+    static
+    function &getTagDetails($entityID, $entityTable = 'civicrm_contact') {
+      $tags = array();
+
+      $entityTag = new CRM_Core_BAO_EntityTag();
+      $entityTag->entity_id = $entityID;
+      $entityTag->entity_table = $entityTable;
+      $entityTag->joinAdd(new CRM_Core_BAO_Tag());
+      $entityTag->find();
+
+      while ($entityTag->fetch()) {
+        $tags[$entityTag->tag_id] = array(
+          'tag_id' => $entityTag->tag_id,
+          'tag_name' => $entityTag->name,
+          'tag_desc' => $entityTag->description,
+          'tag_parent_id' => $entityTag->parent_id,
+          'entity_table' => $entityTag->entity_table,
+          'entity_id' => $entityTag->entity_id
+        );
+      }
+      return $tags;
+    }
+
   /**
    * takes an associative array and creates a entityTag object
    *
