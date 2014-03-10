@@ -316,8 +316,9 @@ class CRM_Core_DAO_Address extends CRM_Core_DAO
                 ) ,
                 'street_address' => array(
                     'name' => 'street_address',
-                    'type' => CRM_Utils_Type::T_TEXT,
+                    'type' => CRM_Utils_Type::T_STRING,
                     'title' => ts('Street Address') ,
+                    'maxlength' => 96,
                     'size' => CRM_Utils_Type::HUGE,
                     'import' => true,
                     'where' => 'civicrm_address.street_address',
@@ -390,8 +391,9 @@ class CRM_Core_DAO_Address extends CRM_Core_DAO
                 ) ,
                 'supplemental_address_1' => array(
                     'name' => 'supplemental_address_1',
-                    'type' => CRM_Utils_Type::T_TEXT,
+                    'type' => CRM_Utils_Type::T_STRING,
                     'title' => ts('Additional Address 1') ,
+                    'maxlength' => 96,
                     'size' => CRM_Utils_Type::HUGE,
                     'import' => true,
                     'where' => 'civicrm_address.supplemental_address_1',
@@ -401,8 +403,9 @@ class CRM_Core_DAO_Address extends CRM_Core_DAO
                 ) ,
                 'supplemental_address_2' => array(
                     'name' => 'supplemental_address_2',
-                    'type' => CRM_Utils_Type::T_TEXT,
+                    'type' => CRM_Utils_Type::T_STRING,
                     'title' => ts('Additional Address 2') ,
+                    'maxlength' => 96,
                     'size' => CRM_Utils_Type::HUGE,
                     'import' => true,
                     'where' => 'civicrm_address.supplemental_address_2',
@@ -412,8 +415,9 @@ class CRM_Core_DAO_Address extends CRM_Core_DAO
                 ) ,
                 'supplemental_address_3' => array(
                     'name' => 'supplemental_address_3',
-                    'type' => CRM_Utils_Type::T_TEXT,
+                    'type' => CRM_Utils_Type::T_STRING,
                     'title' => ts('Supplemental Address 3') ,
+                    'maxlength' => 96,
                     'size' => CRM_Utils_Type::HUGE,
                 ) ,
                 'city' => array(
