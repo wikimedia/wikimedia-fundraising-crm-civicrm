@@ -1826,22 +1826,40 @@ WHERE     c.id = $contributionId";
       return 0;
     }
 
-    $fromClause = "civicrm_contribution contribution";
-    $whereConditions = array("contribution.contact_id = {$contactId}");
     if ($includeSoftCredit) {
-      $fromClause .= " LEFT JOIN civicrm_contribution_soft softContribution
-                                             ON ( contribution.id = softContribution.contribution_id )";
-      $whereConditions[] = " softContribution.contact_id = {$contactId}";
+      $softCreditClause = "
+        union
+        select contribution_id
+        from civicrm_contribution_soft
+        join civicrm_contribution
+          on civicrm_contribution.id = civicrm_contribution_soft.contribution_id
+        where
+          civicrm_contribution_soft.contact_id = {$contactId}
+          and civicrm_contribution.is_test = 0
+      ";
+    } else {
+      $softCreditClause = "";
     }
     if ($includeHonoree) {
-      $whereConditions[] = " contribution.honor_contact_id = {$contactId}";
+      $honoreeClause = "or contribution.honor_contact_id = {$contactId}";
+    } else {
+      $honoreeClause = "";
     }
-    $whereClause = " contribution.is_test = 0 AND ( " . implode(' OR ', $whereConditions) . " )";
 
     $query = "
-   SELECT  count( contribution.id ) count
-     FROM  {$fromClause}
-    WHERE  {$whereClause}";
+      select count(distinct contribution_id) as count from (
+        select id as contribution_id
+        from civicrm_contribution contribution
+        where
+          contribution.is_test = 0
+          and
+          (
+            contribution.contact_id = {$contactId}
+            {$honoreeClause}
+          )
+        {$softCreditClause}
+      ) contact_contribs
+";
 
     return CRM_Core_DAO::singleValueQuery($query);
   }
