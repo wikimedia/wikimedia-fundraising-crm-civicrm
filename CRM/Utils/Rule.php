@@ -378,7 +378,7 @@ class CRM_Utils_Rule {
       return TRUE;
     }
 
-    return preg_match('/(^-?\d+\.\d?\d?$)|(^-?\.\d\d?$)/', $value) ? TRUE : FALSE;
+    return preg_match('/(^-?\d+\.?\d*$)|(^-?\d*\.\d+$)/', $value) ? TRUE : FALSE;
   }
 
   static function string($value, $maxLength = 0) {
