@@ -113,6 +113,9 @@ class CRM_Admin_Page_Admin extends CRM_Core_Page {
     $this->assign('localVersion', $versionCheck->localVersion);
     $this->assign('adminPanel', $adminPanel);
 
+    // CRM-14091: Additional sanity checks.
+    CRM_Utils_Check_Security::singleton()->checkAll();
+
     $this->_showHide->addToTemplate();
     return parent::run();
   }
