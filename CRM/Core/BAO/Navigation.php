@@ -526,6 +526,12 @@ ORDER BY parent_id, weight";
               return $showItem;
             }
           }
+          elseif ($key == 'access own private reports') {
+            // Special permission processing for private reports.
+            $report_url = parse_url(ltrim($url, '/'));
+            $instance_id = CRM_Report_Utils_Report::getInstanceID($report_url['path']);
+            $hasPermission = $showItem = CRM_Report_BAO_ReportInstance::contactIsOwner($instance_id);
+          }
           else {
             $hasPermission = TRUE;
           }
@@ -826,6 +832,23 @@ ORDER BY parent_id, weight";
       $dao->copyValues($newParams);
       $dao->save();
     }
+  }
+
+  static function getNavItemByUrl($url, $url_params) {
+    // Older versions of CiviCRM incorrectly began the first URL param with
+    // & instead of ?. Those URLs were never upgraded automatically during
+    // version upgrades, so we have to check for both.
+    $query = "SELECT * FROM civicrm_navigation WHERE url = %1 OR url = %2";
+    $params = array(
+      1 => array("{$url}?{$url_params}", 'String'),
+      2 => array("{$url}&{$url_params}", 'String'),
+    );
+    $dao = CRM_Core_DAO::executeQuery($query, $params, TRUE, 'CRM_Core_DAO_Navigation');
+    $dao->fetch();
+    if (isset($dao->id)) {
+      return $dao;
+    }
+    return FALSE;
   }
 }
 

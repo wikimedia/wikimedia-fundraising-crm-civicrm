@@ -776,8 +776,9 @@ CRM.validate = CRM.validate || {
       $('#crm-container').on('crmFormLoad', '*', messagesFromMarkup);
     }
 
-    // bind the event for image popup
-    $('body').on('click', 'a.crm-image-popup', function() {
+    $('body')
+      // bind the event for image popup
+      .on('click', 'a.crm-image-popup', function() {
       var o = $('<div class="crm-container crm-custom-image-popup"><img src=' + $(this).attr('href') + '></div>');
 
       CRM.confirm('',
@@ -788,6 +789,17 @@ CRM.validate = CRM.validate || {
         ts('Done')
       );
       return false;
+    })
+    // Handle actions links show/hide
+    .on('click', function(e) {
+      if ($(e.target).is('.crm-actions-list-link, .crm-actions-list-link *')) {
+        $('.crm-actions-list').hide();
+        $(e.target).parents('.crm-actions-list-wrapper').children('.crm-actions-list').show();
+        e.preventDefault();
+      }
+      else {
+        $('.crm-actions-list').hide();
+      }
     });
   });
 

@@ -91,6 +91,10 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
       $instance->permission = 'null';
     }
 
+    if (empty($params['owner_id'])) {
+      $instance->owner_id = 'null';
+    }
+
     // explicitly set to null if params value is empty
     if (!$instanceID && empty($params['grouprole'])) {
       $instance->grouprole = 'null';
@@ -100,7 +104,7 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
       $instance->id = $instanceID;
     }
 
-    if (! $instanceID) {
+    if (!$instanceID) {
       if ($reportID = CRM_Utils_Array::value('report_id', $params)) {
         $instance->report_id = $reportID;
       } else if ($instanceID) {
@@ -136,34 +140,10 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
    */
   static function &create(&$params) {
     if (isset($params['report_header'])) {
-      $params['header']    = CRM_Utils_Array::value('report_header',$params);
+      $params['header'] = CRM_Utils_Array::value('report_header',$params);
     }
     if (isset($params['report_footer'])) {
-      $params['footer']    = CRM_Utils_Array::value('report_footer',$params);
-    }
-
-    // build navigation parameters
-    if (CRM_Utils_Array::value('is_navigation', $params)) {
-      if (!array_key_exists('navigation', $params)) {
-        $params['navigation'] = array();
-      }
-      $navigationParams =& $params['navigation'];
-
-      $navigationParams['permission'] = array();
-      $navigationParams['label'] = $params['title'];
-      $navigationParams['name']  = $params['title'];
-
-      $navigationParams['current_parent_id'] = CRM_Utils_Array::value('parent_id', $navigationParams);
-      $navigationParams['parent_id'] = CRM_Utils_Array::value('parent_id', $params);
-      $navigationParams['is_active'] = 1;
-
-      if ($permission = CRM_Utils_Array::value('permission', $params)) {
-        $navigationParams['permission'][] = $permission;
-      }
-
-      // unset the navigation related elements, not used in report form values
-      unset($params['parent_id']);
-      unset($params['is_navigation']);
+      $params['footer'] = CRM_Utils_Array::value('report_footer',$params);
     }
 
     // add to dashboard
@@ -179,34 +159,40 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
     }
 
     $transaction = new CRM_Core_Transaction();
-
     $instance = self::add($params);
     if (is_a($instance, 'CRM_Core_Error')) {
       $transaction->rollback();
       return $instance;
     }
 
-    // add / update navigation as required
-    if (!empty($navigationParams)) {
-      if (!CRM_Utils_Array::value('id',$params) &&
-        !CRM_Utils_Array::value('instance_id',$params) &&
-        CRM_Utils_Array::value('id', $navigationParams)) {
-        unset($navigationParams['id']);
+    if (!empty($params['is_navigation'])) {
+      $navigationParams['id'] = NULL;
+      if (CRM_Utils_Array::value('navigation', $params)) {
+        $navigationParams['id'] = CRM_Utils_Array::value('id', $params['navigation']);
       }
-      $navigationParams['url'] = "civicrm/report/instance/{$instance->id}&reset=1";
+      $navigationParams['is_navigation'] = $params['is_navigation'];
+      $navigationParams['parent_id'] = $params['parent_id'];
+      $navigationParams['label'] = $params['title'];
+      $navigationParams['name']  = $params['title'];
+      $navigationParams['is_active'] = 1;
+      $navigationParams['permission'] = array();
+      if ($permission = CRM_Utils_Array::value('permission', $params)) {
+        $navigationParams['permission'][] = $permission;
+      }
+      $navigationParams['url'] = "civicrm/report/instance/{$instance->id}?reset=1";
       $navigation = CRM_Core_BAO_Navigation::add($navigationParams);
-
-      if (CRM_Utils_Array::value('is_active', $navigationParams)) {
-        //set the navigation id in report instance table
-        CRM_Core_DAO::setFieldValue('CRM_Report_DAO_ReportInstance', $instance->id, 'navigation_id', $navigation->id);
-      }
-      else {
-        // has been removed from the navigation bar
-        CRM_Core_DAO::setFieldValue('CRM_Report_DAO_ReportInstance', $instance->id, 'navigation_id', 'NULL');
-      }
-      //reset navigation
-      CRM_Core_BAO_Navigation::resetNavigation();
+      // set the navigation id in report instance table
+      CRM_Core_DAO::setFieldValue('CRM_Report_DAO_ReportInstance', $instance->id, 'navigation_id', $navigation->id);
     }
+    else {
+      // has been removed from the navigation bar
+      $existing_navigation_id = CRM_Core_DAO::getFieldValue('CRM_Report_DAO_ReportInstance', $instance->id, 'navigation_id', 'id');
+      CRM_Core_DAO::setFieldValue('CRM_Report_DAO_ReportInstance', $instance->id, 'navigation_id', 'NULL');
+      if ($existing_navigation_id) {
+        CRM_Core_BAO_Navigation::processDelete($existing_navigation_id);
+      }
+    }
+    CRM_Core_BAO_Navigation::resetNavigation();
 
     // add to dashlet
     if (!empty($dashletParams)) {
@@ -250,5 +236,45 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
       return $instance;
     }
     return NULL;
+  }
+
+  static function reportIsPrivate($instance_id) {
+    $owner_id = CRM_Core_DAO::getFieldValue('CRM_Report_DAO_ReportInstance', $instance_id, 'owner_id', 'id');
+    if ($owner_id) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * @param $instance_id
+   *
+   * @return TRUE if contact owns the report, FALSE if not
+   */
+  static function contactIsOwner($instance_id) {
+    $session = CRM_Core_Session::singleton();
+    $contact_id = $session->get('userID');
+    $owner_id = CRM_Core_DAO::getFieldValue('CRM_Report_DAO_ReportInstance', $instance_id, 'owner_id', 'id');
+    if ($contact_id === $owner_id) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * @param $instance_id
+   *
+   * @return TRUE if contact can edit the private report, FALSE if not
+   */
+  static function contactCanAdministerReport($instance_id) {
+    if (self::reportIsPrivate($instance_id)) {
+      if (self::contactIsOwner($instance_id) || CRM_Core_Permission::check('access all private reports')) {
+        return TRUE;
+      }
+    }
+    elseif (CRM_Core_Permission::check('administer Reports')) {
+      return TRUE;
+    }
+    return FALSE;
   }
 }

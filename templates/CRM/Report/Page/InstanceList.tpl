@@ -47,8 +47,20 @@
         <tr id="row_{counter}" class="crm-report-instanceList">
           <td class="crm-report-instanceList-title" style="width:35%"><a href="{$row.url}" title="{ts}Run this report{/ts}">&raquo; <strong>{$row.title}</strong></a></td>
           <td class="crm-report-instanceList-description">{$row.description}</td>
-          {if $row.deleteUrl}
-            <td class="crm-report-instanceList-deleteUrl" style = "width:5%"><a href="{$row.deleteUrl}" onclick="return window.confirm('{ts}Are you sure you want delete this report?{/ts} {ts}This action cannot be undone.{/ts}');">{ts}Delete{/ts}</a></td>
+          {if $row.viewUrl}
+            <td class="crm-report-instanceList-actions" style = "width:18%">
+                <a href="{$row.viewUrl}" class="action-item crm-hover-button">{ts}View Results{/ts}</a>
+                <span class="crm-actions-list-wrapper more">
+                <a class="crm-actions-list-link" href="#"><span class="btn-slide crm-hover-button">more</span></a>
+                  <div class="crm-actions-list">
+                    <ul>
+                    {foreach from=$row.actions item=action}
+                      <li><a href="{$action.url}" {if $action.id eq 'delete'}onclick="return window.confirm('{ts}Are you sure you want delete this report?{/ts} {ts}This action cannot be undone.{/ts}');"{/if}>{ts}{$action.label}{/ts}</a></li>
+                    {/foreach}
+                    </ul>
+                  </div>
+                </span>
+            </td>
           {/if}
         </tr>
         {/foreach}
@@ -72,13 +84,17 @@
 <div class="crm-content-block">
 <div class="messages status no-popup">
   <div class="icon inform-icon"></div>&nbsp;
-        {ts 1=$compName}No %1 reports have been created.{/ts} &nbsp;
-        {if $templateUrl}
-            {ts 1=$templateUrl}You can create reports by selecting from the <a href="%1">list of report templates here.</a>{/ts}
-        {else}
-            {ts}Contact your site administrator for help creating reports.{/ts}
-        {/if}
-    </div>
+    {if $myReports}
+      {ts}You do not have any private reports. To add a report to this section, edit the Report Settings for a report and set 'Add to My Reports' to Yes.{/ts} &nbsp;
+    {else}    
+      {ts 1=$compName}No %1 reports have been created.{/ts} &nbsp;
+      {if $templateUrl}
+        {ts 1=$templateUrl}You can create reports by selecting from the <a href="%1">list of report templates here.</a>{/ts}
+      {else}
+        {ts}Contact your site administrator for help creating reports.{/ts}
+      {/if}
+    {/if}
+  </div>
 </div>
 {/if}
 {/strip}

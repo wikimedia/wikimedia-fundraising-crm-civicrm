@@ -202,6 +202,12 @@ class CRM_Report_DAO_ReportInstance extends CRM_Core_DAO
    */
   public $is_reserved;
   /**
+   * FK to civicrm_contact ID.
+   *
+   * @var int unsigned
+   */
+  public $owner_id;
+  /**
    * class constructor
    *
    * @access public
@@ -226,6 +232,7 @@ class CRM_Report_DAO_ReportInstance extends CRM_Core_DAO
         new CRM_Core_EntityReference(self::getTableName() , 'domain_id', 'civicrm_domain', 'id') ,
         new CRM_Core_EntityReference(self::getTableName() , 'navigation_id', 'civicrm_navigation', 'id') ,
         new CRM_Core_EntityReference(self::getTableName() , 'drilldown_id', 'civicrm_report_instance', 'id') ,
+        new CRM_Core_EntityReference(self::getTableName() , 'owner_id', 'civicrm_contact', 'id') ,
       );
     }
     return self::$_links;
@@ -376,6 +383,12 @@ class CRM_Report_DAO_ReportInstance extends CRM_Core_DAO
           'type' => CRM_Utils_Type::T_BOOLEAN,
           'title' => ts('Instance is Reserved') ,
         ) ,
+        'owner_id' => array(
+          'name' => 'owner_id',
+          'type' => CRM_Utils_Type::T_INT,
+          'title' => ts('Report Owned By') ,
+          'FKClassName' => 'CRM_Contact_DAO_Contact',
+        ) ,
       );
     }
     return self::$_fields;
@@ -410,6 +423,7 @@ class CRM_Report_DAO_ReportInstance extends CRM_Core_DAO
         'navigation_id' => 'navigation_id',
         'drilldown_id' => 'drilldown_id',
         'is_reserved' => 'is_reserved',
+        'owner_id' => 'owner_id',
       );
     }
     return self::$_fieldKeys;
