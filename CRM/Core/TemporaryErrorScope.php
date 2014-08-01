@@ -47,6 +47,13 @@ class CRM_Core_TemporaryErrorScope {
    * Read the active error-handler settings
    */
   public static function getActive() {
+    if ( !isset( $GLOBALS['_PEAR_default_error_mode'] ) ) {
+      return array(
+        '_PEAR_default_error_mode' => null,
+        '_PEAR_default_error_options' => null,
+        'modeException' => CRM_Core_Error::$modeException,
+      );
+    }
     return array(
       '_PEAR_default_error_mode' => $GLOBALS['_PEAR_default_error_mode'],
       '_PEAR_default_error_options' =>$GLOBALS['_PEAR_default_error_options'],
