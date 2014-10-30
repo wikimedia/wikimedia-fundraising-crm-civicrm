@@ -1519,10 +1519,11 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
       return;
     }
 
+    // WMF: this was a bad feature, has been removed in recent versions of Civi
     // return if field is a 'code' field
-    if (CRM_Utils_Array::value('is_view', $customFields[$customFieldId])) {
-      return;
-    }
+    // if (CRM_Utils_Array::value('is_view', $customFields[$customFieldId])) {
+    //   return;
+    // }
 
     list($tableName, $columnName, $groupID) = self::getTableColumnGroup($customFieldId);
 
