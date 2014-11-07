@@ -387,6 +387,7 @@ class CRM_Report_Form extends CRM_Core_Form {
       else {
         $this->_columns[$tableName]['alias'] = $table['alias'] . '_civireport';
       }
+      $this->_columns[$tableName]['alias'] = str_replace('.', '_', $this->_columns[$tableName]['alias']);
 
       $this->_aliases[$tableName] = $this->_columns[$tableName]['alias'];
 
@@ -448,6 +449,7 @@ class CRM_Report_Form extends CRM_Core_Form {
             $alias = isset($field['alias']) ? $field['alias'] : (isset($this->_columns[$tableName]['alias']) ?
                      $this->_columns[$tableName]['alias'] : $tableName
             );
+            $alias = str_replace('.', '_', $alias);
             $this->_columns[$tableName][$fieldGrp][$fieldName]['alias'] = $alias;
 
             // set name = fieldName, unless already set
@@ -1654,6 +1656,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
             if (CRM_Utils_Array::value('statistics', $field)) {
               foreach ($field['statistics'] as $stat => $label) {
                 $alias = "{$tableName}_{$fieldName}_{$stat}";
+                $alias = str_replace('.', '_', $alias);
                 switch (strtolower($stat)) {
                   case 'max':
                   case 'sum':
@@ -1684,6 +1687,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
             }
             else {
               $alias = "{$tableName}_{$fieldName}";
+              $alias = str_replace('.', '_', $alias);
               $select[] = "{$field['dbAlias']} as $alias";
               $this->_columnHeaders["{$tableName}_{$fieldName}"]['title'] = CRM_Utils_Array::value('title', $field);
               $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
