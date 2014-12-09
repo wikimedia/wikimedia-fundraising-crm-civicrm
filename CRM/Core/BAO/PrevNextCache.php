@@ -326,13 +326,13 @@ AND (entity_id1 = %2 OR entity_id2 = %2)
         $whereClause .= "AND is_selected = 0";
         $sql = "
 UPDATE civicrm_prevnext_cache SET is_selected = 1 " . $whereClause . $entity_whereClause;
-        $params[1] = array("%{$cacheKey}%", 'String');
+        $params[1] = array("{$cacheKey}%", 'String');
       }
       elseif ($action == 'unselect') {
         $whereClause .= "AND is_selected = 1";
         $sql = "
 UPDATE civicrm_prevnext_cache SET is_selected = 0 " . $whereClause . $entity_whereClause;
-        $params[1] = array("%{$cacheKey}%", 'String');
+        $params[1] = array("{$cacheKey}%", 'String');
       }
       // default action is reseting
     }
@@ -341,7 +341,7 @@ UPDATE civicrm_prevnext_cache SET is_selected = 0 " . $whereClause . $entity_whe
 UPDATE civicrm_prevnext_cache SET is_selected = 0
 WHERE cacheKey LIKE %1 AND is_selected = 1
 " . $entity_whereClause;
-      $params[1] = array("%{$cacheKey}%", 'String');
+      $params[1] = array("{$cacheKey}%", 'String');
     }
     CRM_Core_DAO::executeQuery($sql, $params);
   }
@@ -371,7 +371,7 @@ WHERE cacheKey LIKE %1
       $entity_whereClause
 ORDER BY id
 ";
-      $params[1] = array("%{$cacheKey}%", 'String');
+      $params[1] = array("{$cacheKey}%", 'String');
 
       $contactIds = array($cacheKey => array());
       $cIdDao = CRM_Core_DAO::executeQuery($sql, $params);
@@ -392,8 +392,8 @@ SELECT *
 FROM civicrm_prevnext_cache
 WHERE cacheKey LIKE %1 AND is_selected=1 AND cacheKey NOT LIKE %2
 LIMIT $offset, $rowCount";
-    $params1[1] = array("%{$cacheKey}%", 'String');
-    $params1[2] = array("%{$cacheKey}_alphabet%", 'String');
+    $params1[1] = array("{$cacheKey}%", 'String');
+    $params1[2] = array("{$cacheKey}_alphabet%", 'String');
     $dao = CRM_Core_DAO::executeQuery($query, $params1);
     while ($dao->fetch()) {
         $val[] = $dao->data;
@@ -419,8 +419,8 @@ LIMIT $offset, $rowCount";
 SELECT count(id)
 FROM civicrm_prevnext_cache
 WHERE cacheKey LIKE %1 AND is_selected=1 AND cacheKey NOT LIKE %2";
-    $params1[1] = array("%{$cacheKey}%", 'String');
-    $params1[2] = array("%{$cacheKey}_alphabet%", 'String');
+    $params1[1] = array("{$cacheKey}%", 'String');
+    $params1[2] = array("{$cacheKey}_alphabet%", 'String');
     $paramsTotal     = CRM_Core_DAO::singleValueQuery($query, $params1);
     $params['total'] = $paramsTotal;
     $obj->_pager    = new CRM_Utils_Pager($params);
