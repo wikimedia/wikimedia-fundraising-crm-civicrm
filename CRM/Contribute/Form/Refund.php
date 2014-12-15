@@ -28,6 +28,7 @@ class CRM_Contribute_Form_Refund extends CRM_Contribute_Form
 
     function setDefaultValues( ) {
         $defaults['type'] = "refund";
+        $defaults['completed'] = true;
 
         return $defaults;
     }
