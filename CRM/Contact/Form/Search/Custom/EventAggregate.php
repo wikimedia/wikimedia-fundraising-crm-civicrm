@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -74,7 +74,7 @@ class CRM_Contact_Form_Search_Custom_EventAggregate extends CRM_Contact_Form_Sea
     foreach ($event_type as $eventId => $eventName) {
       $form->addElement('checkbox', "event_type_id[$eventId]", 'Event Type', $eventName);
     }
-    $events = CRM_Event_BAO_Event::getEvents(TRUE);
+    $events = CRM_Event_BAO_Event::getEvents(1);
     $form->add('select', 'event_id', ts('Event Name'), array('' => ts('- select -')) + $events);
 
     $form->addDate('start_date', ts('Payments Date From'), FALSE, array('formatType' => 'custom'));
@@ -150,7 +150,6 @@ class CRM_Contact_Form_Search_Custom_EventAggregate extends CRM_Contact_Form_Sea
     // Define ORDER BY for query in $sort, with default value
     if (!empty($sort)) {
       if (is_string($sort)) {
-        $sort = CRM_Utils_Type::escape($sort, 'String');
         $sql .= " ORDER BY $sort ";
       }
       else {

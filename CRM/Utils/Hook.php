@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CiviCRM_Hook
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id: $
  *
  */
@@ -90,10 +90,23 @@ abstract class CRM_Utils_Hook {
     &$arg1, &$arg2, &$arg3, &$arg4, &$arg5,
     $fnSuffix
   );
+
   function commonInvoke($numParams,
     &$arg1, &$arg2, &$arg3, &$arg4, &$arg5,
     $fnSuffix, $fnPrefix
   ) {
+
+    $this->commonBuildModuleList($fnPrefix);
+
+    return $this->runHooks($this->commonCiviModules, $fnSuffix,
+      $numParams, $arg1, $arg2, $arg3, $arg4, $arg5
+    );
+  }
+
+  /**
+   * Build the list of modules to be processed for hooks.
+   */
+  function commonBuildModuleList($fnPrefix) {
     if (!$this->commonIncluded) {
       // include external file
       $this->commonIncluded = TRUE;
@@ -111,54 +124,56 @@ abstract class CRM_Utils_Hook {
 
       $this->requireCiviModules($this->commonCiviModules);
     }
-
-    return $this->runHooks($this->commonCiviModules, $fnSuffix,
-      $numParams, $arg1, $arg2, $arg3, $arg4, $arg5
-    );
   }
 
-  function runHooks(&$civiModules, $fnSuffix, $numParams,
+  function runHooks($civiModules, $fnSuffix, $numParams,
     &$arg1, &$arg2, &$arg3, &$arg4, &$arg5
   ) {
+    // $civiModules is *not* passed by reference because runHooks
+    // must be reentrant. PHP is finicky about running
+    // multiple loops over the same variable. The circumstances
+    // to reproduce the issue are pretty intricate.
     $result = $fResult = array();
 
-    foreach ($civiModules as $module) {
-      $fnName = "{$module}_{$fnSuffix}";
-      if (function_exists($fnName)) {
-        switch ($numParams) {
-          case 0:
-            $fResult = $fnName();
-            break;
+    if ($civiModules !== NULL) {
+      foreach ($civiModules as $module) {
+        $fnName = "{$module}_{$fnSuffix}";
+        if (function_exists($fnName)) {
+          switch ($numParams) {
+            case 0:
+              $fResult = $fnName();
+              break;
 
-          case 1:
-            $fResult = $fnName($arg1);
-            break;
+            case 1:
+              $fResult = $fnName($arg1);
+              break;
 
-          case 2:
-            $fResult = $fnName($arg1, $arg2);
-            break;
+            case 2:
+              $fResult = $fnName($arg1, $arg2);
+              break;
 
-          case 3:
-            $fResult = $fnName($arg1, $arg2, $arg3);
-            break;
+            case 3:
+              $fResult = $fnName($arg1, $arg2, $arg3);
+              break;
 
-          case 4:
-            $fResult = $fnName($arg1, $arg2, $arg3, $arg4);
-            break;
+            case 4:
+              $fResult = $fnName($arg1, $arg2, $arg3, $arg4);
+              break;
 
-          case 5:
-            $fResult = $fnName($arg1, $arg2, $arg3, $arg4, $arg5);
-            break;
+            case 5:
+              $fResult = $fnName($arg1, $arg2, $arg3, $arg4, $arg5);
+              break;
 
-          default:
-            CRM_Core_Error::fatal(ts('Invalid hook invocation'));
-            break;
+            default:
+              CRM_Core_Error::fatal(ts('Invalid hook invocation'));
+              break;
+          }
         }
-      }
 
-      if (!empty($fResult) &&
+        if (!empty($fResult) &&
           is_array($fResult)) {
-        $result = array_merge($result, $fResult);
+          $result = array_merge($result, $fResult);
+        }
       }
     }
 
@@ -169,15 +184,16 @@ abstract class CRM_Utils_Hook {
     $civiModules = CRM_Core_PseudoConstant::getModuleExtensions();
     foreach ($civiModules as $civiModule) {
       if (!file_exists($civiModule['filePath'])) {
-        CRM_Core_Session::setStatus(ts('Error loading module file (%1). Please restore the file or disable the module.', array(
-          1 => $civiModule['filePath'],
-        )) . '<br/>');
+        CRM_Core_Session::setStatus(
+          ts( 'Error loading module file (%1). Please restore the file or disable the module.',
+            array(1 => $civiModule['filePath']) ),
+          ts( 'Warning'), 'error');
         continue;
       }
       include_once $civiModule['filePath'];
       $moduleList[$civiModule['prefix']] = $civiModule['prefix'];
+      }
     }
-  }
 
   /**
    * This hook is called before a db write on some core objects.
@@ -372,7 +388,8 @@ abstract class CRM_Utils_Hook {
    * This hook is called when rendering the dashboard (q=civicrm/dashboard)
    *
    * @param int $contactID - the contactID for whom the dashboard is being rendered
-   * @param int $contentPlacement - (output parameter) where should the hook content be displayed relative to the activity list
+   * @param int $contentPlacement - (output parameter) where should the hook content be displayed
+   * relative to the activity list
    *
    * @return string the html snippet to include in the dashboard
    * @access public
@@ -384,12 +401,10 @@ abstract class CRM_Utils_Hook {
     );
 
     /*
-         * Note we need this seemingly unnecessary code because in the event that the implementation
-         * of the hook declares the second parameter but doesn't set it, then it comes back unset even
-		 * though we have a default value in this function's declaration above.
-		 */
-
-
+     * Note we need this seemingly unnecessary code because in the event that the implementation
+     * of the hook declares the second parameter but doesn't set it, then it comes back unset even
+     * though we have a default value in this function's declaration above.
+     */
     if (!isset($contentPlacement)) {
       $contentPlacement = self::DASHBOARD_BELOW;
     }
@@ -423,7 +438,8 @@ abstract class CRM_Utils_Hook {
    * @access public
    */
   static function buildAmount($pageType, &$form, &$amount) {
-    return self::singleton()->invoke(3, $pageType, $form, $amount, self::$_nullObject, self::$_nullObject, 'civicrm_buildAmount');
+    return self::singleton()->invoke(3, $pageType, $form, $amount, self::$_nullObject,
+      self::$_nullObject, 'civicrm_buildAmount');
   }
 
   /**
@@ -545,23 +561,29 @@ abstract class CRM_Utils_Hook {
    * This hook is called when a contact unsubscribes from a mailing.  It allows modules
    * to override what the contacts are removed from.
    *
+   * @param string $op      - ignored for now
    * @param int $mailing_id - the id of the mailing to unsub from
    * @param int $contact_id - the id of the contact who is unsubscribing
    * @param array / int $groups - array of groups the contact will be removed from
+   * @param array / int $baseGroups - array of base groups (used in smart mailings) the contact will be removed from
+   *
    **/
   static function unsubscribeGroups($op, $mailingId, $contactId, &$groups, &$baseGroups) {
     return self::singleton()->invoke(5, $op, $mailingId, $contactId, $groups, $baseGroups, 'civicrm_unsubscribeGroups');
   }
 
   /**
-   * This hook is called when CiviCRM needs to edit/display a custom field with options (select, radio, checkbox, adv multiselect)
+   * This hook is called when CiviCRM needs to edit/display a custom field with options (select, radio, checkbox,
+   * adv multiselect)
    *
    * @param int $customFieldID - the custom field ID
    * @param array $options - the current set of options for that custom field.
    *   You can add/remove existing options.
-   *   Important: This array may contain meta-data about the field that is needed elsewhere, so it is important to be careful to not overwrite the array.
+   *   Important: This array may contain meta-data about the field that is needed elsewhere, so it is important
+   *              to be careful to not overwrite the array.
    *   Only add/edit/remove the specific field options you intend to affect.
-   * @param boolean $detailedFormat - if true, the options are in an ID => array ( 'id' => ID, 'label' => label, 'value' => value ) format
+   * @param boolean $detailedFormat - if true,
+   *                the options are in an ID => array ( 'id' => ID, 'label' => label, 'value' => value ) format
    */
   static function customFieldOptions($customFieldID, &$options, $detailedFormat = FALSE) {
     return self::singleton()->invoke(3, $customFieldID, $options, $detailedFormat,
@@ -579,11 +601,12 @@ abstract class CRM_Utils_Hook {
    *   - activity, campaign, case, contact, contribution, event, grant, membership, and pledge are supported.
    * @param array $tasks - the current set of tasks for that custom field.
    *   You can add/remove existing tasks.
-   *   Each task needs to have a title (eg 'title'  => ts( 'Add Contacts to Group')) and a class (eg 'class'  => 'CRM_Contact_Form_Task_AddToGroup').
+   *   Each task needs to have a title (eg 'title'  => ts( 'Add Contacts to Group')) and a class
+   *   (eg 'class'  => 'CRM_Contact_Form_Task_AddToGroup').
    *   Optional result (boolean) may also be provided. Class can be an array of classes (not sure what that does :( ).
-   *   The key for new Task(s) should not conflict with the keys for core tasks of that $objectType, which can be found in CRM/$objectType/Task.php.
+   *   The key for new Task(s) should not conflict with the keys for core tasks of that $objectType, which can be
+   *   found in CRM/$objectType/Task.php.
    */
-
   static function searchTasks($objectType, &$tasks) {
     return self::singleton()->invoke(2, $objectType, $tasks,
       self::$_nullObject, self::$_nullObject, self::$_nullObject,
@@ -605,7 +628,6 @@ abstract class CRM_Utils_Hook {
    * @param array $groups - the list of groups being included / excluded
    * @param array $mailings - the list of mailings being included / excluded
    */
-
   static function mailingGroups(&$form, &$groups, &$mailings) {
     return self::singleton()->invoke(3, $form, $groups, $mailings,
       self::$_nullObject, self::$_nullObject,
@@ -614,7 +636,8 @@ abstract class CRM_Utils_Hook {
   }
 
   /**
-   * This hook is called when composing the array of membershipTypes and their cost during a membership registration (new or renewal).
+   * This hook is called when composing the array of membershipTypes and their cost during a membership registration
+   * (new or renewal).
    * Note the hook is called on initial page load and also reloaded after submit (PRG pattern).
    * You can use it to alter the membership types when first loaded, or after submission
    * (for example if you want to gather data in the form and use it to alter the fees).
@@ -633,7 +656,8 @@ abstract class CRM_Utils_Hook {
    * This hook is called when rendering the contact summary
    *
    * @param int $contactID - the contactID for whom the summary is being rendered
-   * @param int $contentPlacement - (output parameter) where should the hook content be displayed relative to the existing content
+   * @param int $contentPlacement - (output parameter) where should the hook content be displayed relative to
+   * the existing content
    *
    * @return string the html snippet to include in the contact summary
    * @access public
@@ -663,7 +687,6 @@ abstract class CRM_Utils_Hook {
    * @param int $id - the id of the object for which the call is being made.
    *   For custom fields, it will be the custom field id
    */
-
   static function contactListQuery(&$query, $name, $context, $id) {
     return self::singleton()->invoke(4, $query, $name, $context, $id,
       self::$_nullObject,
@@ -701,10 +724,10 @@ abstract class CRM_Utils_Hook {
   /**
    * This hook is called when an email is about to be sent by CiviCRM.
    *
-   * @param array $params - array fields include: groupName, from, toName, toEmail, subject, cc, bcc, text, html, returnPath, replyTo, headers, attachments (array)
+   * @param array $params - array fields include: groupName, from, toName, toEmail, subject, cc, bcc, text, html,
+   * returnPath, replyTo, headers, attachments (array)
    * @param string $context - the context in which the hook is being invoked, eg 'civimail'
    */
-
   static function alterMailParams(&$params, $context = NULL) {
     return self::singleton()->invoke(2, $params, $context,
       self::$_nullObject, self::$_nullObject, self::$_nullObject,
@@ -713,11 +736,32 @@ abstract class CRM_Utils_Hook {
   }
 
   /**
+   * This hook is called when membership status is being calculated
+   *
+   * @param array $membershipStatus membership status details as determined - alter if required
+   * @param array $arguments arguments passed in to calculate date
+   * - 'start_date'
+   * - 'end_date'
+   * - 'status_date'
+   * - 'join_date'
+   * - 'exclude_is_admin'
+   * - 'membership_type_id'
+   * @param array $membership membership details from the calling function
+   */
+  static function alterCalculatedMembershipStatus(&$membershipStatus, $arguments, $membership) {
+    return self::singleton()->invoke(3, $membershipStatus, $arguments,
+      $membership, self::$_nullObject, self::$_nullObject,
+      'civicrm_alterCalculatedMembershipStatus'
+    );
+  }
+
+  /**
    * This hook is called when rendering the Manage Case screen
    *
    * @param int $caseID - the case ID
    *
-   * @return array of data to be displayed, where the key is a unique id to be used for styling (div id's) and the value is an array with keys 'label' and 'value' specifying label/value pairs
+   * @return array of data to be displayed, where the key is a unique id to be used for styling (div id's)
+   * and the value is an array with keys 'label' and 'value' specifying label/value pairs
    * @access public
    */
   static function caseSummary($caseID) {
@@ -867,7 +911,8 @@ abstract class CRM_Utils_Hook {
    * This hook is called after a row has been processed and the
    * record (and associated records imported
    *
-   * @param string  $object     - object being imported (for now Contact only, later Contribution, Activity, Participant and Member)
+   * @param string  $object     - object being imported (for now Contact only, later Contribution, Activity,
+   *                               Participant and Member)
    * @param string  $usage      - hook usage/location (for now process only, later mapping and others)
    * @param string  $objectRef  - import record object
    * @param array   $params     - array with various key values: currently
@@ -889,7 +934,7 @@ abstract class CRM_Utils_Hook {
 
   /**
    * This hook is called when API permissions are checked (cf. civicrm_api3_api_check_permission()
-   * in api/v3/utils.php and _civicrm_api3_permissions() in CRM/Core/DAO/.permissions.php).
+   * in api/v3/utils.php and _civicrm_api3_permissions() in CRM/Core/DAO/permissions.php).
    *
    * @param string $entity       the API entity (like contact)
    * @param string $action       the API action (like get)
@@ -974,9 +1019,9 @@ abstract class CRM_Utils_Hook {
    * @param array  $result (reference) has two fields
    *                          contactID - the new (or same) contactID
    *                          action - 3 possible values:
-   *                                   CRM_Utils_Mail_Incoming::EMAILPROCESSOR_CREATE_INDIVIDUAL - create a new contact record
-   *                                   CRM_Utils_Mail_Incoming::EMAILPROCESSOR_OVERRIDE - use the new contactID
-   *                                   CRM_Utils_Mail_Incoming::EMAILPROCESSOR_IGNORE   - skip this email address
+   *                          CRM_Utils_Mail_Incoming::EMAILPROCESSOR_CREATE_INDIVIDUAL - create a new contact record
+   *                          CRM_Utils_Mail_Incoming::EMAILPROCESSOR_OVERRIDE - use the new contactID
+   *                          CRM_Utils_Mail_Incoming::EMAILPROCESSOR_IGNORE   - skip this email address
    *
    * @return null
    * @access public
@@ -1085,7 +1130,8 @@ abstract class CRM_Utils_Hook {
 
   /**
    * This hook is called when a module-extension is installed.
-   * Each module will receive hook_civicrm_install during its own installation (but not during the installation of unrelated modules).
+   * Each module will receive hook_civicrm_install during its own installation (but not during the
+   * installation of unrelated modules).
    */
   static function install() {
     return self::singleton()->invoke(0, self::$_nullObject,
@@ -1097,7 +1143,8 @@ abstract class CRM_Utils_Hook {
 
   /**
    * This hook is called when a module-extension is uninstalled.
-   * Each module will receive hook_civicrm_uninstall during its own uninstallation (but not during the uninstallation of unrelated modules).
+   * Each module will receive hook_civicrm_uninstall during its own uninstallation (but not during the
+   * uninstallation of unrelated modules).
    */
   static function uninstall() {
     return self::singleton()->invoke(0, self::$_nullObject,
@@ -1109,7 +1156,8 @@ abstract class CRM_Utils_Hook {
 
   /**
    * This hook is called when a module-extension is re-enabled.
-   * Each module will receive hook_civicrm_enable during its own re-enablement (but not during the re-enablement of unrelated modules).
+   * Each module will receive hook_civicrm_enable during its own re-enablement (but not during the
+   * re-enablement of unrelated modules).
    */
   static function enable() {
     return self::singleton()->invoke(0, self::$_nullObject,
@@ -1121,7 +1169,8 @@ abstract class CRM_Utils_Hook {
 
   /**
    * This hook is called when a module-extension is disabled.
-   * Each module will receive hook_civicrm_disable during its own disablement (but not during the disablement of unrelated modules).
+   * Each module will receive hook_civicrm_disable during its own disablement (but not during the
+   * disablement of unrelated modules).
    */
   static function disable() {
     return self::singleton()->invoke(0, self::$_nullObject,
@@ -1160,9 +1209,9 @@ abstract class CRM_Utils_Hook {
   /**
    * This hook is called when an email has been successfully sent by CiviCRM, but not on an error.
    *
-   * @param array $params - the mailing parameters array fields include: groupName, from, toName, toEmail, subject, cc, bcc, text, html, returnPath, replyTo, headers, attachments (array)
+   * @param array $params - the mailing parameters array fields include: groupName, from, toName, toEmail,
+   * subject, cc, bcc, text, html, returnPath, replyTo, headers, attachments (array)
    */
-
   static function postEmailSend(&$params) {
     return self::singleton()->invoke(1, $params,
       self::$_nullObject, self::$_nullObject,
@@ -1170,12 +1219,12 @@ abstract class CRM_Utils_Hook {
       'civicrm_postEmailSend'
     );
   }
+
   /**
    * This hook is called when Settings specifications are loaded
    *
    * @param array $settingsFolders - list of paths from which to derive metadata
    */
-
   static function alterSettingsFolders(&$settingsFolders) {
     return self::singleton()->invoke(1, $settingsFolders,
         self::$_nullObject, self::$_nullObject,
@@ -1191,7 +1240,6 @@ abstract class CRM_Utils_Hook {
    * @param array $settingsMetaData - Settings Metadata
    * @domainID integer $domainID
    */
-
   static function alterSettingsMetaData(&$settingsMetaData, $domainID, $profile) {
     return self::singleton()->invoke(3, $settingsMetaData,
         $domainID, $profile,
@@ -1248,19 +1296,10 @@ abstract class CRM_Utils_Hook {
   }
 
   /**
-   * This hook is called to alter the civicrm permissions available
-   * to be provided to the CMS
-   *
-   * @param array $permissions
-   *
-   * @return null the return value is ignored
-   * @access public
+   * @param CRM_Core_Exception Exception $exception
    */
-  static function permissions(&$permissions) {
-    return self::singleton()->invoke(1,
-      $permissions, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
-      'civicrm_permissions'
-    );
+  static function unhandledException($exception) {
+    self::singleton()->invoke(1, $exception, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, 'civicrm_unhandled_exception');
   }
 
   /**
@@ -1360,10 +1399,10 @@ abstract class CRM_Utils_Hook {
    *   The default mailer config options
    * @see Mail::factory
    */
-  static function alterMailer(&$mailer, $driver, $params) {
+  static function alterMail(&$mailer, $driver, $params) {
     return self::singleton()
       ->invoke(3, $mailer, $driver, $params, self::$_nullObject, self::$_nullObject, 'civicrm_alterMailer');
-  } 
+  }
 
   /**
    * This hook is called while building the core search query,

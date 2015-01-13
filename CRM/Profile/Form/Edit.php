@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -62,6 +62,9 @@ class CRM_Profile_Form_Edit extends CRM_Profile_Form {
   function preProcess() {
     $this->_mode = CRM_Profile_Form::MODE_CREATE;
 
+    $this->_onPopupClose = CRM_Utils_Request::retrieve('onPopupClose', 'String', $this);
+    $this->assign('onPopupClose', $this->_onPopupClose);
+
     //set the context for the profile
     $this->_context = CRM_Utils_Request::retrieve('context', 'String', $this);
 
@@ -85,24 +88,26 @@ class CRM_Profile_Form_Edit extends CRM_Profile_Form {
     }
 
     if ($this->get('edit')) {
-      //this is edit mode.
-      $this->_mode = CRM_Profile_Form::MODE_EDIT;
-
       // make sure we have right permission to edit this user
       $session = CRM_Core_Session::singleton();
       $userID  = $session->get('userID');
       $id      = CRM_Utils_Request::retrieve('id', 'Positive', $this, FALSE, $userID);
 
-      if ($id != $userID) {
-        // do not allow edit for anon users in joomla frontend, CRM-4668, unless u have checksum CRM-5228
-        $config = CRM_Core_Config::singleton();
-        if ($config->userFrameworkFrontend) {
-          CRM_Contact_BAO_Contact_Permission::validateOnlyChecksum($id, $this);
+      if ($id) {
+        // this is edit mode.
+        $this->_mode = CRM_Profile_Form::MODE_EDIT;
+
+        if ($id != $userID) {
+          // do not allow edit for anon users in joomla frontend, CRM-4668, unless u have checksum CRM-5228
+          $config = CRM_Core_Config::singleton();
+          if ($config->userFrameworkFrontend) {
+            CRM_Contact_BAO_Contact_Permission::validateOnlyChecksum($id, $this);
+          }
+          else {
+            CRM_Contact_BAO_Contact_Permission::validateChecksumContact($id, $this);
+          }
+          $this->_isPermissionedChecksum = TRUE;
         }
-        else {
-          CRM_Contact_BAO_Contact_Permission::validateChecksumContact($id, $this);
-        }
-        $this->_isPermissionedChecksum = TRUE;
       }
     }
 
@@ -185,6 +190,30 @@ SELECT module
         );
       }
 
+      if ($this->_multiRecordProfile) {
+        $urlParams = "reset=1&id={$this->_id}&gid={$gidString}";
+
+        // get checksum if present
+        if ($this->get('cs')) {
+          $urlParams .= "&cs=" . $this->get('cs');
+        }
+        $this->_postURL = CRM_Utils_System::url('civicrm/profile/edit', $urlParams);
+        $this->_cancelURL = CRM_Utils_System::url('civicrm/profile/edit', $urlParams);
+
+        //passing the post url to template so the popup form does
+        //proper redirection and proccess form errors if any
+        if (!isset($this->_onPopupClose) || $this->_onPopupClose == 'redirectToProfile') {
+          $popupRedirect = CRM_Utils_System::url('civicrm/profile/edit', $urlParams, FALSE, NULL, FALSE);
+        }
+        elseif ($this->_onPopupClose == 'redirectToTab') {
+          $popupRedirect = CRM_Utils_System::url('civicrm/contact/view',
+            "reset=1&cid={$this->_id}&selectedChild=custom_{$this->_customGroupId}", FALSE, NULL, FALSE);
+        }
+
+        $this->assign('urlParams', $urlParams);
+        $this->assign('postUrl', $popupRedirect);
+      }
+
       // we do this gross hack since qf also does entity replacement
       $this->_postURL = str_replace('&amp;', '&', $this->_postURL);
       $this->_cancelURL = str_replace('&amp;', '&', $this->_cancelURL);
@@ -265,9 +294,11 @@ SELECT module
 
     // this is special case when we create contact using Dialog box
     if ($this->_context == 'dialog') {
+      $displayName = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $this->_id, 'display_name');
       $sortName = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $this->_id, 'sort_name');
       $returnArray = array(
         'contactID' => $this->_id,
+        'displayName' => $displayName,
         'sortName' => $sortName,
         'newContactSuccess' => TRUE,
       );
@@ -276,7 +307,10 @@ SELECT module
       CRM_Utils_System::civiExit();
     }
 
-    CRM_Core_Session::setStatus(ts('Thank you. Your information has been saved.'));
+    //for delete record handling
+    if (!CRM_Utils_Array::value($this->_deleteButtonName, $_POST)) {
+      CRM_Core_Session::setStatus(ts('Your information has been saved.'), ts('Thank you.'), 'success');
+    }
 
     $session = CRM_Core_Session::singleton();
     // only replace user context if we do not have a postURL
@@ -290,9 +324,13 @@ SELECT module
       if ($this->_isContactActivityProfile && $this->_activityId) {
         $urlParams .= "&aid={$this->_activityId}";
       }
-      // get checksum if present
+      // Get checksum if present
       if ($this->get('cs')) {
         $urlParams .= "&cs=" . $this->get('cs');
+      }
+      // Generate one if needed
+      elseif (!CRM_Contact_BAO_Contact_Permission::allow($this->_id)) {
+        $urlParams .= "&cs=" . CRM_Contact_BAO_Contact_Utils::generateChecksum($this->_id);
       }
       $url = CRM_Utils_System::url('civicrm/profile/view', $urlParams);
     }
@@ -302,7 +340,7 @@ SELECT module
         'contact_id' => $this->_id,
         'version' => 3,
       );
-      require_once 'api/api.php';
+
       $contact = civicrm_api('contact', 'get', $contactParams);
       $contact = reset($contact['values']);
 

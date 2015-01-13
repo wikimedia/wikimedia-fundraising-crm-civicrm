@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * @copyright DharmaTech  (c) 2009
  * $Id$
  *
@@ -352,7 +352,7 @@ ORDER BY ov.label
   }
 
   function getOperationPair($type = "string", $fieldName = NULL) {
-    if ($fieldName == 'gid' && $type == CRM_Report_FORM::OP_MULTISELECT) {
+    if ($fieldName == 'gid' && $type == CRM_Report_Form::OP_MULTISELECT) {
       return array('in' => ts('Is one of'),
         'mand' => ts('Is equal to'),
       );

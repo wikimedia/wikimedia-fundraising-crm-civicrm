@@ -1,36 +1,36 @@
 <?php
 
-/* 
- +--------------------------------------------------------------------+ 
- | CiviCRM version 4.2                                                | 
- +--------------------------------------------------------------------+ 
- | Copyright CiviCRM LLC (c) 2004-2012                                | 
- +--------------------------------------------------------------------+ 
- | This file is a part of CiviCRM.                                    | 
- |                                                                    | 
- | CiviCRM is free software; you can copy, modify, and distribute it  | 
- | under the terms of the GNU Affero General Public License           | 
- | Version 3, 19 November 2007 and the CiviCRM Licensing Exception.   | 
- |                                                                    | 
- | CiviCRM is distributed in the hope that it will be useful, but     | 
- | WITHOUT ANY WARRANTY; without even the implied warranty of         | 
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               | 
- | See the GNU Affero General Public License for more details.        | 
- |                                                                    | 
+/*
+ +--------------------------------------------------------------------+
+ | CiviCRM version 4.4                                                |
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
+ +--------------------------------------------------------------------+
+ | This file is a part of CiviCRM.                                    |
+ |                                                                    |
+ | CiviCRM is free software; you can copy, modify, and distribute it  |
+ | under the terms of the GNU Affero General Public License           |
+ | Version 3, 19 November 2007 and the CiviCRM Licensing Exception.   |
+ |                                                                    |
+ | CiviCRM is distributed in the hope that it will be useful, but     |
+ | WITHOUT ANY WARRANTY; without even the implied warranty of         |
+ | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
+ | See the GNU Affero General Public License for more details.        |
+ |                                                                    |
  | You should have received a copy of the GNU Affero General Public   |
  | License and the CiviCRM Licensing Exception along                  |
  | with this program; if not, contact CiviCRM LLC                     |
  | at info[AT]civicrm[DOT]org. If you have questions about the        |
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
- +--------------------------------------------------------------------+ 
+ +--------------------------------------------------------------------+
 */
 
 /**
  *
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -102,6 +102,8 @@ class CRM_Core_BAO_CustomQuery {
    */
   protected $_contactSearch;
 
+  protected $_locationSpecificCustomFields;
+
   /**
    * This stores custom data group types and tables that it extends
    *
@@ -135,8 +137,10 @@ class CRM_Core_BAO_CustomQuery {
    * @param  array  $ids     the set of custom field ids
    *
    * @access public
-   */ function __construct($ids, $contactSearch = FALSE) {
+   */
+  function __construct($ids, $contactSearch = FALSE, $locationSpecificFields = array()) {
     $this->_ids = &$ids;
+    $this->_locationSpecificCustomFields = $locationSpecificFields;
 
     $this->_select      = array();
     $this->_element     = array();
@@ -161,12 +165,12 @@ SELECT f.id, f.label, f.data_type,
        f.html_type, f.is_search_range,
        f.option_group_id, f.custom_group_id,
        f.column_name, g.table_name,
-       f.date_format,f.time_format 
+       f.date_format,f.time_format
   FROM civicrm_custom_field f,
        civicrm_custom_group g
  WHERE f.custom_group_id = g.id
    AND g.is_active = 1
-   AND f.is_active = 1 
+   AND f.is_active = 1
    AND f.id IN ( $idString )";
 
     $dao = CRM_Core_DAO::executeQuery($query);
@@ -300,12 +304,20 @@ SELECT label, value
       }
 
       if ($joinTable) {
-        $this->_tables[$name] = "\nLEFT JOIN $name ON $name.entity_id = $joinTable.id";
+        $joinClause = 1;
+        $joinTableAlias = $joinTable;
+        // Set location-specific query
+        if (isset($this->_locationSpecificCustomFields[$id])) {
+          list($locationType, $locationTypeId) = $this->_locationSpecificCustomFields[$id];
+          $joinTableAlias = "$locationType-address";
+          $joinClause = "\nLEFT JOIN $joinTable `$locationType-address` ON (`$locationType-address`.contact_id = contact_a.id AND `$locationType-address`.location_type_id = $locationTypeId)";
+        }
+        $this->_tables[$name] = "\nLEFT JOIN $name ON $name.entity_id = `$joinTableAlias`.id";
         if ($this->_ids[$id]) {
           $this->_whereTables[$name] = $this->_tables[$name];
         }
         if ($joinTable != 'contact_a') {
-          $this->_whereTables[$joinTable] = $this->_tables[$joinTable] = 1;
+          $this->_whereTables[$joinTableAlias] = $this->_tables[$joinTableAlias] = $joinClause;
         }
         elseif ($this->_contactSearch) {
           CRM_Contact_BAO_Query::$_openedPanes[ts('Custom Fields')] = TRUE;
@@ -325,9 +337,6 @@ SELECT label, value
    * @access public
    */
   function where() {
-    //CRM_Core_Error::debug( 'fld', $this->_fields );
-    //CRM_Core_Error::debug( 'ids', $this->_ids );
-
     foreach ($this->_ids as $id => $values) {
 
       // Fixed for Isuue CRM 607
@@ -454,7 +463,12 @@ SELECT label, value
             continue;
 
           case 'Boolean':
-            $value = (int ) $value;
+            if (strtolower($value) == 'yes' || strtolower($value) == strtolower(ts('Yes'))) {
+              $value = 1;
+            }
+            else {
+              $value = (int) $value;
+            }
             $value = ($value == 1) ? 1 : 0;
             $this->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause($fieldName, $op, $value, 'Integer');
             $value = $value ? ts('Yes') : ts('No');
@@ -567,6 +581,21 @@ SELECT label, value
               }
             }
             continue;
+
+          case 'File':
+            if ( $op == 'IS NULL' || $op == 'IS NOT NULL' || $op == 'IS EMPTY' || $op == 'IS NOT EMPTY' ) {
+              switch ($op) {
+                case 'IS EMPTY':
+                  $op = 'IS NULL';
+                  break;
+                case 'IS NOT EMPTY':
+                  $op = 'IS NOT NULL';
+                  break;
+              }
+              $this->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause($fieldName, $op);
+              $this->_qill[$grouping][] = $field['label'] . " {$op} ";
+            }
+            continue;
         }
       }
     }
@@ -636,4 +665,3 @@ SELECT label, value
     }
   }
 }
-

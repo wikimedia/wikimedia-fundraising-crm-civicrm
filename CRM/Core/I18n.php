@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,14 +28,15 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
 class CRM_Core_I18n {
 
   /**
-   * A PHP-gettext instance for string translation; should stay null if the strings are not to be translated (en_US).
+   * A PHP-gettext instance for string translation;
+   * should stay null if the strings are not to be translated (en_US).
    */
   private $_phpgettext = NULL;
 
@@ -45,12 +46,20 @@ class CRM_Core_I18n {
   private $_nativegettext = FALSE;
 
   /**
+   * Gettext cache for extension domains/streamers, depending on if native or phpgettext.
+   * - native gettext: we cache the value for textdomain()
+   * - phpgettext: we cache the file streamer.
+   */
+  private $_extensioncache = array();
+
+  /**
    * A locale-based constructor that shouldn't be called from outside of this class (use singleton() instead).
    *
    * @param  $locale string  the base of this certain object's existence
    *
    * @return         void
-   */ function __construct($locale) {
+   */
+  function __construct($locale) {
     if ($locale != '' and $locale != 'en_US') {
       $config = CRM_Core_Config::singleton();
 
@@ -61,6 +70,7 @@ class CRM_Core_I18n {
 
         $locale .= '.utf8';
         putenv("LANG=$locale");
+
         // CRM-11833 Avoid LC_ALL because of LC_NUMERIC and potential DB error.
         setlocale(LC_TIME, $locale);
         setlocale(LC_MESSAGES, $locale);
@@ -71,15 +81,27 @@ class CRM_Core_I18n {
         textdomain('civicrm');
 
         $this->_phpgettext = new CRM_Core_I18n_NativeGettext();
+        $this->_extensioncache['civicrm'] = 'civicrm';
         return;
       }
 
       // Otherwise, use PHP-gettext
+      // we support both the old file hierarchy format and the new:
+      // pre-4.5:  civicrm/l10n/xx_XX/civicrm.mo
+      // post-4.5: civicrm/l10n/xx_XX/LC_MESSAGES/civicrm.mo
       require_once 'PHPgettext/streams.php';
       require_once 'PHPgettext/gettext.php';
 
-      $streamer = new FileReader($config->gettextResourceDir . $locale . DIRECTORY_SEPARATOR . 'civicrm.mo');
+      $mo_file = $config->gettextResourceDir . $locale . DIRECTORY_SEPARATOR . 'LC_MESSAGES' . DIRECTORY_SEPARATOR . 'civicrm.mo';
+
+      if (! file_exists($mo_file)) {
+        // fallback to pre-4.5 mode
+        $mo_file = $config->gettextResourceDir . $locale . DIRECTORY_SEPARATOR . 'civicrm.mo';
+      }
+
+      $streamer = new FileReader($mo_file);
       $this->_phpgettext = new gettext_reader($streamer);
+      $this->_extensioncache['civicrm'] = $this->_phpgettext;
     }
   }
 
@@ -104,7 +126,7 @@ class CRM_Core_I18n {
     static $enabled = NULL;
 
     if (!$all) {
-      $all = CRM_Core_I18n_PseudoConstant::languages();
+      $all = CRM_Contact_BAO_Contact::buildOptions('preferred_language');
 
       // check which ones are available; add them to $all if not there already
       $config = CRM_Core_Config::singleton();
@@ -191,8 +213,7 @@ class CRM_Core_I18n {
    *
    * @return        string  the translated string
    */
-  function crm_translate($text, $params = array(
-    )) {
+  function crm_translate($text, $params = array()) {
     if (isset($params['escape'])) {
       $escape = $params['escape'];
       unset($params['escape']);
@@ -228,9 +249,18 @@ class CRM_Core_I18n {
       $context = NULL;
     }
 
+    // gettext domain for extensions
+    $domain_changed = FALSE;
+    if (! empty($params['domain']) && $this->_phpgettext) {
+      if ($this->setGettextDomain($params['domain'])) {
+        $domain_changed = TRUE;
+      }
+    }
+
     // do all wildcard translations first
     $config = CRM_Core_Config::singleton();
-    $stringTable = CRM_Utils_Array::value($config->lcMessages,
+    $stringTable = CRM_Utils_Array::value(
+      $config->lcMessages,
       $config->localeCustomStrings
     );
 
@@ -245,15 +275,13 @@ class CRM_Core_I18n {
       }
     }
 
-    if (!$exactMatch &&
+    if (
+      !$exactMatch &&
       isset($stringTable['enabled']['wildcardMatch'])
     ) {
       $search  = array_keys($stringTable['enabled']['wildcardMatch']);
       $replace = array_values($stringTable['enabled']['wildcardMatch']);
-      $text    = str_replace($search,
-        $replace,
-        $text
-      );
+      $text    = str_replace($search, $replace, $text);
     }
 
     // dont translate if we've done exactMatch already
@@ -300,6 +328,10 @@ class CRM_Core_I18n {
     // escape for JavaScript (if requested)
     if (isset($escape) and ($escape == 'js')) {
       $text = addcslashes($text, "'");
+    }
+
+    if ($domain_changed) {
+      $this->setGettextDomain('civicrm');
     }
 
     return $text;
@@ -355,9 +387,66 @@ class CRM_Core_I18n {
         $array[$key] = $value;
       }
       elseif ((string ) $key == 'title') {
-        $array[$key] = ts($value);
+        $array[$key] = ts($value, array('context' => 'menu'));
       }
     }
+  }
+
+  /**
+   * Binds a gettext domain, wrapper over bindtextdomain().
+   *
+   * @param  $key Key of the extension (can be 'civicrm', or 'org.example.foo').
+   *
+   * @return Boolean True if the domain was changed for an extension.
+   */
+  function setGettextDomain($key) {
+    /* No domain changes for en_US */
+    if (! $this->_phpgettext) {
+      return FALSE;
+    }
+
+    // It's only necessary to find/bind once
+    if (! isset($this->_extensioncache[$key])) {
+      $config = CRM_Core_Config::singleton();
+
+      try {
+        $mapper = CRM_Extension_System::singleton()->getMapper();
+        $path = $mapper->keyToBasePath($key);
+        $info = $mapper->keyToInfo($key);
+        $domain = $info->file;
+
+        if ($this->_nativegettext) {
+          bindtextdomain($domain, $path . DIRECTORY_SEPARATOR . 'l10n');
+          bind_textdomain_codeset($domain, 'UTF-8');
+          $this->_extensioncache[$key] = $domain;
+        }
+        else {
+          // phpgettext
+          $mo_file = $path . DIRECTORY_SEPARATOR . 'l10n' . DIRECTORY_SEPARATOR . $config->lcMessages . DIRECTORY_SEPARATOR . 'LC_MESSAGES' . DIRECTORY_SEPARATOR . $domain . '.mo';
+          $streamer = new FileReader($mo_file);
+          $this->_extensioncache[$key] = new gettext_reader($streamer);
+        }
+      }
+      catch (CRM_Extension_Exception $e) {
+        // Intentionally not translating this string to avoid possible infinit loops
+        // Only developers should see this string, if they made a mistake in their ts() usage.
+        CRM_Core_Session::setStatus('Unknown extension key in a translation string: ' . $key, '', 'error');
+        $this->_extensioncache[$key] = FALSE;
+      }
+    }
+
+    if (isset($this->_extensioncache[$key]) && $this->_extensioncache[$key]) {
+      if ($this->_nativegettext) {
+        textdomain($this->_extensioncache[$key]);
+      }
+      else {
+        $this->_phpgettext = $this->_extensioncache[$key];
+      }
+
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
   /**

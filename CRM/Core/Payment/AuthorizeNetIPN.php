@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -55,7 +55,7 @@ class CRM_Core_Payment_AuthorizeNetIPN extends CRM_Core_Payment_BaseIPN {
       // load post ids in $ids
       $this->getIDs($ids, $input);
 
-      $paymentProcessorID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_PaymentProcessorType',
+      $paymentProcessorID = CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_PaymentProcessorType',
         'AuthNet', 'id', 'name'
       );
 
@@ -111,7 +111,7 @@ class CRM_Core_Payment_AuthorizeNetIPN extends CRM_Core_Payment_BaseIPN {
       // create a contribution and then get it processed
       $contribution = new CRM_Contribute_BAO_Contribution();
       $contribution->contact_id = $ids['contact'];
-      $contribution->contribution_type_id = $objects['contributionType']->id;
+      $contribution->financial_type_id  = $objects['contributionType']->id;
       $contribution->contribution_page_id = $ids['contributionPage'];
       $contribution->contribution_recur_id = $ids['contributionRecur'];
       $contribution->receive_date = $now;
@@ -206,7 +206,6 @@ class CRM_Core_Payment_AuthorizeNetIPN extends CRM_Core_Payment_BaseIPN {
     $input['response_code'] = self::retrieve('x_response_code', 'Integer');
     $input['MD5_Hash'] = self::retrieve('x_MD5_Hash', 'String', FALSE, '');
     $input['fee_amount'] = self::retrieve('x_fee_amount', 'Money', FALSE, '0.00');
-    $input['net_amount'] = self::retrieve('x_net_amount', 'Money', FALSE, '0.00');
     $input['response_reason_code'] = self::retrieve('x_response_reason_code', 'String', FALSE);
     $input['response_reason_text'] = self::retrieve('x_response_reason_text', 'String', FALSE);
     $input['subscription_paynum'] = self::retrieve('x_subscription_paynum', 'Integer', FALSE, 0);
@@ -239,11 +238,11 @@ class CRM_Core_Payment_AuthorizeNetIPN extends CRM_Core_Payment_BaseIPN {
   }
 
   function getIDs(&$ids, &$input) {
-    $ids['contact'] = self::retrieve('x_cust_id', 'Integer');
+    $ids['contact'] = self::retrieve('x_cust_id', 'Integer', FALSE, 0);
     $ids['contribution'] = self::retrieve('x_invoice_num', 'Integer');
 
     // joining with contribution table for extra checks
-      $sql = "
+    $sql = "
     SELECT cr.id, cr.contact_id
       FROM civicrm_contribution_recur cr
 INNER JOIN civicrm_contribution co ON co.contribution_recur_id = cr.id
@@ -260,8 +259,8 @@ INNER JOIN civicrm_contribution co ON co.contribution_recur_id = cr.id
       $ids['contact'] = $contRecur->contact_id;
     }
     if (!$ids['contributionRecur']) {
-      CRM_Core_Error::debug_log_message("Could not find contributionRecur id");
-      echo "Failure: Missing Parameter<p>";
+      CRM_Core_Error::debug_log_message("Could not find contributionRecur id: ".print_r($input, TRUE));
+      echo "Failure: Could not find contributionRecur<p>";
       exit();
     }
 
@@ -292,8 +291,7 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
     }
   }
 
-  static
-  function retrieve($name, $type, $abort = TRUE, $default = NULL, $location = 'POST') {
+  static function retrieve($name, $type, $abort = TRUE, $default = NULL, $location = 'POST') {
     static $store = NULL;
     $value = CRM_Utils_Request::retrieve($name, $type, $store,
       FALSE, $default, $location
@@ -309,7 +307,7 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
   }
 
   function checkMD5($ids, $input) {
-    $paymentProcessor = CRM_Core_BAO_PaymentProcessor::getPayment($ids['paymentProcessor'],
+    $paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($ids['paymentProcessor'],
       $input['is_test'] ? 'test' : 'live'
     );
     $paymentObject = CRM_Core_Payment::singleton($input['is_test'] ? 'test' : 'live', $paymentProcessor);

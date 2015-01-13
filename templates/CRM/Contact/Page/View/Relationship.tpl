@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -37,7 +37,7 @@
             <a accesskey="N" href="{crmURL p='civicrm/contact/view/rel' q="cid=`$contactId`&action=add&reset=1"}" class="button"><span><div class="icon add-icon"></div>{ts}Add Relationship{/ts}</span></a>
         </div>
   {/if}
-  {include file="CRM/common/jsortable.tpl" useAjax=0}   
+  {include file="CRM/common/jsortable.tpl" useAjax=0}
   {* start of code to show current relationships *}
   {if $currentRelationships}
     {* show browse table for any action *}
@@ -92,8 +92,8 @@
                 <td class="bold">{$rel.relation}</strong></td>
                 <td>{$rel.name}</td>
             {/if}
-                <td>{$rel.start_date}</td>
-                <td>{$rel.end_date}</td>
+                <td class="crm-rel-start_date">{$rel.start_date}</td>
+                <td class="crm-rel-end_date">{$rel.end_date}</td>
                 <td>{$rel.city}</td>
                 <td>{$rel.state}</td>
                 <td>{$rel.email}</td>
@@ -118,7 +118,7 @@
 {if NOT ($currentRelationships or $inactiveRelationships) }
 
   {if $action NEQ 1} {* show 'no relationships' message - unless already in 'add' mode. *}
-       <div class="messages status">
+       <div class="messages status no-popup">
             <div class="icon inform-icon"></div>
            {capture assign=crmURL}{crmURL p='civicrm/contact/view/rel' q="cid=`$contactId`&action=add&reset=1"}{/capture}
            {if $permission EQ 'edit'}
@@ -171,15 +171,15 @@
               {if $rel.description}<p class='description'>{$rel.description}</p>{/if}
             </td>
             <td><a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=`$rel.cid`"}">{$rel.name}</a></td>
-                <td class="dis-crm-rel-start_date">{$rel.start_date}</td>
-                <td class="dis-crm-rel-end_date">{$rel.end_date}</td>
-                <td>{$rel.city}</td>
-                <td>{$rel.state}</td>
-                <td>{$rel.email}</td>
-                <td>{$rel.phone}</td>
-                <td class="nowrap">{$rel.action|replace:'xx':$rel.id}</td>
-                <td class="dis-start_date hiddenElement">{$rel.start_date|crmDate}</td>
-                <td class="dis-end_date hiddenElement">{$rel.end_date|crmDate}</td>
+            <td class="dis-crm-rel-start_date">{$rel.start_date}</td>
+            <td class="dis-crm-rel-end_date">{$rel.end_date}</td>
+            <td>{$rel.city}</td>
+            <td>{$rel.state}</td>
+            <td>{$rel.email}</td>
+            <td>{$rel.phone}</td>
+            <td class="nowrap">{$rel.action|replace:'xx':$rel.id}</td>
+            <td class="dis-start_date hiddenElement">{$rel.start_date|crmDate}</td>
+            <td class="dis-end_date hiddenElement">{$rel.end_date|crmDate}</td>
           </tr>
         {/foreach}
         </table>

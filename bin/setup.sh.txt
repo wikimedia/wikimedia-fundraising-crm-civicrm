@@ -9,12 +9,6 @@ case "$CALLEDPATH" in
     ;;
 esac
 
-if [ ! -f "$CALLEDPATH/setup.conf" ]; then
-  echo
-  echo "Missing configuration file. Please copy $CALLEDPATH/setup.conf.txt to $CALLEDPATH/setup.conf and edit it."
-  exit 1
-fi
-
 source "$CALLEDPATH/setup.conf"
 
 if [ "$1" = '-h' ] || [ "$1" = '--help' ]; then
@@ -103,18 +97,3 @@ cd $CALLEDPATH/..
 # when config object is initialized
 mysql -u$DBUSER $PASSWDSECTION $DBARGS $DBNAME -e "UPDATE civicrm_domain SET config_backend = NULL; UPDATE civicrm_setting SET value = NULL WHERE name = 'userFrameworkResourceURL';"
 
-echo; echo "Setup Complete. Logout from your CMS to avoid session conflicts."
-
-# to generate a new data file do the following from the sql directory:
-# mysqladmin -f -u $DBUSER $PASSWDSECTION drop $DBNAME
-# mysqladmin -f -u $DBUSER $PASSWDSECTION create $DBNAME
-# mysql -u $DBUSER $PASSWDSECTION $DBNAME < civicrm.mysql
-# mysql -u $DBUSER $PASSWDSECTION $DBNAME < civicrm_data.mysql
-# mysql -u $DBUSER $PASSWDSECTION $DBNAME < civicrm_sample.mysql
-# mysql -u $DBUSER $PASSWDSECTION $DBNAME < zipcodes.mysql
-# php GenerateData.php
-# echo "drop table zipcodes ; update civicrm_domain set config_backend = null; UPDATE civicrm_setting SET value = NULL WHERE name = 'userFrameworkResourceURL' OR name = 'imageUploadURL';" | mysql -u $DBUSER $PASSWDSECTION $DBNAME
-# mysqldump -c -e -t -n -u $DBUSER $PASSWDSECTION $DBNAME  > civicrm_generated.mysql
-# add sample custom data
-# cat civicrm_sample_custom_data.mysql >> civicrm_generated.mysql
-# cat ../CRM/Case/xml/configuration.sample/SampleConfig.mysql >> civicrm_generated.mysql

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -260,9 +260,9 @@ class CRM_Campaign_Form_Search extends CRM_Core_Form {
     //build the search form.
     CRM_Campaign_BAO_Query::buildSearchForm($this);
 
-    /* 
-         * add form checkboxes for each row. This is needed out here to conform to QF protocol 
-         * of all elements being declared in builQuickForm 
+    /*
+         * add form checkboxes for each row. This is needed out here to conform to QF protocol
+         * of all elements being declared in builQuickForm
          */
 
 
@@ -434,17 +434,15 @@ class CRM_Campaign_Form_Search extends CRM_Core_Form {
 
   function formatParams() {
     $interviewerId = CRM_Utils_Array::value('survey_interviewer_id', $this->_formValues);
-    if (!$interviewerId) {
-      $session = CRM_Core_Session::singleton();
-      $this->_formValues['survey_interviewer_id'] = $interviewerId = $session->get('userID');
-    }
-    $this->set('interviewerId', $interviewerId);
-    if (!CRM_Utils_Array::value('survey_interviewer_name', $this->_formValues)) {
-      $this->_formValues['survey_interviewer_name'] = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact',
-        $interviewerId,
-        'sort_name',
-        'id'
-      );
+    if ($interviewerId) {
+      $this->set('interviewerId', $interviewerId);
+      if (!CRM_Utils_Array::value('survey_interviewer_name', $this->_formValues)) {
+        $this->_formValues['survey_interviewer_name'] = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact',
+          $interviewerId,
+          'sort_name',
+          'id'
+        );
+      }
     }
 
     //format multi-select group and contact types.

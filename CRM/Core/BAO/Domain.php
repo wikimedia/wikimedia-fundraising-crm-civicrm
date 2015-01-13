@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -65,7 +65,6 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
   static function retrieve(&$params, &$defaults) {
     return CRM_Core_DAO::commonRetrieve('CRM_Core_DAO_Domain', $params, $defaults);
   }
-
 
   /**
    * Get the domain BAO
@@ -119,14 +118,13 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
     CRM_Core_Config::singleton(TRUE, TRUE);
   }
 
-  static
-  function version( $skipUsingCache = false ) {
+  static function version( $skipUsingCache = false ) {
     return CRM_Core_DAO::getFieldValue('CRM_Core_DAO_Domain',
-                                       CRM_Core_Config::domainID(),
+      CRM_Core_Config::domainID(),
                                        'version',
                                        'id',
                                        $skipUsingCache
-                                       );
+    );
   }
 
   /**
@@ -139,9 +137,9 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
    */
   function &getLocationValues() {
     if ($this->_location == NULL) {
+      $domain = self::getDomain(null);
       $params = array(
-        'entity_id' => $this->id,
-        'entity_table' => self::getTableName(),
+        'contact_id' => $domain->contact_id
       );
       $this->_location = CRM_Core_BAO_Location::getValues($params, TRUE);
 
@@ -158,8 +156,7 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
    * @return domain array
    * @access public
    */
-  static
-  function edit(&$params, &$id) {
+  static function edit(&$params, &$id) {
     $domain = new CRM_Core_DAO_Domain();
     $domain->id = $id;
     $domain->copyValues($params);
@@ -173,16 +170,14 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
    * @return domain array
    * @access public
    */
-  static
-  function create($params) {
+  static function create($params) {
     $domain = new CRM_Core_DAO_Domain();
     $domain->copyValues($params);
     $domain->save();
     return $domain;
   }
 
-  static
-  function multipleDomains() {
+  static function multipleDomains() {
     $session = CRM_Core_Session::singleton();
 
     $numberDomains = $session->get('numberDomains');
@@ -194,8 +189,7 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
     return $numberDomains > 1 ? TRUE : FALSE;
   }
 
-  static
-  function getNameAndEmail($skipFatal = FALSE) {
+  static function getNameAndEmail($skipFatal = FALSE) {
     $fromEmailAddress = CRM_Core_OptionGroup::values('from_email_address', NULL, NULL, NULL, ' AND is_default = 1');
     if (!empty($fromEmailAddress)) {
       foreach ($fromEmailAddress as $key => $value) {
@@ -218,8 +212,7 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
     CRM_Core_Error::fatal($status);
   }
 
-  static
-  function addContactToDomainGroup($contactID) {
+  static function addContactToDomainGroup($contactID) {
     $groupID = self::getGroupId();
 
     if ($groupID) {
@@ -231,8 +224,7 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
     return FALSE;
   }
 
-  static
-  function getGroupId() {
+  static function getGroupId() {
     static $groupID = NULL;
 
     if ($groupID) {
@@ -270,14 +262,12 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
     return $groupID ? $groupID : FALSE;
   }
 
-  static
-  function isDomainGroup($groupId) {
+  static function isDomainGroup($groupId) {
     $domainGroupID = self::getGroupId();
     return $domainGroupID == $groupId ? TRUE : FALSE;
   }
 
-  static
-  function getChildGroupIds() {
+  static function getChildGroupIds() {
     $domainGroupID = self::getGroupId();
     $childGrps = array();
 
@@ -289,16 +279,15 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
   }
 
   // function to retrieve a list of contact-ids that belongs to current domain/site.
-  static
-  function getContactList() {
+  static function getContactList() {
     $siteGroups = CRM_Core_BAO_Domain::getChildGroupIds();
     $siteContacts = array();
 
     if (!empty($siteGroups)) {
       $query = "
-SELECT      cc.id
-FROM        civicrm_contact cc
-INNER JOIN  civicrm_group_contact gc ON
+ SELECT      cc.id
+ FROM        civicrm_contact cc
+ INNER JOIN  civicrm_group_contact gc ON
            (gc.contact_id = cc.id AND gc.status = 'Added' AND gc.group_id IN (" . implode(',', $siteGroups) . "))";
 
       $dao = CRM_Core_DAO::executeQuery($query);

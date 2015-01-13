@@ -18,7 +18,7 @@ ADD UNIQUE INDEX UI_name ( name );
 DELETE FROM civicrm_currency WHERE name = 'EEK';
 
 -- CRM-8769
-INSERT INTO civicrm_state_province
+INSERT IGNORE INTO civicrm_state_province
   (`name`, `abbreviation`, `country_id`)
 VALUES
   ('Metropolitan Manila' , 'MNL', '1170');
@@ -267,7 +267,7 @@ UPDATE civicrm_option_group SET `is_reserved` = 1;
 {/if}
 
 -- CRM-9112
- ALTER TABLE `civicrm_dedupe_rule_group` ADD `title` VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL DEFAULT NULL COMMENT 'Label of the rule group';
+  ALTER TABLE `civicrm_dedupe_rule_group` ADD `title` VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL DEFAULT NULL COMMENT 'Label of the rule group';
 
 ALTER TABLE `civicrm_dedupe_rule_group` ADD `is_reserved` TINYINT( 4 ) NULL DEFAULT NULL COMMENT 'Is this a reserved rule - a rule group that has been optimized and cannot be changed by the admin';
 

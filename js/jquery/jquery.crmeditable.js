@@ -1,6 +1,6 @@
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,7 @@
 *
 *
 * This offers two features:
-* - crmEditable() edit in place of a single field 
+* - crmEditable() edit in place of a single field
 *  (mostly a wrapper that binds jeditable features with the ajax api and replies on crm-entity crmf-{field} html conventions)
 *  if you want to add an edit in place on a template:
 *  - add a class crm-entity and id {EntityName}-{Entityid} higher in the dom
@@ -40,10 +40,9 @@
 */
 
 
-(function($){
+(function($) {
 
     $.fn.crmEditable = function (options) {
-
       // for a jquery object (the crm-editable), find the entity name and id to apply the changes to
       // call result function(entity,id). The caller is responsible to use these params and do the needed
       var getEntityID = function (field,result) {
@@ -59,12 +58,12 @@
         }
         domid=domid.attr('id');
         if (!domid) {
-          $().crmNotification ("FATAL crm-editable: Couldn't get the entity id. You need to set class='crm-entity' id='{entityName}-{id}'",'notification',domid);
+          console && console.log && console.log("FATAL crm-editable: Couldn't get the entity id. You need to set class='crm-entity' id='{entityName}-{id}'");
           return false;
         }
         var e=domid.match(/(\S*)-(\S*)/);
         if (!e) {
-           $().crmNotification ("Couldn't get the entity id. You need to set class='crm-entity' id='{entityName}-{id}'",'notification',this);
+           console && console.log && console.log("Couldn't get the entity id. You need to set class='crm-entity' id='{entityName}-{id}'");
            return false;
         }
         result(e[1],e[2]);
@@ -73,17 +72,16 @@
       // param in : a dom object that contains the field name as a class crmf-xxx
       var getFieldName = function (field) {
         if ($(field).data('field')) {
-           return $(field).data('field');   
-        }  
+           return $(field).data('field');
+        }
         var fieldName=field.className.match(/crmf-(\S*)/)[1];
         if (!fieldName) {
-          $().crmNotification ("Couldn't get the crm-editable field name to modify. You need to set crmf-{field_name} or data-{field_name}",'notification',field);
+          console && console.log && console.log("Couldn't get the crm-editable field name to modify. You need to set crmf-{field_name} or data-{field_name}");
           return false;
         }
         return fieldName;
       }
 
-      
       var checkable = function () {
         $(this).change (function() {
           var params={sequential:1};
@@ -92,7 +90,7 @@
           if  (!getEntityID (this,function (e,id) {
             entity=e;
             params.id = id;
-            
+
           })) { return };
 
           params['field']=getFieldName(this);
@@ -100,13 +98,13 @@
             return false;
           params['value']=checked?'1':'0';//seems that the ajax backend gets lost with boolean
 
-          //$().crmAPI.call(this,entity,'create',params,{ create is still too buggy & perf
-          $().crmAPI.call(this,entity,'setvalue',params,{
+          CRM.api(entity,'setvalue',params,{
+            context: this,
             error: function (data) {
-              editableSettings.error.call(this,entity,fieldName,checked,data);
+              editableSettings.error.call(this,entity,params.field,checked,data);
             },
             success: function (data) {
-              editableSettings.success.call(this,entity,fieldName,checked,data);
+              editableSettings.success.call(this,entity,params.field,checked,data);
             }
           });
         });
@@ -122,19 +120,19 @@
           }
         },
         error: function(entity,field,value,data) {
-          $().crmNotification (data.error_message,'error',data);
-          $(this).removeClass ('crm-editable-saving').addClass('crm-editable-error');
+          $(this).crmError(data.error_message, ts('Error'));
+          $(this).removeClass('crm-editable-saving');
         },
         success: function(entity,field,value,data) {
-          var $i=$(this);
-          $().crmNotification (false);
-          $i.removeClass ('crm-editable-saving').removeClass ('crm-editable-error');
+          var $i = $(this);
+          CRM.alert('', ts('Saved'), 'success');
+          $i.removeClass ('crm-editable-saving crm-error');
           $i.html(value);
         }
       }
 
       var editableSettings = $.extend({}, defaults, options);
-  	  return this.each(function() {
+      return this.each(function() {
         var $i = $(this);
         var fieldName = "";
       
@@ -158,17 +156,17 @@
             var id= $i.closest('.crm-entity').attr('id');
             if (id) {
               var e=id.match(/(\S*)-(\S*)/);
-               if (!e) 
-                 $().crmNotification ("Couldn't get the entity id. You need to set class='crm-entity' id='{entityName}-{id}'",'notification',this);
+               if (!e)
+                 console && console.log && console.log("Couldn't get the entity id. You need to set class='crm-entity' id='{entityName}-{id}'");
               formSettings.entity=e[1];
               formSettings.id=e[2];
-            } 
+            }
             if ($i.hasClass('crm-dialog')) {
               $i.click (function () {
                 var $n=$('<div>Loading</div>').appendTo('body');
                 $n.dialog ({modal:true,width:500});
                 $n.crmForm (formSettings);
-                return false; 
+                return false;
               });
             } else {
               $i.click (function () {
@@ -180,7 +178,7 @@
                   return false;
                 };
                 $n.crmForm (formSettings);
-                return false; 
+                return false;
               });
             }
             return;
@@ -223,7 +221,7 @@
         //$i.editable(function(value,editableSettings) {
           parent=$i.closest('.crm-entity');
           if (!parent) {
-            $().crmNotification ("crm-editable: you need to define one parent element that has a class .crm-entity",'notification',this);
+            console && console.log && console.log("crm-editable: you need to define one parent element that has a class .crm-entity");
             return;
           }
 
@@ -253,8 +251,8 @@
           } else {
             action="setvalue";
           }
-          $().crmAPI.call(this,entity,action,params,{
-          //cj().crmAPI.call(this,entity,'setvalue/create',params,{
+          CRM.api(entity, action, params, {
+              context: this,
               error: function (data) {
                 editableSettings.error.call(this,entity,fieldName,value,data);
               },
@@ -267,13 +265,7 @@
             });
            },settings);
     });
- }
-   
-})(jQuery);
-//})(cj);
-
-
-(function($){
+  }
 
   $.fn.crmForm = function (options ) {
     var settings = $.extend( {
@@ -285,7 +277,7 @@
       'dialog': false,
       'load' : function (target){},
       'success' : function (result) {
-        $(this).html ("Saved");
+        $(this).html(ts('Saved'));
        }
     }, options);
 
@@ -293,7 +285,7 @@
     return this.each(function() {
       var formLoaded = function (target) {
         var $this =$(target);
-        var destination="<input type='hidden' name='civicrmDestination' value='"+$.crmURL('civicrm/ajax/rest',{
+        var destination="<input type='hidden' name='civicrmDestination' value='"+CRM.url('civicrm/ajax/rest',{
           'sequential':settings.sequential,
           'json':'html',
           'entity':settings.entity,
@@ -305,7 +297,7 @@
             $this.html("<div class='crm-editable-saving'>Saving...</div>");
             return true;
           },
-          success:function(response) { 
+          success:function(response) {
             if (response.indexOf('crm-error') >= 0) { // we got an error, re-display the page
               $this.html(response);
               formLoaded(target);
@@ -316,7 +308,7 @@
                 settings.success(response);
             }
           }
-        }).append('<input type="hidden" name="snippet" value="1"/>'+destination).trigger('load'); 
+        }).append('<input type="hidden" name="snippet" value="1"/>'+destination).trigger('load');
 
         settings.load(target);
       };
@@ -339,5 +331,3 @@
   };
 
 })(jQuery);
-//})(cj);
-

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,8 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
- * $Id$
+ * @copyright CiviCRM LLC (c) 2004-2013
  *
  */
 
@@ -51,12 +50,10 @@ class CRM_Core_Page_AJAX_Location {
     $ufId = CRM_Utils_Request::retrieve('ufId', 'Integer', CRM_Core_DAO::$_nullObject, TRUE);
 
     // Verify user id
-    $user = CRM_Core_Session::singleton()->get('userID');
-    if (!$user) {
-      $user = CRM_Utils_Request::retrieve('uid', 'Integer', CRM_Core_DAO::$_nullObject, TRUE);
-      if (!CRM_Contact_BAO_Contact_Permission::validateOnlyChecksum($user, CRM_Core_DAO::$_nullObject)) {
-        CRM_Utils_System::civiExit();
-      }
+    $user = CRM_Utils_Request::retrieve('uid', 'Integer', CRM_Core_DAO::$_nullObject, FALSE, CRM_Core_Session::singleton()->get('userID'));
+    if (empty($user) || (CRM_Utils_Request::retrieve('cs', 'String', $form, FALSE) && !CRM_Contact_BAO_Contact_Permission::validateChecksumContact($user, CRM_Core_DAO::$_nullObject, FALSE))
+    ) {
+      CRM_Utils_System::civiExit();
     }
 
     // Verify user permission on related contact
@@ -72,40 +69,42 @@ class CRM_Core_Page_AJAX_Location {
     $config = CRM_Core_Config::singleton();
     $addressSequence = array_flip($config->addressSequence());
 
-    $profileFields = CRM_Core_BAO_UFGroup::getFields($ufId, FALSE, CRM_Core_Action::VIEW, NULL, NULL, FALSE,
-      NULL, FALSE, NULL, CRM_Core_Permission::CREATE, NULL
-    );
-    $website = CRM_Core_BAO_Website::getValues($entityBlock, $values);
 
-    foreach ($location as $fld => $values) {
-      if (is_array($values) && !empty($values)) {
-        $locType = $values[1]['location_type_id'];
-        if ($fld == 'email') {
-          $elements["onbehalf_{$fld}-{$locType}"] = array(
-            'type' => 'Text',
-            'value' => $location[$fld][1][$fld],
-          );
-          unset($profileFields["{$fld}-{$locType}"]);
-        }
-        elseif ($fld == 'phone') {
-          $phoneTypeId = $values[1]['phone_type_id'];
-          $elements["onbehalf_{$fld}-{$locType}-{$phoneTypeId}"] = array(
-            'type' => 'Text',
-            'value' => $location[$fld][1][$fld],
-          );
-          unset($profileFields["{$fld}-{$locType}-{$phoneTypeId}"]);
-        }
-        elseif ($fld == 'im') {
-          $providerId = $values[1]['provider_id'];
-          $elements["onbehalf_{$fld}-{$locType}"] = array(
-            'type' => 'Text',
-            'value' => $location[$fld][1][$fld],
-          );
-          $elements["onbehalf_{$fld}-{$locType}provider_id"] = array(
-            'type' => 'Select',
-            'value' => $location[$fld][1]['provider_id'],
-          );
-          unset($profileFields["{$fld}-{$locType}-{$providerId}"]);
+      $profileFields = CRM_Core_BAO_UFGroup::getFields($ufId, FALSE, CRM_Core_Action::VIEW, NULL, NULL, FALSE,
+        NULL, FALSE, NULL, CRM_Core_Permission::CREATE, NULL
+      );
+      $website = CRM_Core_BAO_Website::getValues($entityBlock, $values);
+
+      foreach ($location as $fld => $values) {
+        if (is_array($values) && !empty($values)) {
+          $locType = $values[1]['location_type_id'];
+          if ($fld == 'email') {
+            $elements["onbehalf_{$fld}-{$locType}"] = array(
+              'type' => 'Text',
+              'value' => $location[$fld][1][$fld],
+            );
+            unset($profileFields["{$fld}-{$locType}"]);
+          }
+          elseif ($fld == 'phone') {
+            $phoneTypeId = $values[1]['phone_type_id'];
+            $elements["onbehalf_{$fld}-{$locType}-{$phoneTypeId}"] = array(
+              'type' => 'Text',
+              'value' => $location[$fld][1][$fld],
+            );
+            unset($profileFields["{$fld}-{$locType}-{$phoneTypeId}"]);
+          }
+          elseif ($fld == 'im') {
+            $providerId = $values[1]['provider_id'];
+            $elements["onbehalf_{$fld}-{$locType}"] = array(
+              'type' => 'Text',
+              'value' => $location[$fld][1][$fld],
+            );
+            $elements["onbehalf_{$fld}-{$locType}provider_id"] = array(
+              'type' => 'Select',
+              'value' => $location[$fld][1]['provider_id'],
+            );
+            unset($profileFields["{$fld}-{$locType}-{$providerId}"]);
+          }
         }
       }
 
@@ -124,7 +123,7 @@ class CRM_Core_Page_AJAX_Location {
         }
       }
 
-      $locTypeId = $location['address'][1]['location_type_id'];
+      $locTypeId = isset($location['address'][1]) ? $location['address'][1]['location_type_id'] : NULL;
       $addressFields = array(
         'street_address',
         'supplemental_address_1',
@@ -144,7 +143,7 @@ class CRM_Core_Page_AJAX_Location {
           }
           $elements["onbehalf_{$field}-{$locTypeId}"] = array(
             'type' => 'Text',
-            'value' => $location['address'][1][$addField],
+            'value' =>  isset($location['address'][1]) ? $location['address'][1][$addField] : null,
           );
           unset($profileFields["{$field}-{$locTypeId}"]);
         }
@@ -190,14 +189,14 @@ class CRM_Core_Page_AJAX_Location {
           }
         }
       }
-    }
 
     echo json_encode($elements);
     CRM_Utils_System::civiExit();
   }
 
-  function jqState($config) {
-    if (!isset($_GET['_value']) ||
+  static function jqState($config) {
+    if (
+      !isset($_GET['_value']) ||
       empty($_GET['_value'])
     ) {
       CRM_Utils_System::civiExit();
@@ -205,9 +204,11 @@ class CRM_Core_Page_AJAX_Location {
 
     $result = CRM_Core_PseudoConstant::stateProvinceForCountry($_GET['_value']);
 
-    $elements = array(array('name' => ts('- select a state -'),
+    $elements = array(
+      array('name' => ts('- select a state -'),
         'value' => '',
-      ));
+      )
+    );
     foreach ($result as $id => $name) {
       $elements[] = array(
         'name' => $name,
@@ -219,19 +220,18 @@ class CRM_Core_Page_AJAX_Location {
     CRM_Utils_System::civiExit();
   }
 
-  function jqCounty($config) {
+  static function jqCounty($config) {
     if (CRM_Utils_System::isNull($_GET['_value'])) {
-      $elements = array(array('name' => ts('- select state -'),
-          'value' => '',
-        ));
+      $elements = array(
+        array('name' => ts('- select state -'), 'value' => '')
+      );
     }
     else {
-
       $result = CRM_Core_PseudoConstant::countyForState($_GET['_value']);
 
-      $elements = array(array('name' => ts('- select -'),
-          'value' => '',
-        ));
+      $elements = array(
+        array('name' => ts('- select -'), 'value' => '')
+      );
       foreach ($result as $id => $name) {
         $elements[] = array(
           'name' => $name,
@@ -241,9 +241,9 @@ class CRM_Core_Page_AJAX_Location {
 
       if ($elements == array(
         array('name' => ts('- select -'), 'value' => ''))) {
-        $elements = array(array('name' => ts('- no counties -'),
-            'value' => '',
-          ));
+        $elements = array(
+          array('name' => ts('- no counties -'), 'value' => '')
+        );
       }
     }
 
@@ -251,7 +251,7 @@ class CRM_Core_Page_AJAX_Location {
     CRM_Utils_System::civiExit();
   }
 
-  function getLocBlock() {
+  static function getLocBlock() {
     // i wish i could retrieve loc block info based on loc_block_id,
     // Anyway, lets retrieve an event which has loc_block_id set to 'lbid'.
     if ($_POST['lbid']) {
@@ -307,4 +307,3 @@ class CRM_Core_Page_AJAX_Location {
     CRM_Utils_System::civiExit();
   }
 }
-

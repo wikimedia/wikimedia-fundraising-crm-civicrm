@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.2                                                |
+  | CiviCRM version 4.4                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2012                                |
+  | Copyright CiviCRM LLC (c) 2004-2013                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -455,6 +455,9 @@ class CRM_Utils_Date {
 
   /**
    * converts the date/datetime from ISO format to MySQL format
+   * Note that until CRM-14986/ 4.4.7 this was required whenever the pattern $dao->find(TRUE): $dao->save(); was
+   * used to update an object with a date field was used. The DAO now checks for a '-' in date field strings
+   * & runs this function if the - appears - meaning it is likely redundant in the form & BAO layers
    *
    * @param string $iso  date/datetime in ISO format
    *
@@ -474,7 +477,7 @@ class CRM_Utils_Date {
    * @param string $dateParam  index of params
    * @static
    */
-  function convertToDefaultDate(&$params, $dateType, $dateParam) {
+  static function convertToDefaultDate(&$params, $dateType, $dateParam) {
     $now     = getDate();
     $cen     = substr($now['year'], 0, 2);
     $prevCen = $cen - 1;
@@ -915,7 +918,7 @@ class CRM_Utils_Date {
    * @return array $dateRange    start date and end date for the relative time frame
    * @static
    */
-  function relativeToAbsolute($relativeTerm, $unit) {
+  static function relativeToAbsolute($relativeTerm, $unit) {
     $now       = getDate();
     $from      = $to = $dateRange = array();
     $from['H'] = $from['i'] = $from['s'] = 0;
@@ -984,6 +987,26 @@ class CRM_Utils_Date {
             $to['M'] = $now['mon'];
             $to['Y'] = $now['year'];
             break;
+
+          case 'ending_2':
+            $to['d'] = $now['mday'];
+            $to['M'] = $now['mon'];
+            $to['Y'] = $now['year'];
+            $to['H'] = 23;
+            $to['i'] = $to['s'] = 59;
+            $from    = self::intervalAdd('year', -2, $to);
+            $from    = self::intervalAdd('second', 1, $from);
+            break;
+
+          case 'ending_3':
+            $to['d'] = $now['mday'];
+            $to['M'] = $now['mon'];
+            $to['Y'] = $now['year'];
+            $to['H'] = 23;
+            $to['i'] = $to['s'] = 59;
+            $from    = self::intervalAdd('year', -3, $to);
+            $from    = self::intervalAdd('second', 1, $from);
+            break;
         }
         break;
 
@@ -1047,6 +1070,7 @@ class CRM_Utils_Date {
             $difference = 2;
             $quarter    = ceil($now['mon'] / 3);
             $quarter    = $quarter - $difference;
+            $subtractYear = 0;  
             if ($quarter <= 0) {
               $subtractYear = 1;
               $quarter += 4;
@@ -1097,6 +1121,7 @@ class CRM_Utils_Date {
 
           case 'earlier':
             $quarter = ceil($now['mon'] / 3) - 1;
+            $subtractYear = 0;  
             if ($quarter <= 0) {
               $subtractYear = 1;
               $quarter += 4;
@@ -1390,8 +1415,9 @@ class CRM_Utils_Date {
    *
    * @return int $fy       Current Fiscl Year
    * @access public
+   * @static
    */
-  function calculateFiscalYear($fyDate, $fyMonth) {
+  static function calculateFiscalYear($fyDate, $fyMonth) {
     $date = date("Y-m-d");
     $currentYear = date("Y");
 
@@ -1421,18 +1447,11 @@ class CRM_Utils_Date {
    *
    *  @return string $mysqlDate date format that is excepted by mysql
    */
-  static function processDate($date, $time = NULL, $returnNullString = FALSE, $format = 'YmdHis', $inputCustomFormat = NULL) {
+  static function processDate($date, $time = NULL, $returnNullString = FALSE, $format = 'YmdHis') {
     $mysqlDate = NULL;
 
     if ($returnNullString) {
       $mysqlDate = 'null';
-    }
-
-    $config = CRM_Core_Config::singleton();
-    $inputFormat = $config->dateInputFormat;
-
-    if (!empty($inputCustomFormat)) {
-      $inputFormat = $inputCustomFormat;
     }
 
     if (trim($date)) {
@@ -1519,7 +1538,7 @@ class CRM_Utils_Date {
   static function getDateFormat($formatType = NULL) {
     $format = NULL;
     if ($formatType) {
-      $format = CRM_Core_Dao::getFieldValue('CRM_Core_DAO_PreferencesDate',
+      $format = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_PreferencesDate',
                 $formatType, 'date_format', 'name'
       );
     }
@@ -1530,5 +1549,69 @@ class CRM_Utils_Date {
     }
     return $format;
   }
+
+  /**
+   * Get the time in UTC for the current time. You can optionally send an offset from the current time if needed
+   *
+   * @param $offset int the offset from the current time in seconds
+   *
+   * @return the time in UTC
+   * @static
+   * @public
+   */
+  static function getUTCTime($offset = 0) {
+    $originalTimezone = date_default_timezone_get();
+    date_default_timezone_set('UTC');
+    $time = time() + $offset;
+    $now = date('YmdHis', $time);
+    date_default_timezone_set($originalTimezone);
+    return $now;
+  }
+
+
+  static function formatDate($date, $dateType) {
+    $formattedDate = NULL;
+    if (empty($date)) {
+      return $formattedDate;
+    }
+
+    //1. first convert date to default format.
+    //2. append time to default formatted date (might be removed during format)
+    //3. validate date / date time.
+    //4. If date and time then convert to default date time format.
+
+    $dateKey = 'date';
+    $dateParams = array($dateKey => $date);
+
+    if (CRM_Utils_Date::convertToDefaultDate($dateParams, $dateType, $dateKey)) {
+      $dateVal = $dateParams[$dateKey];
+      $ruleName = 'date';
+      if ($dateType == 1) {
+        $matches = array();
+        if (preg_match("/(\s(([01]\d)|[2][0-3]):([0-5]\d))$/", $date, $matches)) {
+          $ruleName = 'dateTime';
+          if (strpos($date, '-') !== FALSE) {
+            $dateVal .= array_shift($matches);
+          }
+        }
+      }
+
+      // validate date.
+      $valid = CRM_Utils_Rule::$ruleName($dateVal);
+
+      if ($valid) {
+        //format date and time to default.
+        if ($ruleName == 'dateTime') {
+          $dateVal = CRM_Utils_Date::customFormat(preg_replace("/(:|\s)?/", "", $dateVal), '%Y%m%d%H%i');
+          //hack to add seconds
+          $dateVal .= '00';
+        }
+        $formattedDate = $dateVal;
+      }
+    }
+
+    return $formattedDate;
+  }
+
 }
 

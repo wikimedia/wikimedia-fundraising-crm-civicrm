@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -143,25 +143,25 @@ class CRM_Contact_Form_Search_Custom_ContribSYBNT implements CRM_Contact_Form_Se
     else {
       $select = $this->select();
       $select = "
-      DISTINCT contact.id as contact_id,
-      contact.display_name as display_name,
-      $select
-      ";
+           DISTINCT contact.id as contact_id,
+           contact.display_name as display_name,
+           $select
+";
 
     }
 
     $sql = "
-    SELECT $select
-    FROM civicrm_contact AS contact
-    LEFT JOIN civicrm_contribution contrib_1 ON contrib_1.contact_id = contact.id
-    $from
-    WHERE contrib_1.contact_id = contact.id
-    AND contrib_1.is_test = 0
-    $where
-    GROUP BY contact.id
-    $having
-    ORDER BY donation_amount desc
-    ";
+SELECT     $select
+FROM       civicrm_contact AS contact
+LEFT JOIN  civicrm_contribution contrib_1 ON contrib_1.contact_id = contact.id
+           $from
+WHERE      contrib_1.contact_id = contact.id
+AND        contrib_1.is_test = 0
+           $where
+GROUP BY   contact.id
+           $having
+ORDER BY   donation_amount desc
+";
 
     // CRM_Core_Error::debug('sql',$sql); exit();
     return $sql;

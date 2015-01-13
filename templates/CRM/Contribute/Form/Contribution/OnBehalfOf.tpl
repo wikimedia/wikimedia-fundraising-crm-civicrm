@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -23,16 +23,22 @@
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
 *}
-{* This file provides the HTML for the on-behalf-of form. Can also be used for related contact edit form. *}
+{**
+ * This file provides the HTML for the on-behalf-of form. 
+ * Also used for related contact edit form.
+ * FIXME: This is way more complex than it needs to be
+ * FIXME: About 1% of this javascript is needed for contribution forms
+ * FIXME: Why are we not just using the dynamic form tpl to display this profile?
+ *}
 
 {if $buildOnBehalfForm or $onBehalfRequired}
-  <fieldset id="for_organization" class="for_organization-group">
-  <legend>{$fieldSetTitle}</legend>
+<fieldset id="for_organization" class="for_organization-group">
+<legend>{$fieldSetTitle}</legend>
   {if ( $relatedOrganizationFound or $onBehalfRequired ) and !$organizationName}
     <div id='orgOptions' class="section crm-section">
-       <div class="content">
+      <div class="content">
         {$form.org_option.html}
-       </div>
+      </div>
     </div>
   {/if}
 
@@ -50,92 +56,97 @@
         &nbsp;&nbsp;<span class='description'>{$onBehalfOfFields.$fieldName.help_pre}</span>
       {/if}
 
-       {if ( $fieldName eq 'organization_name' ) and $organizationName}
+      {if ( $fieldName eq 'organization_name' ) and $organizationName}
         <div id='org_name' class="label">{$form.onbehalf.$fieldName.label}</div>
-         <div class="content">
-          {$form.onbehalf.$fieldName.html|crmReplace:class:big}
-            <span>
+        <div class="content">
+          {$form.onbehalf.$fieldName.html|crmAddClass:big}
+          <span>
               ( <a id='createNewOrg' href="#" onclick="createNew( ); return false;">{ts}Enter a new organization{/ts}</a> )
-            </span>
-            <div id="id-onbehalf-orgname-enter-help" class="description">
-                {ts}Organization details have been prefilled for you. If this is not the organization you want to use, click "Enter a new organization" above.{/ts}
-            </div>
-            {if $onBehalfOfFields.$fieldName.help_post}
-                 <span class='description'>{$onBehalfOfFields.$fieldName.help_post}</span>
-            {/if}
-         </div>
-       {else}
+          </span>
+          <div id="id-onbehalf-orgname-enter-help" class="description">
+            {ts}Organization details have been prefilled for you. If this is not the organization you want to use, click "Enter a new organization" above.{/ts}
+          </div>
+          {if $onBehalfOfFields.$fieldName.help_post}
+            <span class='description'>{$onBehalfOfFields.$fieldName.help_post}</span>
+          {/if}
+        </div>
+      {else}
         {if $onBehalfOfFields.$fieldName.options_per_line}
           <div class="label option-label">{$form.onbehalf.$fieldName.label}</div>
           <div class="content">
-              {assign var="count" value="1"}
-              {strip}
+            {assign var="count" value="1"}
+            {strip}
               <table class="form-layout-compressed">
               <tr>
-                {* sort by fails for option per line. Added a variable to iterate through the element array*}
+              {* sort by fails for option per line. Added a variable to iterate through the element array*}
                 {assign var="index" value="1"}
                 {foreach name=outer key=key item=item from=$form.onbehalf.$fieldName}
-                {if $index < 10}
-                  {assign var="index" value=`$index+1`}
-                {else}
-                    <td class="labels font-light">{$form.onbehalf.$fieldName.$key.html}</td>
-                  {if $count == $onBehalfOfFields.$fieldName.options_per_line}
-                    </tr>
-                    <tr>
-                    {assign var="count" value="1"}
+                  {if $index < 10}
+                    {assign var="index" value=`$index+1`}
                   {else}
-                       {assign var="count" value=`$count+1`}
+                    <td class="labels font-light">{$form.onbehalf.$fieldName.$key.html}</td>
+                    {if $count == $onBehalfOfFields.$fieldName.options_per_line}
+                      </tr>
+                      <tr>
+                      {assign var="count" value="1"}
+                    {else}
+                      {assign var="count" value=`$count+1`}
+                    {/if}
                   {/if}
-                {/if}
                 {/foreach}
               </tr>
               </table>
-              {/strip}
-              {if $onBehalfOfFields.$fieldName.help_post}
-                 <span class='description'>{$onBehalfOfFields.$fieldName.help_post}</span>
+            {/strip}
+            {if $onBehalfOfFields.$fieldName.help_post}
+              <span class='description'>{$onBehalfOfFields.$fieldName.help_post}</span>
+            {/if}
+          </div>
+        {else}
+          <div class="label">{$form.onbehalf.$fieldName.label}</div>
+          <div class="content">
+            {if $fieldName eq 'organization_name' and !empty($form.onbehalfof_id)}
+              {$form.onbehalfof_id.html}
+            {/if}
+            {$form.onbehalf.$fieldName.html}
+            {if !empty($onBehalfOfFields.$fieldName.html_type)  && $onBehalfOfFields.$fieldName.html_type eq 'Autocomplete-Select'}
+              {assign var=elementName value=onbehalf[$fieldName]}
+            {include file="CRM/Custom/Form/AutoComplete.tpl" element_name=$elementName}
+            {/if}
+            {if $onBehalfOfFields.$fieldName.name|substr:0:5 eq 'phone'}
+              {assign var="phone_ext_field" value=$onBehalfOfFields.$fieldName.name|replace:'phone':'phone_ext'}
+              {if $form.onbehalf.$phone_ext_field.html}
+                &nbsp;{$form.onbehalf.$phone_ext_field.html}
               {/if}
-            </div>
-          {else}
-              <div class="label">{$form.onbehalf.$fieldName.label}</div>
-              <div class="content">
-              {if $fieldName eq 'organization_name' and !empty($form.onbehalfof_id)}
-                {$form.onbehalfof_id.html}
-              {/if}
-              {$form.onbehalf.$fieldName.html}
-              {if !empty($onBehalfOfFields.$fieldName.html_type)  && $onBehalfOfFields.$fieldName.html_type eq 'Autocomplete-Select'}
-                {assign var=elementName value=onbehalf[$fieldName]}
-                {include file="CRM/Custom/Form/AutoComplete.tpl" element_name=$elementName}
-              {/if}
-              {if $onBehalfOfFields.$fieldName.help_post}
-                <br /><span class='description'>{$onBehalfOfFields.$fieldName.help_post}</span>
-              {/if}
-              </div>
-          {/if}
-       {/if}
+            {/if}
+            {if $onBehalfOfFields.$fieldName.help_post}
+              <br /><span class='description'>{$onBehalfOfFields.$fieldName.help_post}</span>
+            {/if}
+          </div>
+        {/if}
+      {/if}
       <div class="clear"></div>
     </div>
-    {/foreach}
-  </div>
-  <div>{$form.mode.html}</div>
+  {/foreach}
+</div>
+<div>{$form.mode.html}</div>
+</fieldset>
 {/if}
-
 {if empty($snippet)}
 {literal}
 <script type="text/javascript">
 
   showOnBehalf({/literal}"{$onBehalfRequired}"{literal});
 
-cj( "#mode" ).hide( );
-cj( "#mode" ).attr( 'checked', 'checked' );
+  cj( "#mode" ).hide( );
+  cj( "#mode" ).attr( 'checked', 'checked' );
   if ( cj( "#mode" ).attr( 'checked' ) && !{/literal}"{$reset}"{literal} ) {
     $text = ' {/literal}{ts escape="js"}Use existing organization{/ts}{literal} ';
     cj( "#createNewOrg" ).text( $text );
     cj( "#mode" ).removeAttr( 'checked' );
-}
+  }
 
-function showOnBehalf( onBehalfRequired )
-{
-    if ( cj( "#is_for_organization" ).attr( 'checked' ) || onBehalfRequired ) {
+function showOnBehalf(onBehalfRequired) {
+  if ( cj( "#is_for_organization" ).attr( 'checked' ) || onBehalfRequired ) {
     var urlPath = {/literal}"{crmURL p=$urlPath h=0 q="snippet=4&onbehalf=1&id=$contributionPageID&qfKey=$qfKey"}";
     {if $mode eq 'test'}
       urlPath += '&action=preview';
@@ -147,7 +158,8 @@ function showOnBehalf( onBehalfRequired )
     if (cj("fieldset", '#onBehalfOfOrg').length < 1) {
       cj('#onBehalfOfOrg').load(urlPath);
     }
-     } else {
+  }
+  else {
     cj("#onBehalfOfOrg").hide();
   }
 }
@@ -157,57 +169,67 @@ function resetValues() {
   cj('input[type=radio], input[type=checkbox]', "#select_org tr td").prop('checked', false);
 }
 
-function createNew( )
-{
-    if ( cj( "#mode" ).attr( 'checked' ) ) {
+function createNew( ) {
+  if (cj("#mode").attr('checked')) {
     var textMessage = ' {/literal}{ts escape="js"}Use existing organization{/ts}{literal} ';
-        cj( "#onbehalf_organization_name" ).removeAttr( 'readonly' );
-        cj( "#mode" ).removeAttr( 'checked' );
-
-        resetValues();
-    } else {
+    cj("#onbehalf_organization_name").removeAttr('readonly');
+    cj("#mode").removeAttr('checked');
+    resetValues();
+  }
+  else {
     var textMessage = ' {/literal}{ts escape="js"}Enter a new organization{/ts}{literal} ';
-        cj( "#mode" ).attr( 'checked', 'checked' );
-        setOrgName( );
-    }
+    cj("#mode").attr('checked', 'checked');
+    setOrgName( );
+  }
   cj("#createNewOrg").text(textMessage);
 }
 
-function setOrgName( )
-{
-    var orgName = "{/literal}{$organizationName}{literal}";
-    var orgId   = "{/literal}{$orgId}{literal}";
-    cj( "#onbehalf_organization_name" ).val( orgName );
-    cj( "#onbehalf_organization_name" ).attr( 'readonly', true );
-    setLocationDetails( orgId );
+function setOrgName( ) {
+  var orgName = "{/literal}{$organizationName}{literal}";
+  var orgId   = "{/literal}{$orgId}{literal}";
+  cj("#onbehalf_organization_name").val(orgName);
+  cj("#onbehalf_organization_name").attr('readonly', true);
+  setLocationDetails(orgId);
 }
 
 
-function setLocationDetails( contactID )
-{
-    resetValues();
-    var locationUrl = {/literal}"{$locDataURL}"{literal} + contactID + "&ufId=" + {/literal}"{$profileId}"{literal};
-    cj.ajax({
-              url         : locationUrl,
-              dataType    : "json",
-              timeout     : 5000, //Time in milliseconds
-              success     : function( data, status ) {
-                for (var ele in data) {
-                   if ( data[ele].type == 'Radio' ) {
-                       if ( data[ele].value ) {
-                           cj( "input[name='"+ ele +"']" ).filter( "[value=" + data[ele].value + "]" ).attr( 'checked', 'checked' );
-                       }
-		   } else if ( data[ele].type == 'CheckBox' ) {
-		       if ( data[ele].value ) {
-                           cj( "input[name='"+ ele +"']" ).attr( 'checked','checked' );
-                       }
-                   } else if ( data[ele].type == 'Multi-Select' ) {
-                       for ( var selectedOption in data[ele].value ) {
-                            cj( "#" + ele + " option[value='" + selectedOption + "']" ).attr( 'selected', 'selected' );
-                       }
-                   } else if ( data[ele].type == 'Autocomplete-Select' ) {
-                       cj( "#" + ele ).val( data[ele].value );
-                       cj( "#" + ele + '_id' ).val( data[ele].id );
+function setLocationDetails(contactID , reset) {
+  var submittedCID = {/literal}"{$submittedOnBehalf}"{literal};
+  var submittedOnBehalfInfo = {/literal}'{$submittedOnBehalfInfo}'{literal};
+  submittedOnBehalfInfo = cj.parseJSON(submittedOnBehalfInfo);
+  if (submittedCID == contactID) {
+    cj.each(submittedOnBehalfInfo, function(key, value) {
+      cj('#onbehalf_' + key ).val(value);
+    });
+    return;
+  }
+
+  resetValues();
+  var locationUrl = {/literal}"{$locDataURL}"{literal} + contactID + "&ufId=" + {/literal}"{$profileId}"{literal};
+  cj.ajax({
+    url         : locationUrl,
+    dataType    : "json",
+    timeout     : 5000, //Time in milliseconds
+    success     : function(data, status) {
+      for (var ele in data) {
+        if (data[ele].type == 'Radio') {
+          if (data[ele].value) {
+            cj("input[name='"+ ele +"']").filter("[value=" + data[ele].value + "]").attr('checked', 'checked');
+          }
+        }
+        else if (data[ele].type == 'CheckBox') {
+          if (data[ele].value) {
+            cj("input[name='"+ ele +"']").attr('checked','checked');
+          }
+        }
+        else if (data[ele].type == 'Multi-Select') {
+          for (var selectedOption in data[ele].value) {
+            cj('#' + ele + " option[value='" + selectedOption + "']").attr('selected', 'selected');
+          }
+        }
+        else if (data[ele].type == 'Autocomplete-Select') {
+          cj('#' + ele ).val( data[ele].value );
+          cj('#' + ele + '_id').val(data[ele].id);
         }
         else if (data[ele].type == 'AdvMulti-Select') {
           var customFld = ele.replace('onbehalf_', '');
@@ -220,67 +242,61 @@ function setLocationDetails( contactID )
             cj('#onbehalf\\['+ customFld +'\\]-f option[value="' + selectedOption + '"]').remove()
               .appendTo('#onbehalf\\['+ customFld +'\\]-t');
           }
-                   } else {
-                       cj( "#" + ele ).val( data[ele].value );
-                   }
-                }
-              },
-              error       : function( XMLHttpRequest, textStatus, errorThrown ) {
-                   console.error("HTTP error status: ", textStatus);
-              }
-    });
+        }
+        else {
+          cj('#' + ele ).val(data[ele].value);
+        }
+      }
+    },
+    error       : function(XMLHttpRequest, textStatus, errorThrown) {
+      console.error("HTTP error status: ", textStatus);
+    }
+  });
 }
 
-cj( "input:radio[name='org_option']" ).click( function( ) {
+cj("input:radio[name='org_option']").click( function( ) {
   var orgOption = cj(this).val();
-  selectCreateOrg( orgOption, true );
+  selectCreateOrg(orgOption, true);
 });
 
 cj('#onbehalfof_id').change(function() {
   setLocationDetails(cj(this).val());
 }).change();
 
-function selectCreateOrg( orgOption, reset )
-{
-    if ( orgOption == 0 ) {
-      cj("#onbehalfof_id").show().change();
-      cj("input#onbehalf_organization_name").hide();
-    } else if ( orgOption == 1 ) {
-      cj("input#onbehalf_organization_name").show();
-      cj("#onbehalfof_id").hide();
-    }
+function selectCreateOrg( orgOption, reset ) {
+  if (orgOption == 0) {
+    cj("#onbehalfof_id").show().change();
+    cj("input#onbehalf_organization_name").hide()
+  }
+  else if ( orgOption == 1 ) {
+    cj("input#onbehalf_organization_name").show();
+    cj("#onbehalfof_id").hide();
+  }
 
-    if ( reset ) {
-        resetValues();
-    }
+  if ( reset ) {
+    resetValues();
+  }
 }
 
-{/literal}{if ( $relatedOrganizationFound or $onBehalfRequired ) and $reset and $organizationName}
-    setOrgName( );
+{/literal}
+{if ($relatedOrganizationFound or $onBehalfRequired) and $reset and $organizationName}
+  setOrgName( );
 {else}
-       cj( "#orgOptions" ).show( );
-       var orgOption = cj( "input:radio[name=org_option]:checked" ).val( );
-       selectCreateOrg( orgOption, false );
-{/if}{literal}
-</script>
-{/literal}
-</fieldset>
-
-
-{literal}
-<script type="text/javascript">
-{/literal}
+  cj("#orgOptions").show( );
+  var orgOption = cj("input:radio[name=org_option]:checked").val( );
+  selectCreateOrg(orgOption, false);
+{/if}
 
 {* If mid present in the url, take the required action (poping up related existing contact ..etc) *}
 {if $membershipContactID}
-    {literal}
-    cj( function( ) {
-        cj( '#organization_id' ).val("{/literal}{$membershipContactName}{literal}");
-        cj( '#organization_name' ).val("{/literal}{$membershipContactName}{literal}");
-        cj( '#onbehalfof_id' ).val("{/literal}{$membershipContactID}{literal}");
-        setLocationDetails( "{/literal}{$membershipContactID}{literal}" );
-    });
-    {/literal}
+{literal}
+  cj( function( ) {
+    cj('#organization_id').val("{/literal}{$membershipContactName}{literal}");
+    cj('#organization_name').val("{/literal}{$membershipContactName}{literal}");
+    cj('#onbehalfof_id').val("{/literal}{$membershipContactID}{literal}");
+    setLocationDetails( "{/literal}{$membershipContactID}{literal}" );
+  });
+{/literal}
 {/if}
 
 </script>

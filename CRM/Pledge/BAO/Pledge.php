@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -63,8 +63,7 @@ class CRM_Pledge_BAO_Pledge extends CRM_Pledge_DAO_Pledge {
    * @access public
    * @static
    */
-  static
-  function retrieve(&$params, &$defaults) {
+  static function retrieve(&$params, &$defaults) {
     $pledge = new CRM_Pledge_DAO_Pledge();
     $pledge->copyValues($params);
     if ($pledge->find(TRUE)) {
@@ -84,8 +83,7 @@ class CRM_Pledge_BAO_Pledge extends CRM_Pledge_DAO_Pledge {
    *
    * @return object
    */
-  static
-  function add(&$params) {
+  static function add(&$params) {
     if (CRM_Utils_Array::value('id', $params)) {
       CRM_Utils_Hook::pre('edit', 'Pledge', $params['id'], $params);
     }
@@ -132,8 +130,7 @@ class CRM_Pledge_BAO_Pledge extends CRM_Pledge_DAO_Pledge {
    * @access public
    * @static
    */
-  static
-  function &getValues(&$params, &$values, $returnProperties = NULL) {
+  static function &getValues(&$params, &$values, $returnProperties = NULL) {
     if (empty($params)) {
       return NULL;
     }
@@ -150,8 +147,7 @@ class CRM_Pledge_BAO_Pledge extends CRM_Pledge_DAO_Pledge {
    * @access public
    * @static
    */
-  static
-  function &create(&$params) {
+  static function &create(&$params) {
     //FIXME: a cludgy hack to fix the dates to MySQL format
     $dateFields = array('start_date', 'create_date', 'acknowledge_date', 'modified_date', 'cancel_date', 'end_date');
     foreach ($dateFields as $df) {
@@ -163,7 +159,7 @@ class CRM_Pledge_BAO_Pledge extends CRM_Pledge_DAO_Pledge {
     $transaction = new CRM_Core_Transaction();
 
     $paymentParams = array();
-    $paymentParams['status_id'] = $params['status_id'];
+    $paymentParams['status_id'] = CRM_Utils_Array::value('status_id', $params);
     if (CRM_Utils_Array::value('installment_amount', $params)) {
       $params['amount'] = $params['installment_amount'] * $params['installments'];
     }
@@ -242,9 +238,8 @@ class CRM_Pledge_BAO_Pledge extends CRM_Pledge_DAO_Pledge {
       );
     }
 
-    $config            = CRM_Core_Config::singleton();
-    $contributionTypes = CRM_Contribute_PseudoConstant::contributionType();
-    $title             = CRM_Contact_BAO_Contact::displayName($pledge->contact_id) . ' - (' . ts('Pledged') . ' ' . CRM_Utils_Money::format($pledge->amount, $pledge->currency) . ' - ' . $contributionTypes[$pledge->contribution_type_id] . ')';
+    $contributionTypes = CRM_Contribute_PseudoConstant::financialType();
+    $title = CRM_Contact_BAO_Contact::displayName($pledge->contact_id) . ' - (' . ts('Pledged') . ' ' . CRM_Utils_Money::format($pledge->amount, $pledge->currency) . ' - ' . CRM_Utils_Array::value($pledge->financial_type_id, $contributionTypes) . ')';
 
     // add the recently created Pledge
     CRM_Utils_Recent::add($title,
@@ -268,8 +263,7 @@ class CRM_Pledge_BAO_Pledge extends CRM_Pledge_DAO_Pledge {
    * @static
    *
    */
-  static
-  function deletePledge($id) {
+  static function deletePledge($id) {
     CRM_Utils_Hook::pre('delete', 'Pledge', $id, CRM_Core_DAO::$_nullArray);
 
     $transaction = new CRM_Core_Transaction();
@@ -308,7 +302,7 @@ class CRM_Pledge_BAO_Pledge extends CRM_Pledge_DAO_Pledge {
   /**
    * function to get the amount details date wise.
    */
-  function getTotalAmountAndCount($status = NULL, $startDate = NULL, $endDate = NULL) {
+  static function getTotalAmountAndCount($status = NULL, $startDate = NULL, $endDate = NULL) {
     $where = array();
     $select = $from = $queryDate = NULL;
     //get all status
@@ -412,10 +406,10 @@ GROUP BY  currency
     $whereCond = implode(' AND ', $where);
 
     $query = "
-SELECT $select, cp.currency
-FROM $from
-WHERE  $whereCond
-GROUP BY  cp.currency
+ SELECT $select, cp.currency
+ FROM $from
+ WHERE  $whereCond
+ GROUP BY  cp.currency
 ";
     if ($select) {
       // CRM_Core_Error::debug($status . ' start:' . $startDate . '- end:' . $endDate, $query);
@@ -453,8 +447,7 @@ GROUP BY  cp.currency
    * @access public
    * @static
    */
-  static
-  function getHonorContacts($honorId) {
+  static function getHonorContacts($honorId) {
     $params = array();
     $honorDAO = new CRM_Pledge_DAO_Pledge();
     $honorDAO->honor_contact_id = $honorId;
@@ -468,8 +461,8 @@ GROUP BY  cp.currency
         'status' => CRM_Contribute_PseudoConstant::contributionStatus($honorDAO->status_id),
         'create_date' => $honorDAO->create_date,
         'acknowledge_date' => $honorDAO->acknowledge_date,
-        'type' => CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_ContributionType',
-          $honorDAO->contribution_type_id, 'name'
+        'type' => CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_FinancialType',
+          $honorDAO->financial_type_id, 'name'
         ),
         'display_name' => CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact',
           $honorDAO->contact_id, 'display_name'
@@ -553,8 +546,8 @@ GROUP BY  cp.currency
       )
     ) {
       $honor_block_is_active = TRUE;
-      $prefix = CRM_Core_PseudoConstant::individualPrefix();
-      $honor = CRM_Core_PseudoConstant::honor();
+      $prefix = CRM_Core_PseudoConstant::get('CRM_Contact_DAO_Contact', 'prefix_id');
+      $honor = CRM_Core_PseudoConstant::get('CRM_Pledge_DAO_Pledge', 'honor_type_id');
       $form->assign('honor_type', $honor[$params['honor_type_id']]);
       $form->assign('honor_prefix', $prefix[$params['honor_prefix_id']]);
       $form->assign('honor_first_name', $params['honor_first_name']);
@@ -642,7 +635,7 @@ GROUP BY  cp.currency
       $receiptFrom = "$userName <$userEmail>";
     }
 
-    list($sent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplates::sendTemplate(
+    list($sent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate(
       array(
         'groupName' => 'msg_tpl_workflow_pledge',
         'valueName' => 'pledge_acknowledge',
@@ -700,19 +693,13 @@ GROUP BY  cp.currency
    * @access public
    * @static
    */
-  static
-  function &exportableFields() {
+  static function &exportableFields() {
     if (!self::$_exportableFields) {
       if (!self::$_exportableFields) {
         self::$_exportableFields = array();
       }
 
       $fields = CRM_Pledge_DAO_Pledge::export();
-
-      //export campaign title.
-      if (isset($fields['pledge_campaign_id'])) {
-        $fields['pledge_campaign'] = array('title' => ts('Campaign Title'));
-      }
 
       $fields = array_merge($fields, CRM_Pledge_DAO_PledgePayment::export());
 
@@ -770,8 +757,7 @@ GROUP BY  cp.currency
    * @return array associated array of pledge id(s)
    * @static
    */
-  static
-  function getContactPledges($contactID) {
+  static function getContactPledges($contactID) {
     $pledgeDetails = array();
     $pledgeStatuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
 
@@ -791,9 +777,9 @@ GROUP BY  cp.currency
     $statusClause = " IN (" . implode(',', $status) . ")";
 
     $query = "
-SELECT civicrm_pledge.id id
-FROM civicrm_pledge
-WHERE civicrm_pledge.status_id  {$statusClause}
+ SELECT civicrm_pledge.id id
+ FROM civicrm_pledge
+ WHERE civicrm_pledge.status_id  {$statusClause}
   AND civicrm_pledge.contact_id = %1
 ";
 
@@ -816,13 +802,12 @@ WHERE civicrm_pledge.status_id  {$statusClause}
    * @access public
    * @static
    */
-  static
-  function getContactPledgeCount($contactID) {
+  static function getContactPledgeCount($contactID) {
     $query = "SELECT count(*) FROM civicrm_pledge WHERE civicrm_pledge.contact_id = {$contactID} AND civicrm_pledge.is_test = 0";
     return CRM_Core_DAO::singleValueQuery($query);
   }
 
-  public function updatePledgeStatus($params) {
+  public static function updatePledgeStatus($params) {
 
     $returnMessages = array();
 
@@ -1008,7 +993,7 @@ SELECT  pledge.contact_id              as contact_id,
             $template->assign('amount', $details['amount']);
             $template->assign('create_date', $details['create_date']);
             $template->assign('currency', $details['currency']);
-            list($mailSent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplates::sendTemplate(
+            list($mailSent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate(
               array(
                 'groupName' => 'msg_tpl_workflow_pledge',
                 'valueName' => 'pledge_reminder',

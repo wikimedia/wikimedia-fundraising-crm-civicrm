@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,12 +28,10 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
-
-
 
 require_once 'HTML/QuickForm/Rule/Email.php';
 
@@ -89,7 +87,9 @@ class CRM_Utils_String {
    */
   static function munge($name, $char = '_', $len = 63) {
     // replace all white space and non-alpha numeric with $char
-    $name = preg_replace('/\s+|\W+/', $char, trim($name));
+    // we only use the ascii character set since mysql does not create table names / field names otherwise
+    // CRM-11744
+    $name = preg_replace('/[^a-zA-Z0-9]+/', $char, trim($name));
 
     if ($len) {
       // lets keep variable names short
@@ -100,18 +100,17 @@ class CRM_Utils_String {
     }
   }
 
-
-  /*
-     * Takes a variable name and munges it randomly into another variable name
-     *
-     * @param  string $name    Initial Variable Name
-     * @param int     $len  length of valid variables
-     *
-     * @return string  Randomized Variable Name
-     * @access public
-     * @static
-     */
-
+  /**
+   *
+   * Takes a variable name and munges it randomly into another variable name
+   *
+   * @param  string $name    Initial Variable Name
+   * @param int     $len  length of valid variables
+   *
+   * @return string  Randomized Variable Name
+   * @access public
+   * @static
+   */
   static function rename($name, $len = 4) {
     $rand = substr(uniqid(), 0, $len);
     return substr_replace($name, $rand, -$len, $len);
@@ -193,12 +192,9 @@ class CRM_Utils_String {
     if (!function_exists('mb_detect_encoding')) {
       // eliminate all white space from the string
       $str = preg_replace('/\s+/', '', $str);
-      /* FIXME:  This is a pretty brutal hack to make utf8 and 8859-1 work.
-             */
-
+      // FIXME:  This is a pretty brutal hack to make utf8 and 8859-1 work.
 
       /* match low- or high-ascii characters */
-
       if (preg_match('/[\x00-\x20]|[\x7F-\xFF]/', $str)) {
         // || // low ascii characters
         // high ascii characters
@@ -406,7 +402,7 @@ class CRM_Utils_String {
   /**
    * Convert a HTML string into a text one using html2text
    *
-   * @param string $html  the tring to be converted
+   * @param string $html  the string to be converted
    *
    * @return string       the converted string
    * @access public
@@ -414,8 +410,11 @@ class CRM_Utils_String {
    */
   static function htmlToText($html) {
     require_once 'packages/html2text/rcube_html2text.php';
-    $converter = new rcube_html2text($html);
-    return $converter->get_text();
+    $token_html = preg_replace('!\{([a-z_.]+)\}!i', 'token:{$1}', $html);
+    $converter = new rcube_html2text($token_html);
+    $token_text = $converter->get_text();
+    $text = preg_replace('!token\:\{([a-z_.]+)\}!i', '{$1}', $token_text);
+    return $text;
   }
 
   static function extractName($string, &$params) {
@@ -451,7 +450,6 @@ class CRM_Utils_String {
       }
     }
     else {
-
       // name has no comma - assume fname [mname] fname
       $names = explode(' ', $name);
       if (count($names) == 1) {
@@ -485,10 +483,15 @@ class CRM_Utils_String {
 
   /**
    * Function to add include files needed for jquery
+   *
+   * This appears to be used in cases where the normal html-header
+   * provided by CRM_Core_Resources can't be used (e.g. when outputting in
+   * "print" mode, the execution will short-circuit without allowing the
+   * CMS to output JS/CSS tags).
    */
   static function addJqueryFiles(&$html) {
-    $smarty = CRM_Core_Smarty::singleton();
-    return $smarty->fetch('CRM/common/jquery.tpl') . $html;
+    CRM_Core_Resources::singleton()->addCoreResources('html-header');
+    return CRM_Core_Region::instance('html-header')->render('', FALSE) . $html;
   }
 
   /**
@@ -586,7 +589,7 @@ class CRM_Utils_String {
    */
   static function purifyHTML($string) {
     static $_filter = null;
-    if ( ! $_filter ) {
+    if (!$_filter) {
       $config = HTMLPurifier_Config::createDefault();
       $config->set('Core.Encoding', 'UTF-8');
 
@@ -609,10 +612,12 @@ class CRM_Utils_String {
     $len = strlen($string);
     if ($len <= $maxLen) {
       return $string;
-    } else {
+    }
+    else {
       return substr($string, 0, $maxLen-3) . '...';
     }
   }
+
   /**
    * Generate a random string
    *
@@ -645,6 +650,19 @@ class CRM_Utils_String {
     else {
       return array(substr($string, 0, $pos), substr($string, 1+$pos));
     }
+  }
+
+  /**
+   * Many parts of the codebase have a convention of internally passing around
+   * HTML-encoded URLs. This effectively means that "&" is replaced by "&amp;"
+   * (because most other odd characters are %-escaped in URLs; and %-escaped
+   * strings don't need any extra escaping in HTML).
+   *
+   * @param string $url URL with HTML entities
+   * @return string URL without HTML entities
+   */
+  public static function unstupifyUrl($htmlUrl) {
+    return str_replace('&amp;', '&', $htmlUrl);
   }
 }
 

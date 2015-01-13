@@ -1,42 +1,46 @@
 <?php
-
-
-
-/*
- Function demonstrates getting asignee_contact_id & using it to get the contact
+/**
+ * Test Generated example of using activity get API
+ * Function demonstrates getting asignee_contact_id & using it to get the contact *
  */
 function activity_get_example(){
-$params = array( 
+$params = array(
   'activity_id' => 1,
-  'version' => 3,
   'sequential' => 1,
   'return.assignee_contact_id' => 1,
-  'api.contact.get' => array( 
+  'api.contact.get' => array(
       'id' => '$value.source_contact_id',
     ),
 );
 
-  require_once 'api/api.php';
-  $result = civicrm_api( 'activity','get',$params );
-
-  return $result;
+try{
+  $result = civicrm_api3('activity', 'get', $params);
+}
+catch (CiviCRM_API3_Exception $e) {
+  // handle error here
+  $errorMessage = $e->getMessage();
+  $errorCode = $e->getErrorCode();
+  $errorData = $e->getExtraParams();
+  return array('error' => $errorMessage, 'error_code' => $errorCode, 'error_data' => $errorData);
 }
 
-/*
+return $result;
+}
+
+/**
  * Function returns array of result expected from previous function
  */
 function activity_get_expectedresult(){
 
-  $expectedResult = array( 
+  $expectedResult = array(
   'is_error' => 0,
   'version' => 3,
   'count' => 1,
   'id' => 1,
-  'values' => array( 
-      '0' => array( 
+  'values' => array(
+      '0' => array(
           'id' => '1',
-          'source_contact_id' => '17',
-          'activity_type_id' => '40',
+          'activity_type_id' => '46',
           'subject' => 'test activity type id',
           'activity_date_time' => '2011-06-02 14:36:13',
           'duration' => '120',
@@ -48,37 +52,43 @@ function activity_get_expectedresult(){
           'is_auto' => 0,
           'is_current_revision' => '1',
           'is_deleted' => 0,
-          'assignee_contact_id' => array( 
-              '0' => '19',
+          'assignee_contact_id' => array(
+              '0' => '3',
             ),
-          'api.contact.get' => array( 
+          'source_contact_id' => '1',
+          'api.contact.get' => array(
               'is_error' => 0,
               'version' => 3,
               'count' => 1,
-              'id' => 17,
-              'values' => array( 
-                  '0' => array( 
-                      'contact_id' => '17',
+              'id' => 1,
+              'values' => array(
+                  '0' => array(
+                      'contact_id' => '1',
                       'contact_type' => 'Individual',
                       'contact_sub_type' => '',
-                      'sort_name' => '',
-                      'display_name' => 'Test Contact',
-                      'do_not_email' => '',
-                      'do_not_phone' => '',
-                      'do_not_mail' => '',
-                      'do_not_sms' => '',
-                      'do_not_trade' => '',
+                      'sort_name' => 'Anderson, Anthony',
+                      'display_name' => 'Mr. Anthony Anderson II',
+                      'do_not_email' => 0,
+                      'do_not_phone' => 0,
+                      'do_not_mail' => 0,
+                      'do_not_sms' => 0,
+                      'do_not_trade' => 0,
                       'is_opt_out' => 0,
                       'legal_identifier' => '',
                       'external_identifier' => '',
                       'nick_name' => '',
                       'legal_name' => '',
                       'image_URL' => '',
-                      'preferred_mail_format' => '',
-                      'first_name' => 'Test',
-                      'middle_name' => '',
-                      'last_name' => 'Contact',
+                      'preferred_communication_method' => '',
+                      'preferred_language' => 'en_US',
+                      'preferred_mail_format' => 'Both',
+                      'first_name' => 'Anthony',
+                      'middle_name' => 'J.',
+                      'last_name' => 'Anderson',
+                      'prefix_id' => '3',
+                      'suffix_id' => '3',
                       'job_title' => '',
+                      'gender_id' => '',
                       'birth_date' => '',
                       'is_deceased' => 0,
                       'deceased_date' => '',
@@ -86,12 +96,6 @@ function activity_get_expectedresult(){
                       'organization_name' => '',
                       'sic_code' => '',
                       'contact_is_deleted' => 0,
-                      'gender_id' => '',
-                      'gender' => '',
-                      'prefix_id' => '',
-                      'prefix' => '',
-                      'suffix_id' => '',
-                      'suffix' => '',
                       'current_employer' => '',
                       'address_id' => '',
                       'street_address' => '',
@@ -103,22 +107,25 @@ function activity_get_expectedresult(){
                       'geo_code_1' => '',
                       'geo_code_2' => '',
                       'state_province_id' => '',
-                      'state_province_name' => '',
-                      'state_province' => '',
                       'country_id' => '',
-                      'country' => '',
                       'phone_id' => '',
                       'phone_type_id' => '',
                       'phone' => '',
-                      'email_id' => '',
-                      'email' => '',
-                      'on_hold' => '',
+                      'email_id' => '1',
+                      'email' => 'anthony_anderson@civicrm.org',
+                      'on_hold' => 0,
                       'im_id' => '',
                       'provider_id' => '',
                       'im' => '',
                       'worldregion_id' => '',
                       'world_region' => '',
-                      'id' => '17',
+                      'individual_prefix' => 'Mr.',
+                      'individual_suffix' => 'II',
+                      'gender' => '',
+                      'state_province_name' => '',
+                      'state_province' => '',
+                      'country' => '',
+                      'id' => '1',
                     ),
                 ),
             ),
@@ -126,22 +133,28 @@ function activity_get_expectedresult(){
     ),
 );
 
-  return $expectedResult  ;
+  return $expectedResult;
 }
-
-
 
 
 /*
 * This example has been generated from the API test suite. The test that created it is called
-* 
-* testActivityGetGoodID1 and can be found in 
-* http://svn.civicrm.org/civicrm/branches/v3.4/tests/phpunit/CiviTest/api/v3/ActivityTest.php
-* 
-* You can see the outcome of the API tests at 
-* http://tests.dev.civicrm.org/trunk/results-api_v3
-* and review the wiki at
-* http://wiki.civicrm.org/confluence/display/CRMDOC/CiviCRM+Public+APIs
+*
+* testActivityGetGoodID1 and can be found in
+* https://github.com/civicrm/civicrm-core/blob/master/tests/phpunit/api/v3/ActivityTest.php
+*
+* You can see the outcome of the API tests at
+* https://test.civicrm.org/job/CiviCRM-master-git/
+*
+* To Learn about the API read
+* http://wiki.civicrm.org/confluence/display/CRMDOC/Using+the+API
+*
+* Browse the api on your own site with the api explorer
+* http://MYSITE.ORG/path/to/civicrm/api/explorer
+*
 * Read more about testing here
 * http://wiki.civicrm.org/confluence/display/CRM/Testing
+*
+* API Standards documentation:
+* http://wiki.civicrm.org/confluence/display/CRM/API+Architecture+Standards
 */

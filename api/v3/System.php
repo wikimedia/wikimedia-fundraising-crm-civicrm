@@ -1,11 +1,10 @@
 <?php
-// $Id$
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -33,7 +32,7 @@
  * @package CiviCRM_APIv3
  * @subpackage API_Domain
  *
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * @version $Id: Domain.php 30171 2010-10-14 09:11:27Z mover $
  *
  */
@@ -41,7 +40,7 @@
 /**
  * Flush all system caches
  *
- * @param  array   	  $params input parameters
+ * @param  array       $params input parameters
  *                          - triggers: bool, whether to drop/create SQL triggers; default: FALSE
  *                          - session:  bool, whether to reset the CiviCRM session data; defaul: FALSE
  *
@@ -57,4 +56,61 @@ function civicrm_api3_system_flush($params) {
     CRM_Utils_Array::value('session', $params, FALSE)
   );
   return civicrm_api3_create_success();
+}
+
+/**
+ * Adjust Metadata for Flush action
+ *
+ * The metadata is used for setting defaults, documentation & validation
+ * @param array $params array or parameters determined by getfields
+ */
+function _civicrm_api3_system_flush_spec(&$params){
+  $params['triggers'] = array('title' => 'rebuild triggers (boolean)');
+  $params['session'] = array('title' => 'refresh sessions (boolean)');
+}
+
+/**
+ * System.Check API specification (optional)
+ * This is used for documentation and validation.
+ *
+ * @param array $spec description of fields supported by this API call
+ * @return void
+ * @see http://wiki.civicrm.org/confluence/display/CRM/API+Architecture+Standards
+ */
+function _civicrm_api3_system_check_spec(&$spec) {
+  // $spec['magicword']['api.required'] = 1;
+}
+
+/**
+ * System.Check API
+ *
+ * @param array $params
+ * @return array API result descriptor; return items are alert codes/messages
+ * @see civicrm_api3_create_success
+ * @see civicrm_api3_create_error
+ * @throws API_Exception
+ */
+function civicrm_api3_system_check($params) {
+  $returnValues = array();
+  foreach (CRM_Utils_Check::singleton()->checkAll() as $message) {
+    $returnValues[] = $message->toArray();
+  }
+
+  // Spec: civicrm_api3_create_success($values = 1, $params = array(), $entity = NULL, $action = NULL)
+  return civicrm_api3_create_success($returnValues, $params, 'System', 'Check');
+}
+
+/**
+ * System.Get API
+ *
+ * @param arary $params
+ */
+function civicrm_api3_system_get($params) {
+  $returnValues = array(
+    array(
+      'version' => CRM_Utils_System::version(),
+      'uf' => CIVICRM_UF,
+    ),
+  );
+  return civicrm_api3_create_success($returnValues, $params, 'System', 'get');
 }

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -65,7 +65,7 @@ class CRM_Contact_Form_Search_Custom_Base {
       return $sql;
     }
 
-    return CRM_Core_DAO::composeQuery($sql);
+    return CRM_Core_DAO::composeQuery($sql, CRM_Core_DAO::$_nullArray);
   }
 
   function sql(
@@ -135,6 +135,7 @@ class CRM_Contact_Form_Search_Custom_Base {
     if ($rowcount > 0 && $offset >= 0) {
       $offset = CRM_Utils_Type::escape($offset, 'Int');
       $rowcount = CRM_Utils_Type::escape($rowcount, 'Int');
+
       $sql .= " LIMIT $offset, $rowcount ";
     }
   }
@@ -167,5 +168,10 @@ class CRM_Contact_Form_Search_Custom_Base {
   function whereClause(&$where, &$params) {
     return CRM_Core_DAO::composeQuery($where, $params, TRUE);
   }
-}
 
+  // override this method to define the contact query object
+  // used for creating $sql
+  function getQueryObj() {
+    return NULL;
+  }
+}

@@ -13,8 +13,8 @@ class CRM_Case_Audit_Audit {
     $retval = array();
 
     /*
-		 * Loop through the activities in the file and add them to the appropriate region array.
-		 */
+     * Loop through the activities in the file and add them to the appropriate region array.
+     */
 
     $doc = new DOMDocument();
 
@@ -141,9 +141,9 @@ class CRM_Case_Audit_Audit {
         }
         else {
           /* This is a little bit inefficient, but the alternative is to do two passes
-					because we don't know until we've examined all the field values whether the activity
-					is completed, since the field that determines it and its value is configurable,
-					so either way isn't ideal. */
+          because we don't know until we've examined all the field values whether the activity
+          is completed, since the field that determines it and its value is configurable,
+          so either way isn't ideal. */
 
           unset($retval[$activityindex]);
           unset($caseActivities[$activityindex]);

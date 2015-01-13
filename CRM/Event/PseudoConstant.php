@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.4                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2013                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2013
  * $Id$
  *
  */
@@ -97,10 +97,10 @@ class CRM_Event_PseudoConstant extends CRM_Core_PseudoConstant {
    *
    * @access public
    *
-   * @return array - array reference of all events if any
+   * @return array - array of all events if any
    * @static
    */
-  public static function &event($id = NULL, $all = FALSE, $condition = NULL) {
+  public static function event($id = NULL, $all = FALSE, $condition = NULL) {
     $key = "{$id}_{$all}_{$condition}";
 
     if (!isset(self::$event[$key])) {
@@ -162,8 +162,7 @@ class CRM_Event_PseudoConstant extends CRM_Core_PseudoConstant {
    *
    * @return array  of status classes, keyed by status type
    */
-  static
-  function &participantStatusClass() {
+  static function &participantStatusClass() {
     static $statusClasses = NULL;
 
     if ($statusClasses === NULL) {
@@ -276,8 +275,10 @@ class CRM_Event_PseudoConstant extends CRM_Core_PseudoConstant {
    * @param boolean $name pseudoconstant to be flushed
    *
    */
-  public static function flush($name) {
-    self::$$name = NULL;
+  public static function flush($name = 'cache') {
+   if (isset(self::$$name)) {
+      self::$$name = NULL;
+    }
   }
 
   /**
