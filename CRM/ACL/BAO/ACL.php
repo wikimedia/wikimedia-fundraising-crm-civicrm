@@ -602,7 +602,7 @@ INNER JOIN  $c2g
     $rule->query($query);
 
     while ($rule->fetch()) {
-      $results[$rule->id] = &$rule->toArray();
+      $results[$rule->id] = $rule->toArray();
     }
 
     // also get all acls for "Any Role" case
@@ -622,7 +622,7 @@ SELECT $acl.*
 
     $rule->query($query);
     while ($rule->fetch()) {
-      $results[$rule->id] = &$rule->toArray();
+      $results[$rule->id] = $rule->toArray();
     }
 
     return $results;
