@@ -503,7 +503,7 @@ class CRM_ACL_BAO_ACL extends CRM_ACL_DAO_ACL {
     $rule->query($query);
 
     while ($rule->fetch()) {
-      $results[$rule->id] = &$rule->toArray();
+      $results[$rule->id] = $rule->toArray();
     }
 
     return $results;
@@ -543,7 +543,7 @@ INNER JOIN  $c2g
       $rule->query($query);
 
       while ($rule->fetch()) {
-        $results[$rule->id] = &$rule->toArray();
+        $results[$rule->id] = $rule->toArray();
       }
     }
 
