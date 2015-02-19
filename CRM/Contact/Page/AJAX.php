@@ -730,7 +730,7 @@ LIMIT {$offset}, {$rowCount}
           $dao = CRM_Core_DAO::executeQuery($query);
           while ($dao->fetch()) {
             $result[] = array(
-              'name' => $dao->name,
+              'name' => $dao->sort_name,
               'id' => $dao->id,
             );
           }
