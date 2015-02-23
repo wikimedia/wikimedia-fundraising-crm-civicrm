@@ -1,0 +1,6 @@
+[gerrit]
+host=gerrit.wikimedia.org
+port=29418
+project=wikimedia/fundraising/crm/civicrm.git
+defaultbranch=giantrabbit-v4.4
+defaultrebase=0
