@@ -1,0 +1,1873 @@
+diff -urN civicrm-4.2.19/api/api.php civicrm-4.2.19-wmf/api/api.php
+--- civicrm-4.2.19/api/api.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/api/api.php	2015-03-11 13:31:10.446248473 -0700
+@@ -114,7 +114,7 @@
+       return 0;
+     }
+     $data = array();
+-    $err = civicrm_api3_create_error($e->getMessage(), $data, $apiRequest);
++    $err = civicrm_api3_create_error($e, $data, $apiRequest);
+     if (CRM_Utils_Array::value('debug', $apiRequest['params'])) {
+       $err['trace'] = $e->getTraceSafe();
+     }
+@@ -134,7 +134,7 @@
+       return 0;
+     }
+     $data = $e->getExtraParams();
+-    $err = civicrm_api3_create_error($e->getMessage(), $data, $apiRequest, $e->getCode());
++    $err = civicrm_api3_create_error($e, $data, $apiRequest, $e->getCode());
+     if (CRM_Utils_Array::value('debug', CRM_Utils_Array::value('params',$apiRequest))) {
+       $err['trace'] = $e->getTraceAsString();
+     }
+@@ -148,7 +148,7 @@
+       return 0;
+     }
+     $data = array();
+-    $err = civicrm_api3_create_error($e->getMessage(), $data, $apiRequest, $e->getCode());
++    $err = civicrm_api3_create_error($e, $data, $apiRequest, $e->getCode());
+     if (CRM_Utils_Array::value('debug', $apiRequest['params'])) {
+       $err['trace'] = $e->getTraceAsString();
+     }
+diff -urN civicrm-4.2.19/api/v3/EntityTag.php civicrm-4.2.19-wmf/api/v3/EntityTag.php
+--- civicrm-4.2.19/api/v3/EntityTag.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/api/v3/EntityTag.php	2015-03-11 13:31:10.458248472 -0700
+@@ -72,6 +72,16 @@
+   $params['entity_table']['api.default'] = 'civicrm_contact';
+ }
+ 
++function civicrm_api3_entity_tag_getdetails($params) {
++    $values = CRM_Core_BAO_EntityTag::getTagDetails($params['entity_id'], $params['entity_table']);
++    return civicrm_api3_create_success($values, $params);
++}
++function _civicrm_api3_entity_tag_getdetails_spec(&$params) {
++    $params['entity_id']['api.required'] = 1;
++    $params['entity_id']['api.aliases'] = array('contact_id');
++    $params['entity_table']['api.default'] = 'civicrm_contact';
++}
++
+ /**
+  *
+  * @param <type> $params
+diff -urN civicrm-4.2.19/api/v3/utils.php civicrm-4.2.19-wmf/api/v3/utils.php
+--- civicrm-4.2.19/api/v3/utils.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/api/v3/utils.php	2015-03-11 13:31:10.474248472 -0700
+@@ -152,7 +152,21 @@
+     }
+   }
+   $data['is_error'] = 1;
+-  $data['error_message'] = $msg;
++  if (is_callable(array($msg, 'getMessage'))) {
++    $data['error_message'] = $msg->getMessage();
++
++    // Digging into causes is an unfortunate hack.  begin hack.
++    if (is_callable(array($msg, 'getCause'))) {
++      $msg = $msg->getCause();
++
++      if (is_callable(array($msg, 'getDebugInfo'))) {
++        $data['debuginfo'] = json_encode($msg->getDebugInfo());
++      }
++    }
++    // </hack>
++  } else {
++    $data['error_message'] = $msg;
++  }
+   if (is_array($dao) && isset($dao['params']) && is_array($dao['params']) && CRM_Utils_Array::value('api.has_parent', $dao['params'])) {
+     throw new Exception('Error in call to ' . $dao['entity'] . '_' . $dao['action'] . ' : ' . $msg);
+   }
+@@ -309,22 +323,18 @@
+ }
+ 
+ /**
+- *  Recursive function to explode value-separated strings into arrays
++ * explode value-separated strings into arrays
+  *
+  */
+ function _civicrm_api3_separate_values(&$values) {
++  array_walk_recursive($values, "_civicrm_api3_values_to_array");
++}
++
++function _civicrm_api3_values_to_array( &$values, $key ) {
+   $sp = CRM_Core_DAO::VALUE_SEPARATOR;
+-  foreach ($values as $key => & $value) {
+-    if (is_array($value)) {
+-      _civicrm_api3_separate_values($value);
+-    }
+-    elseif (is_string($value)) {
+-      if($key == 'case_type_id'){// this is to honor the way case API was originally written
+-        $value = trim(str_replace($sp, ',', $value), ',');
+-      }
+-      elseif (strpos($value, $sp) !== FALSE) {
+-        $value = explode($sp, trim($value, $sp));
+-      }
++  if (is_string($values)) {
++    if (strpos($values, $sp) !== FALSE) {
++      $values = explode($sp, trim($values, $sp));
+     }
+   }
+ }
+@@ -1102,14 +1112,14 @@
+   //should we check first to prevent it from being copied if they have passed in sql friendly format?
+   if (CRM_Utils_Array::value($fieldInfo['name'], $params)) {
+     //accept 'whatever strtotime accepts
+-    if (strtotime($params[$fieldInfo['name']]) == 0) {
++    if (strtotime($params[$fieldInfo['name']]) === false) {
+       throw new Exception($fieldInfo['name'] . " is not a valid date: " . $params[$fieldInfo['name']]);
+     }
+     $params[$fieldInfo['name']] = CRM_Utils_Date::processDate($params[$fieldInfo['name']]);
+   }
+   if ((CRM_Utils_Array::value('name', $fieldInfo) != $fieldname) && CRM_Utils_Array::value($fieldname, $params)) {
+     //If the unique field name differs from the db name & is set handle it here
+-    if (strtotime($params[$fieldname]) == 0) {
++    if (strtotime($params[$fieldname]) === false) {
+       throw new Exception($fieldname . " is not a valid date: " . $params[$fieldname]);
+     }
+     $params[$fieldname] = CRM_Utils_Date::processDate($params[$fieldname]);
+@@ -1222,13 +1232,9 @@
+ 
+     return civicrm_api3_create_success($creates, $params);
+   }
+-  catch(PEAR_Exception$e) {
+-    $tx->rollback();
+-    return civicrm_api3_create_error($e->getMessage());
+-  }
+   catch(Exception$e) {
+     $tx->rollback();
+-    return civicrm_api3_create_error($e->getMessage());
++    return civicrm_api3_create_error($e);
+   }
+ }
+ 
+diff -urN civicrm-4.2.19/CRM/ACL/BAO/ACL.php civicrm-4.2.19-wmf/CRM/ACL/BAO/ACL.php
+--- civicrm-4.2.19/CRM/ACL/BAO/ACL.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/ACL/BAO/ACL.php	2015-03-11 13:31:10.174248480 -0700
+@@ -44,6 +44,7 @@
+   static $_operation = NULL;
+ 
+   static $_fieldKeys = NULL;
++  static $_group_cache = array();
+   static
+   function entityTable() {
+     if (!self::$_entityTable) {
+@@ -502,7 +503,7 @@
+     $rule->query($query);
+ 
+     while ($rule->fetch()) {
+-      $results[$rule->id] = &$rule->toArray();
++      $results[$rule->id] = $rule->toArray();
+     }
+ 
+     return $results;
+@@ -542,7 +543,7 @@
+       $rule->query($query);
+ 
+       while ($rule->fetch()) {
+-        $results[$rule->id] = &$rule->toArray();
++        $results[$rule->id] = $rule->toArray();
+       }
+     }
+ 
+@@ -601,7 +602,7 @@
+     $rule->query($query);
+ 
+     while ($rule->fetch()) {
+-      $results[$rule->id] = &$rule->toArray();
++      $results[$rule->id] = $rule->toArray();
+     }
+ 
+     // also get all acls for "Any Role" case
+@@ -621,7 +622,7 @@
+ 
+     $rule->query($query);
+     while ($rule->fetch()) {
+-      $results[$rule->id] = &$rule->toArray();
++      $results[$rule->id] = $rule->toArray();
+     }
+ 
+     return $results;
+@@ -848,7 +849,11 @@
+       $aclKeys = array_keys($acls);
+       $aclKeys = implode(',', $aclKeys);
+ 
+-      $query = "
++      $cache_key = "$tableName-$aclKeys";
++      if ( array_key_exists( $cache_key, self::$_group_cache ) ) {
++          $ids = self::$_group_cache[ $cache_key ];
++      } else {
++        $query = "
+ SELECT   a.operation, a.object_id
+   FROM   civicrm_acl_cache c, civicrm_acl a
+  WHERE   c.acl_id       =  a.id
+@@ -857,24 +862,26 @@
+    AND   a.id        IN ( $aclKeys )
+ ORDER BY a.object_id
+ ";
+-      $params = array(1 => array($tableName, 'String'));
+-      $dao = CRM_Core_DAO::executeQuery($query, $params);
+-      while ($dao->fetch()) {
+-        if ($dao->object_id) {
+-          if (self::matchType($type, $dao->operation)) {
+-            $ids[] = $dao->object_id;
++        $params = array(1 => array($tableName, 'String'));
++        $dao = CRM_Core_DAO::executeQuery($query, $params);
++        while ($dao->fetch()) {
++          if ($dao->object_id) {
++            if (self::matchType($type, $dao->operation)) {
++              $ids[] = $dao->object_id;
++            }
+           }
+-        }
+-        else {
+-          // this user has got the permission for all objects of this type
+-          // check if the type matches
+-          if (self::matchType($type, $dao->operation)) {
+-            foreach ($allGroups as $id => $dontCare) {
+-              $ids[] = $id;
++          else {
++            // this user has got the permission for all objects of this type
++            // check if the type matches
++            if (self::matchType($type, $dao->operation)) {
++              foreach ($allGroups as $id => $dontCare) {
++                $ids[] = $id;
++              }
+             }
++            break;
+           }
+-          break;
+         }
++        self::$_group_cache[ $cache_key ] = $ids;
+       }
+     }
+ 
+diff -urN civicrm-4.2.19/CRM/ACL/BAO/Cache.php civicrm-4.2.19-wmf/CRM/ACL/BAO/Cache.php
+--- civicrm-4.2.19/CRM/ACL/BAO/Cache.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/ACL/BAO/Cache.php	2015-03-11 13:31:10.174248480 -0700
+@@ -149,7 +149,7 @@
+ ";
+     CRM_Core_DAO::singleValueQuery($query);
+ 
+-    CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache");
++    CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache");
+   }
+ }
+ 
+diff -urN civicrm-4.2.19/CRM/Admin/Form/Setting/Localization.php civicrm-4.2.19-wmf/CRM/Admin/Form/Setting/Localization.php
+--- civicrm-4.2.19/CRM/Admin/Form/Setting/Localization.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Admin/Form/Setting/Localization.php	2015-03-11 13:31:10.194248479 -0700
+@@ -97,6 +97,8 @@
+       }
+     }
+ 
++    $this->addElement('checkbox', 'contactLanguageHasDefault', ts('New contacts have default language'));
++
+     $this->addElement('checkbox', 'inheritLocale', ts('Inherit CMS Language'));
+     $this->addElement('text', 'monetaryThousandSeparator', ts('Thousands Separator'), array('size' => 2));
+     $this->addElement('text', 'monetaryDecimalPoint', ts('Decimal Delimiter'), array('size' => 2));
+@@ -227,6 +229,10 @@
+       $values['inheritLocale'] = 0;
+     }
+ 
++    if (!isset($values['contactLanguageHasDefault'])) {
++      $values['contactLanguageHasDefault'] = 0;
++    }
++
+     //cache contact fields retaining localized titles
+     //though we changed localization, so reseting cache.
+     CRM_Core_BAO_Cache::deleteGroup('contact fields');
+diff -urN civicrm-4.2.19/CRM/Admin/Page/Admin.php civicrm-4.2.19-wmf/CRM/Admin/Page/Admin.php
+--- civicrm-4.2.19/CRM/Admin/Page/Admin.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Admin/Page/Admin.php	2015-03-11 13:31:10.194248479 -0700
+@@ -113,6 +113,9 @@
+     $this->assign('localVersion', $versionCheck->localVersion);
+     $this->assign('adminPanel', $adminPanel);
+ 
++    // CRM-14091: Additional sanity checks.
++    CRM_Utils_Check_Security::singleton()->checkAll();
++
+     $this->_showHide->addToTemplate();
+     return parent::run();
+   }
+diff -urN civicrm-4.2.19/CRM/Contact/BAO/Contact.php civicrm-4.2.19-wmf/CRM/Contact/BAO/Contact.php
+--- civicrm-4.2.19/CRM/Contact/BAO/Contact.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/BAO/Contact.php	2015-03-11 13:31:10.218248478 -0700
+@@ -267,8 +267,10 @@
+     $config = CRM_Core_Config::singleton();
+ 
+     // CRM-6942: set preferred language to the current language if it’s unset (and we’re creating a contact)
+-    if (empty($params['contact_id']) && empty($params['preferred_language'])) {
+-      $params['preferred_language'] = $config->lcMessages;
++    if ($config->contactLanguageHasDefault) {
++        if (empty($params['contact_id']) && empty($params['preferred_language'])) {
++          $params['preferred_language'] = $config->lcMessages;
++        }
+     }
+ 
+     // CRM-9739: set greeting & addressee if unset and we’re creating a contact
+@@ -426,7 +428,7 @@
+     }
+ 
+     // process greetings CRM-4575, cache greetings
+-    self::processGreetings($contact);
++    // NOT: self::processGreetings($contact);
+ 
+     return $contact;
+   }
+diff -urN civicrm-4.2.19/CRM/Contact/BAO/GroupContactCache.php civicrm-4.2.19-wmf/CRM/Contact/BAO/GroupContactCache.php
+--- civicrm-4.2.19/CRM/Contact/BAO/GroupContactCache.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/BAO/GroupContactCache.php	2015-03-11 13:31:10.222248478 -0700
+@@ -195,7 +195,7 @@
+ 
+       if ($smartGroupCacheTimeout == 0) {
+         $query = "
+-TRUNCATE civicrm_group_contact_cache
++DELETE FROM civicrm_group_contact_cache
+ ";
+         $update = "
+ UPDATE civicrm_group g
+diff -urN civicrm-4.2.19/CRM/Contact/DAO/Contact.php civicrm-4.2.19-wmf/CRM/Contact/DAO/Contact.php
+--- civicrm-4.2.19/CRM/Contact/DAO/Contact.php	2014-09-09 15:41:40.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/DAO/Contact.php	2015-03-11 13:31:10.226248478 -0700
+@@ -592,8 +592,8 @@
+                     'name' => 'preferred_language',
+                     'type' => CRM_Utils_Type::T_STRING,
+                     'title' => ts('Preferred Language') ,
+-                    'maxlength' => 5,
+-                    'size' => CRM_Utils_Type::EIGHT,
++                    'maxlength' => 32,
++                    'size' => CRM_Utils_Type::MEDIUM,
+                     'import' => true,
+                     'where' => 'civicrm_contact.preferred_language',
+                     'headerPattern' => '/^lang/i',
+diff -urN civicrm-4.2.19/CRM/Contact/Form/CustomData.php civicrm-4.2.19-wmf/CRM/Contact/Form/CustomData.php
+--- civicrm-4.2.19/CRM/Contact/Form/CustomData.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Form/CustomData.php	2015-03-11 13:31:10.230248478 -0700
+@@ -122,7 +122,7 @@
+       return CRM_Custom_Form_CustomData::preProcess($this);
+     }
+ 
+-    $this->_groupID = CRM_Utils_Request::retrieve('groupID', 'Positive', $this, TRUE);
++    $this->_groupID = CRM_Utils_Request::retrieve('groupId', 'Positive', $this, TRUE);
+     $this->_tableID = CRM_Utils_Request::retrieve('tableId', 'Positive', $this, TRUE);
+ 
+     $this->_contactType = CRM_Contact_BAO_Contact::getContactType($this->_tableID);
+diff -urN civicrm-4.2.19/CRM/Contact/Form/Edit/CommunicationPreferences.php civicrm-4.2.19-wmf/CRM/Contact/Form/Edit/CommunicationPreferences.php
+--- civicrm-4.2.19/CRM/Contact/Form/Edit/CommunicationPreferences.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Form/Edit/CommunicationPreferences.php	2015-03-11 13:31:10.230248478 -0700
+@@ -83,7 +83,7 @@
+     $form->add('select', 'preferred_language',
+       ts('Preferred Language'),
+       array(
+-        '' => ts('- select -')) +
++        '' => ts('- unknown -')) +
+       CRM_Core_PseudoConstant::languages()
+     );
+ 
+@@ -169,9 +169,11 @@
+     }
+ 
+     // CRM-7119: set preferred_language to default if unset
+-    if (empty($defaults['preferred_language'])) {
+-      $config = CRM_Core_Config::singleton();
+-      $defaults['preferred_language'] = $config->lcMessages;
++    if ($config->contactLanguageHasDefault) {
++      if (empty($defaults['preferred_language'])) {
++        $config = CRM_Core_Config::singleton();
++        $defaults['preferred_language'] = $config->lcMessages;
++      }
+     }
+ 
+     //set default from greeting types CRM-4575, CRM-9739
+diff -urN civicrm-4.2.19/CRM/Contact/Form/Inline/CommunicationPreferences.php civicrm-4.2.19-wmf/CRM/Contact/Form/Inline/CommunicationPreferences.php
+--- civicrm-4.2.19/CRM/Contact/Form/Inline/CommunicationPreferences.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Form/Inline/CommunicationPreferences.php	2015-03-11 13:31:10.230248478 -0700
+@@ -119,9 +119,11 @@
+     }
+ 
+     // CRM-7119: set preferred_language to default if unset
+-    if (empty($defaults['preferred_language'])) {
+-      $config = CRM_Core_Config::singleton();
+-      $defaults['preferred_language'] = $config->lcMessages;
++    if ($config->contactLanguageHasDefault) {
++      if (empty($defaults['preferred_language'])) {
++        $config = CRM_Core_Config::singleton();
++        $defaults['preferred_language'] = $config->lcMessages;
++      }
+     }
+ 
+     foreach (CRM_Contact_BAO_Contact::$_greetingTypes as $greeting) {
+diff -urN civicrm-4.2.19/CRM/Contact/Form/Search/Custom/DateAdded.php civicrm-4.2.19-wmf/CRM/Contact/Form/Search/Custom/DateAdded.php
+--- civicrm-4.2.19/CRM/Contact/Form/Search/Custom/DateAdded.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Form/Search/Custom/DateAdded.php	2015-03-11 13:31:10.234248478 -0700
+@@ -121,7 +121,6 @@
+ 
+     if ($justIDs) {
+       $select = "contact_a.id as contact_id";
+-    } else {
+       $selectClause = "contact_a.id  as contact_id,
+                        contact_a.contact_type as contact_type,
+                        contact_a.sort_name    as sort_name,
+diff -urN civicrm-4.2.19/CRM/Contact/Form/Search/Custom/FullText.php civicrm-4.2.19-wmf/CRM/Contact/Form/Search/Custom/FullText.php
+--- civicrm-4.2.19/CRM/Contact/Form/Search/Custom/FullText.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Form/Search/Custom/FullText.php	2015-03-11 13:31:10.238248478 -0700
+@@ -345,7 +345,7 @@
+   }
+ 
+   function runQueries(&$tables) {
+-    $sql = "TRUNCATE {$this->_entityIDTableName}";
++    $sql = "DELETE FROM {$this->_entityIDTableName}";
+     CRM_Core_DAO::executeQuery($sql);
+ 
+     $maxRowCount = 0;
+diff -urN civicrm-4.2.19/CRM/Contact/Form/Search.php civicrm-4.2.19-wmf/CRM/Contact/Form/Search.php
+--- civicrm-4.2.19/CRM/Contact/Form/Search.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Form/Search.php	2015-03-11 13:31:10.234248478 -0700
+@@ -329,6 +329,7 @@
+           'taskClassName' => 'CRM_Contact_Task',
+         ),
+       );
++      CRM_Utils_Hook::advancedSearchModes(self::$_modeValues);
+     }
+   }
+ 
+diff -urN civicrm-4.2.19/CRM/Contact/Page/AJAX.php civicrm-4.2.19-wmf/CRM/Contact/Page/AJAX.php
+--- civicrm-4.2.19/CRM/Contact/Page/AJAX.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Page/AJAX.php	2015-03-11 13:31:10.246248478 -0700
+@@ -730,7 +730,7 @@
+           $dao = CRM_Core_DAO::executeQuery($query);
+           while ($dao->fetch()) {
+             $result[] = array(
+-              'name' => $dao->name,
++              'name' => $dao->sort_name,
+               'id' => $dao->id,
+             );
+           }
+diff -urN civicrm-4.2.19/CRM/Contact/Page/DedupeFind.php civicrm-4.2.19-wmf/CRM/Contact/Page/DedupeFind.php
+--- civicrm-4.2.19/CRM/Contact/Page/DedupeFind.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Page/DedupeFind.php	2015-03-11 13:31:10.246248478 -0700
+@@ -167,6 +167,12 @@
+       $where = "de.id IS NULL";
+       $this->_mainContacts = CRM_Core_BAO_PrevNextCache::retrieve($cacheKeyString, $join, $where);
+       if (empty($this->_mainContacts)) {
++
++if ( empty( $contactIds ) ) {
++    CRM_Core_Session::singleton()->setStatus( "I'm sorry Dave, I can't do that right now.  Crazy deduping of the entire database is not supported at the moment.  Please try merging contacts from the Search Results page, if are feeling that kind of itch." );
++    CRM_Utils_System::redirect( CRM_Utils_System::url( 'civicrm' ) );
++}
++
+         if ($gid) {
+           $foundDupes = $this->get("dedupe_dupes_$gid");
+           if (!$foundDupes) {
+diff -urN civicrm-4.2.19/CRM/Contact/Selector.php civicrm-4.2.19-wmf/CRM/Contact/Selector.php
+--- civicrm-4.2.19/CRM/Contact/Selector.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Selector.php	2015-03-11 13:31:10.250248478 -0700
+@@ -799,7 +799,7 @@
+     $sortByCharacter = CRM_Utils_Request::retrieve('sortByCharacter', 'String', CRM_Core_DAO::$_nullObject);
+ 
+     //for text field pagination selection save
+-    $countRow = CRM_Core_BAO_PrevNextCache::getCount("%civicrm search {$cacheKey}%", NULL, "entity_table = 'civicrm_contact'", "LIKE");
++    $countRow = CRM_Core_BAO_PrevNextCache::getCount("civicrm search {$cacheKey}", NULL, "entity_table = 'civicrm_contact'", "LIKE");
+ 
+     if ((!$crmPID || $countRow == 0) && !$sortByCharacter) {
+       $this->fillupPrevNextCache($sort);
+diff -urN civicrm-4.2.19/CRM/Contribute/BAO/Contribution.php civicrm-4.2.19-wmf/CRM/Contribute/BAO/Contribution.php
+--- civicrm-4.2.19/CRM/Contribute/BAO/Contribution.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contribute/BAO/Contribution.php	2015-03-11 13:31:10.254248478 -0700
+@@ -1826,22 +1826,40 @@
+       return 0;
+     }
+ 
+-    $fromClause = "civicrm_contribution contribution";
+-    $whereConditions = array("contribution.contact_id = {$contactId}");
+     if ($includeSoftCredit) {
+-      $fromClause .= " LEFT JOIN civicrm_contribution_soft softContribution
+-                                             ON ( contribution.id = softContribution.contribution_id )";
+-      $whereConditions[] = " softContribution.contact_id = {$contactId}";
++      $softCreditClause = "
++        union
++        select contribution_id
++        from civicrm_contribution_soft
++        join civicrm_contribution
++          on civicrm_contribution.id = civicrm_contribution_soft.contribution_id
++        where
++          civicrm_contribution_soft.contact_id = {$contactId}
++          and civicrm_contribution.is_test = 0
++      ";
++    } else {
++      $softCreditClause = "";
+     }
+     if ($includeHonoree) {
+-      $whereConditions[] = " contribution.honor_contact_id = {$contactId}";
++      $honoreeClause = "or contribution.honor_contact_id = {$contactId}";
++    } else {
++      $honoreeClause = "";
+     }
+-    $whereClause = " contribution.is_test = 0 AND ( " . implode(' OR ', $whereConditions) . " )";
+ 
+     $query = "
+-   SELECT  count( contribution.id ) count
+-     FROM  {$fromClause}
+-    WHERE  {$whereClause}";
++      select count(distinct contribution_id) as count from (
++        select id as contribution_id
++        from civicrm_contribution contribution
++        where
++          contribution.is_test = 0
++          and
++          (
++            contribution.contact_id = {$contactId}
++            {$honoreeClause}
++          )
++        {$softCreditClause}
++      ) contact_contribs
++";
+ 
+     return CRM_Core_DAO::singleValueQuery($query);
+   }
+diff -urN civicrm-4.2.19/CRM/Contribute/BAO/ContributionRecur.php civicrm-4.2.19-wmf/CRM/Contribute/BAO/ContributionRecur.php
+--- civicrm-4.2.19/CRM/Contribute/BAO/ContributionRecur.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contribute/BAO/ContributionRecur.php	2015-03-11 13:31:10.254248478 -0700
+@@ -338,6 +338,8 @@
+       $params[$recurDAO->id]['next_sched_contribution'] = $recurDAO->next_sched_contribution;
+       $params[$recurDAO->id]['amount'] = $recurDAO->amount;
+       $params[$recurDAO->id]['currency'] = $recurDAO->currency;
++      $params[$recurDAO->id]['failure_count'] = $recurDAO->failure_count;
++      $params[$recurDAO->id]['failure_retry_date'] = $recurDAO->failure_retry_date;
+       $params[$recurDAO->id]['frequency_unit'] = $recurDAO->frequency_unit;
+       $params[$recurDAO->id]['frequency_interval'] = $recurDAO->frequency_interval;
+       $params[$recurDAO->id]['installments'] = $recurDAO->installments;
+diff -urN civicrm-4.2.19/CRM/Contribute/Form/Contribution.php civicrm-4.2.19-wmf/CRM/Contribute/Form/Contribution.php
+--- civicrm-4.2.19/CRM/Contribute/Form/Contribution.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contribute/Form/Contribution.php	2015-03-11 13:31:10.258248477 -0700
+@@ -1044,7 +1044,7 @@
+     );
+     $this->assign('outBound_option', $mailingInfo['outBound_option']);
+ 
+-    $this->addButtons(array(
++    $buttons = array(
+         array(
+           'type' => 'upload',
+           'name' => ts('Save'),
+@@ -1061,9 +1061,17 @@
+           'type' => 'cancel',
+           'name' => ts('Cancel'),
+         ),
+-      )
+     );
+ 
++    if ($this->_id) {
++      $buttons[] = array (
++        'type' => 'refund',
++        'js' => array( 'onclick' => "document.location = '" . CRM_Utils_System::url( 'civicrm/contribute/refund', "id={$this->_id}", false, null, false ) . "'; return false;" ),
++        'name' => ts('Refund'),
++      ); 
++    }
++    $this->addButtons($buttons);
++
+     $this->addFormRule(array('CRM_Contribute_Form_Contribution', 'formRule'), $this);
+ 
+     if ($this->_action & CRM_Core_Action::VIEW) {
+diff -urN civicrm-4.2.19/CRM/Contribute/Form/Refund.php civicrm-4.2.19-wmf/CRM/Contribute/Form/Refund.php
+--- civicrm-4.2.19/CRM/Contribute/Form/Refund.php	1969-12-31 16:00:00.000000000 -0800
++++ civicrm-4.2.19-wmf/CRM/Contribute/Form/Refund.php	2015-03-11 13:31:10.262248477 -0700
+@@ -0,0 +1,99 @@
++<?php
++
++require_once 'CRM/Contribute/Form.php';
++
++class CRM_Contribute_Form_Refund extends CRM_Contribute_Form
++{
++    public function preProcess() 
++    {
++        parent::preProcess();
++
++        $this->_id = CRM_Utils_Request::retrieve( 'id', 'Positive', $this );
++
++        //$session = CRM_Core_Session::singleton();
++        //$this->_userContext = $session->readUserContext( );
++
++        require_once 'CRM/Contribute/BAO/Contribution.php';
++        $this->contribution = new CRM_Contribute_BAO_Contribution();
++        $this->contribution->id = $this->_id;
++        if ( !$this->contribution->find( true ) ) {
++            CRM_Core_Error::fatal( ts("Contribution does not exist: %1", array( 1 => $this->_id ) ) );
++        }
++
++        require_once 'CRM/Contact/BAO/Contact.php';
++        $this->contact = new CRM_Contact_BAO_Contact();
++        $this->contact->id = $this->contribution->contact_id;
++        $this->contact->find( true );
++    }
++
++    function setDefaultValues( ) {
++        $defaults['type'] = "refund";
++        $defaults['completed'] = true;
++
++        return $defaults;
++    }
++
++
++    /**
++     * Function to build the form
++     *
++     * @return None
++     * @access public
++     */
++    public function buildQuickForm( ) 
++    {
++        $this->addButtons(array(
++            array (
++                'type'      => 'next',
++                'name'      => ts('Confirm')
++            ),
++            array (
++                'type'      => 'cancel',
++                'name'      => ts('Cancel')
++            ),
++        ));
++
++        $this->addElement( 'checkbox', 'completed', ts('Refund has been completed') );
++
++        $this->add('select', 'type', ts('Refund type'),array(
++            '' => '- select -',
++            'refund' => 'Refund',
++            'chargeback' => 'Chargeback',
++        ));
++
++        $this->add( 'hidden', 'id', $this->_id );
++        $this->assign( "contribution_id", $this->_id );
++
++        list( $original_currency, $original_amount ) = explode( " ", $this->contribution->source );
++        $this->assign( "original_currency", $original_currency );
++        $this->assign( "original_amount", $original_amount );
++        $this->assign( "receive_date", $this->contribution->receive_date );
++
++        $this->assign( "contact_name", $this->contact->display_name );
++        $this->assign( "view_original_contribution", CRM_Utils_System::url( 'civicrm/contact/view/contribution', "reset=1&action=view&id={$this->_id}&cid={$this->contact->id}" ) );
++    }
++
++    public function postProcess() 
++    {
++        $submittedValues = $this->controller->exportValues( $this->_name );
++
++        $this->type = CRM_Utils_Array::value( 'type', $submittedValues, 'refund' );
++        $this->completed = CRM_Utils_Array::value( 'completed', $submittedValues, false );
++
++        if ( CRM_Utils_Array::value( '_qf_Refund_next', $this->_submitValues ) ) {
++            try {
++                $this->refund_id = module_invoke( 'wmf_civicrm', 'mark_refund', $this->_id, $this->type, $this->completed );
++            } catch (Exception $e) {
++                CRM_Core_Error::fatal( ts("Failed to mark refund: %1", array( 1 => $e->getMessage() ) ) );
++            }
++
++            CRM_Core_Session::setStatus( ts("Your %1 has been recorded. <a href=\"%2\">Edit</a> the refund contribution.", array(
++                    1 => $this->type,
++                    2 => CRM_Utils_System::url( 'civicrm/contact/view/contribution', "reset=1&action=update&id={$this->refund_id}&cid={$this->contact->id}" ),
++            )) );
++        }
++
++        $session = CRM_Core_Session::singleton();
++        $session->replaceUserContext( CRM_Utils_System::url( 'civicrm/contact/view', "reset=1&cid={$this->contact->id}&selectedChild=contribute" ) );
++    }
++}
+diff -urN civicrm-4.2.19/CRM/Contribute/Form/Search.php civicrm-4.2.19-wmf/CRM/Contribute/Form/Search.php
+--- civicrm-4.2.19/CRM/Contribute/Form/Search.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contribute/Form/Search.php	2015-03-11 13:31:10.262248477 -0700
+@@ -159,6 +159,13 @@
+     $this->_limit   = CRM_Utils_Request::retrieve('limit', 'Positive', $this);
+     $this->_context = CRM_Utils_Request::retrieve('context', 'String', $this, FALSE, 'search');
+ 
++    /*
++     * WMF HACK: "force" causes a search with null criteria.  Disable until this is fixed.
++     */
++    if ( $this->_context === "search" && CRM_Utils_Request::retrieve('qfKey', 'String') === NULL ) {
++      $this->_force = false;
++    }
++
+     $this->assign("context", $this->_context);
+ 
+     // get user submitted values
+diff -urN civicrm-4.2.19/CRM/Contribute/Form/Task.php civicrm-4.2.19-wmf/CRM/Contribute/Form/Task.php
+--- civicrm-4.2.19/CRM/Contribute/Form/Task.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contribute/Form/Task.php	2015-03-11 13:31:10.262248477 -0700
+@@ -166,7 +166,7 @@
+    * @return void
+    * @access public
+    */
+-  function addDefaultButtons($title, $nextType = 'next', $backType = 'back') {
++  function addDefaultButtons($title, $nextType = 'next', $backType = 'back', $submitOnce = FALSE) {
+     $this->addButtons(array(
+         array(
+           'type' => $nextType,
+diff -urN civicrm-4.2.19/CRM/Contribute/xml/Menu/Contribute.xml civicrm-4.2.19-wmf/CRM/Contribute/xml/Menu/Contribute.xml
+--- civicrm-4.2.19/CRM/Contribute/xml/Menu/Contribute.xml	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contribute/xml/Menu/Contribute.xml	2015-03-11 13:31:10.270248477 -0700
+@@ -219,6 +219,11 @@
+     <access_arguments>make online contributions</access_arguments>
+   </item>
+   <item>
++     <path>civicrm/contribute/refund</path>
++     <page_callback>CRM_Contribute_Form_Refund</page_callback>
++     <access_arguments>edit contributions</access_arguments>
++  </item>
++  <item>
+     <path>civicrm/contribute/updatebilling</path>
+     <title>Update Billing Details</title>
+     <page_callback>CRM_Contribute_Form_UpdateBilling</page_callback>
+diff -urN civicrm-4.2.19/CRM/Core/BAO/CustomField.php civicrm-4.2.19-wmf/CRM/Core/BAO/CustomField.php
+--- civicrm-4.2.19/CRM/Core/BAO/CustomField.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/BAO/CustomField.php	2015-03-11 13:31:10.274248477 -0700
+@@ -275,7 +275,9 @@
+       self::createField($customField, 'modify', $indexExist);
+     }
+     else {
+-      $customField->column_name .= "_{$customField->id}";
++      if (!isset($params['column_name'])) {
++        $customField->column_name .= "_{$customField->id}";
++      }
+       $customField->save();
+       // make sure all values are present in the object
+       $customField->find(TRUE);
+@@ -1517,10 +1519,11 @@
+       return;
+     }
+ 
++    // WMF: this was a bad feature, has been removed in recent versions of Civi
+     // return if field is a 'code' field
+-    if (CRM_Utils_Array::value('is_view', $customFields[$customFieldId])) {
+-      return;
+-    }
++    // if (CRM_Utils_Array::value('is_view', $customFields[$customFieldId])) {
++    //   return;
++    // }
+ 
+     list($tableName, $columnName, $groupID) = self::getTableColumnGroup($customFieldId);
+ 
+@@ -1806,7 +1809,7 @@
+       $params['fk_field_name'] = 'id';
+       $params['fk_attributes'] = 'ON DELETE SET NULL';
+     }
+-    if ($field->default_value) {
++    if (isset($field->default_value)) {
+       $params['default'] = "'{$field->default_value}'";
+     }
+ 
+diff -urN civicrm-4.2.19/CRM/Core/BAO/CustomGroup.php civicrm-4.2.19-wmf/CRM/Core/BAO/CustomGroup.php
+--- civicrm-4.2.19/CRM/Core/BAO/CustomGroup.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/BAO/CustomGroup.php	2015-03-11 13:31:10.274248477 -0700
+@@ -142,7 +142,12 @@
+ 
+ 
+       // lets create the table associated with the group and save it
+-      $tableName = $group->table_name = "civicrm_value_" . strtolower(CRM_Utils_String::munge($group->title, '_', 32));
++      if (isset($params['table_name'])) {
++          $tableName = $params['table_name'];
++      } else {
++          $munged_title = strtolower(CRM_Utils_String::munge($group->title, '_', 32));
++          $tableName = "civicrm_value_{$munged_title}_{$group->id}";
++      }
+ 
+       // we do this only once, so name never changes
+       $group->name = CRM_Utils_String::munge($params['title'], '_', 64);
+@@ -159,9 +164,6 @@
+ 
+     $group->save();
+     if ($tableName) {
+-      // now append group id to table name, this prevent any name conflicts
+-      // like CRM-2742
+-      $tableName .= "_{$group->id}";
+       $group->table_name = $tableName;
+       CRM_Core_DAO::setFieldValue('CRM_Core_DAO_CustomGroup',
+         $group->id,
+diff -urN civicrm-4.2.19/CRM/Core/BAO/EntityTag.php civicrm-4.2.19-wmf/CRM/Core/BAO/EntityTag.php
+--- civicrm-4.2.19/CRM/Core/BAO/EntityTag.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/BAO/EntityTag.php	2015-03-11 13:31:10.274248477 -0700
+@@ -64,6 +64,42 @@
+     return $tags;
+   }
+ 
++    /**
++     *
++     * Given a contact id, it returns an array of tag details the
++     * contact belongs to.
++     *
++     * @param int $entityID id of the entity usually the contactID.
++     * @param string $entityTable name of the entity table usually 'civicrm_contact'
++     *
++     * @return array reference with keys being the tag id
++     *
++     * @access public
++     * @static
++     */
++    static
++    function &getTagDetails($entityID, $entityTable = 'civicrm_contact') {
++      $tags = array();
++
++      $entityTag = new CRM_Core_BAO_EntityTag();
++      $entityTag->entity_id = $entityID;
++      $entityTag->entity_table = $entityTable;
++      $entityTag->joinAdd(new CRM_Core_BAO_Tag());
++      $entityTag->find();
++
++      while ($entityTag->fetch()) {
++        $tags[$entityTag->tag_id] = array(
++          'tag_id' => $entityTag->tag_id,
++          'tag_name' => $entityTag->name,
++          'tag_desc' => $entityTag->description,
++          'tag_parent_id' => $entityTag->parent_id,
++          'entity_table' => $entityTag->entity_table,
++          'entity_id' => $entityTag->entity_id
++        );
++      }
++      return $tags;
++    }
++
+   /**
+    * takes an associative array and creates a entityTag object
+    *
+diff -urN civicrm-4.2.19/CRM/Core/BAO/Mapping.php civicrm-4.2.19-wmf/CRM/Core/BAO/Mapping.php
+--- civicrm-4.2.19/CRM/Core/BAO/Mapping.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/BAO/Mapping.php	2015-03-11 13:31:10.278248477 -0700
+@@ -272,13 +272,12 @@
+   static
+   function buildMappingForm(&$form, $mappingType = 'Export', $mappingId = NULL, $columnNo, $blockCount = 3, $exportMode = NULL) {
+     if ($mappingType == 'Export') {
+-      $name = "Map";
+       $columnCount = array('1' => $columnNo);
+     }
+     elseif ($mappingType == 'Search Builder') {
+-      $name = "Builder";
+       $columnCount = $columnNo;
+     }
++    $name = $form->getAttribute('id');
+ 
+     //get the saved mapping details
+ 
+diff -urN civicrm-4.2.19/CRM/Core/BAO/PrevNextCache.php civicrm-4.2.19-wmf/CRM/Core/BAO/PrevNextCache.php
+--- civicrm-4.2.19/CRM/Core/BAO/PrevNextCache.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/BAO/PrevNextCache.php	2015-03-11 13:31:10.278248477 -0700
+@@ -116,8 +116,9 @@
+     }
+ 
+     if (isset($cacheKey)) {
+-      $sql .= " AND cacheKey LIKE %3";
+-      $params[3] = array("{$cacheKey}%", 'String');
++      $sql .= " AND ( cacheKey = %3 OR cacheKey = %4 )";
++      $params[3] = array("{$cacheKey}", 'String');
++      $params[4] = array("{$cacheKey}_alphabet", 'String');
+     }
+     CRM_Core_DAO::executeQuery($sql, $params);
+   }
+@@ -132,8 +133,9 @@
+     $params[3] = array($id2, 'Integer');
+ 
+     if (isset($cacheKey)) {
+-      $sql .= " AND cacheKey LIKE %4";
+-      $params[4] = array("{$cacheKey}%", 'String');
++      $sql .= " AND ( cacheKey = %4 OR cacheKey = %5 )";
++      $params[4] = array("{$cacheKey}", 'String');
++      $params[5] = array("{$cacheKey}_alphabet", 'String');
+     }
+ 
+     CRM_Core_DAO::executeQuery($sql, $params);
+@@ -192,14 +194,25 @@
+     $query = "
+ SELECT COUNT(*) FROM civicrm_prevnext_cache pn
+ {$join}
+-WHERE cacheKey " . $op . " %1
+ ";
++
++    if ( $op === 'LIKE' ) {
++        $query .= "WHERE (cacheKey = %1 OR cacheKey = %2)";
++        $params = array(
++            1 => array($cacheKey, 'String'),
++            2 => array($cacheKey . '_alphabet', 'String'),
++        );
++    } else {
++        $query .= "WHERE cacheKey = %1";
++        $params = array(
++            1 => array($cacheKey, 'String'),
++        );
++    }
++
+     if ($where) {
+       $query .= " AND {$where}";
+     }
+ 
+-    $params = array(1 => array($cacheKey, 'String'));
+-
+     return CRM_Core_DAO::singleValueQuery($query, $params);
+   }
+ 
+@@ -217,8 +230,11 @@
+     }
+ 
+     // 1. Clear cache if any
+-    $sql = "DELETE FROM civicrm_prevnext_cache WHERE  cacheKey LIKE %1";
+-    CRM_Core_DAO::executeQuery($sql, array(1 => array("{$cacheKeyString}%", 'String')));
++    $sql = "DELETE FROM civicrm_prevnext_cache WHERE ( cacheKey = %1 OR cacheKey = %2 )";
++    CRM_Core_DAO::executeQuery($sql, array(
++      1 => array($cacheKeyString, 'String'),
++      2 => array("{$cacheKeyString}_alphabet", 'String')
++    ));
+ 
+     // FIXME: we need to start using temp tables / queries here instead of arrays.
+     // And cleanup code in CRM/Contact/Page/DedupeFind.php
+@@ -308,40 +324,40 @@
+     $entity_whereClause = " AND entity_table = '{$entity_table}'";
+     if ($cIds && $cacheKey && $action) {
+ 
++      $params[1] = array("{$cacheKey}", 'String');
++      $params[2] = array("{$cacheKey}_alphabet", 'String');
++
+       if (is_array($cIds)) {
+         $cIdFilter = "(" . implode(',', $cIds) . ")";
+         $whereClause = "
+-WHERE cacheKey LIKE %1
++WHERE (cacheKey = %1 OR cacheKey = %2)
+ AND (entity_id1 IN {$cIdFilter} OR entity_id2 IN {$cIdFilter})
+ ";
+       }
+       else {
+         $whereClause = "
+-WHERE cacheKey LIKE %1
+-AND (entity_id1 = %2 OR entity_id2 = %2)
++WHERE (cacheKey = %1 OR cacheKey = %2)
++AND (entity_id1 = %3 OR entity_id2 = %3)
+ ";
+-        $params[2] = array("{$cIds}", 'Integer');
++        $params[3] = array("{$cIds}", 'Integer');
+       }
+       if ($action == 'select') {
+         $whereClause .= "AND is_selected = 0";
+         $sql = "
+ UPDATE civicrm_prevnext_cache SET is_selected = 1 " . $whereClause . $entity_whereClause;
+-        $params[1] = array("%{$cacheKey}%", 'String');
+       }
+       elseif ($action == 'unselect') {
+         $whereClause .= "AND is_selected = 1";
+         $sql = "
+ UPDATE civicrm_prevnext_cache SET is_selected = 0 " . $whereClause . $entity_whereClause;
+-        $params[1] = array("%{$cacheKey}%", 'String');
+       }
+       // default action is reseting
+     }
+     elseif (!$cIds && $cacheKey && $action == 'unselect') {
+       $sql = "
+ UPDATE civicrm_prevnext_cache SET is_selected = 0
+-WHERE cacheKey LIKE %1 AND is_selected = 1
++WHERE (cacheKey = %1 OR cacheKey = %2) AND is_selected = 1
+ " . $entity_whereClause;
+-      $params[1] = array("%{$cacheKey}%", 'String');
+     }
+     CRM_Core_DAO::executeQuery($sql, $params);
+   }
+@@ -366,12 +382,13 @@
+       $actionGet = ($action == "get") ? " AND is_selected = 1 " : "";
+       $sql = "
+ SELECT entity_id1, entity_id2 FROM civicrm_prevnext_cache
+-WHERE cacheKey LIKE %1
++WHERE (cacheKey = %1 OR cacheKey = %2)
+       $actionGet
+       $entity_whereClause
+ ORDER BY id
+ ";
+-      $params[1] = array("%{$cacheKey}%", 'String');
++      $params[1] = array("{$cacheKey}", 'String');
++      $params[2] = array("{$cacheKey}_alphabet", 'String');
+ 
+       $contactIds = array($cacheKey => array());
+       $cIdDao = CRM_Core_DAO::executeQuery($sql, $params);
+@@ -390,10 +407,10 @@
+       $query = "
+ SELECT *
+ FROM civicrm_prevnext_cache
+-WHERE cacheKey LIKE %1 AND is_selected=1 AND cacheKey NOT LIKE %2
++WHERE cacheKey = %1 AND is_selected=1 AND cacheKey != %2
+ LIMIT $offset, $rowCount";
+-    $params1[1] = array("%{$cacheKey}%", 'String');
+-    $params1[2] = array("%{$cacheKey}_alphabet%", 'String');
++    $params1[1] = array($cacheKey, 'String');
++    $params1[2] = array("{$cacheKey}_alphabet", 'String');
+     $dao = CRM_Core_DAO::executeQuery($query, $params1);
+     while ($dao->fetch()) {
+         $val[] = $dao->data;
+@@ -418,9 +435,9 @@
+     $query = "
+ SELECT count(id)
+ FROM civicrm_prevnext_cache
+-WHERE cacheKey LIKE %1 AND is_selected=1 AND cacheKey NOT LIKE %2";
+-    $params1[1] = array("%{$cacheKey}%", 'String');
+-    $params1[2] = array("%{$cacheKey}_alphabet%", 'String');
++WHERE cacheKey = %1 AND is_selected=1 AND cacheKey != %2";
++    $params1[1] = array($cacheKey, 'String');
++    $params1[2] = array("{$cacheKey}_alphabet", 'String');
+     $paramsTotal     = CRM_Core_DAO::singleValueQuery($query, $params1);
+     $params['total'] = $paramsTotal;
+     $obj->_pager    = new CRM_Utils_Pager($params);
+diff -urN civicrm-4.2.19/CRM/Core/BAO/UFGroup.php civicrm-4.2.19-wmf/CRM/Core/BAO/UFGroup.php
+--- civicrm-4.2.19/CRM/Core/BAO/UFGroup.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/BAO/UFGroup.php	2015-03-11 13:31:10.282248477 -0700
+@@ -1738,7 +1738,7 @@
+       $form->add('select', $name, $title, CRM_Core_SelectValues::pmf());
+     }
+     elseif ($fieldName === 'preferred_language') {
+-      $form->add('select', $name, $title, array('' => ts('- select -')) + CRM_Core_PseudoConstant::languages());
++      $form->add('select', $name, $title, array('' => ts('- unknown -')) + CRM_Core_PseudoConstant::languages());
+     }
+     elseif ($fieldName == 'external_identifier') {
+       $form->add('text', $name, $title, $attributes, $required);
+diff -urN civicrm-4.2.19/CRM/Core/Block.php civicrm-4.2.19-wmf/CRM/Core/Block.php
+--- civicrm-4.2.19/CRM/Core/Block.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/Block.php	2015-03-11 13:31:10.282248477 -0700
+@@ -281,6 +281,7 @@
+    * @return void
+    * @access private
+    */
++  static
+   private function setTemplateValues($id) {
+     switch ($id) {
+       case self::CREATE_NEW:
+@@ -333,6 +334,7 @@
+    * @return void
+    * @access private
+    */
++  static
+   private function setTemplateShortcutValues() {
+     $config = CRM_Core_Config::singleton();
+ 
+@@ -433,6 +435,7 @@
+    * @return void
+    * @access private
+    */
++  static
+   private function setTemplateDashboardValues() {
+     static $dashboardLinks = array();
+     if (CRM_Core_Permission::check('access Contact Dashboard')) {
+diff -urN civicrm-4.2.19/CRM/Core/Config/Variables.php civicrm-4.2.19-wmf/CRM/Core/Config/Variables.php
+--- civicrm-4.2.19/CRM/Core/Config/Variables.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/Config/Variables.php	2015-03-11 13:31:10.286248477 -0700
+@@ -129,6 +129,12 @@
+   public $lcMessages = 'en_US';
+ 
+   /**
++   * Whether new contacts default to $lcMessages (if config is true), or null.
++   * @var boolean
++   */
++  public $contactLanguageHasDefault = true;
++
++  /**
+    * String format for date+time
+    * @var string
+    */
+diff -urN civicrm-4.2.19/CRM/Core/Config.php civicrm-4.2.19-wmf/CRM/Core/Config.php
+--- civicrm-4.2.19/CRM/Core/Config.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/Config.php	2015-03-11 13:31:10.286248477 -0700
+@@ -689,13 +689,13 @@
+    */
+   function clearDBCache() {
+     $queries = array(
+-      'TRUNCATE TABLE civicrm_acl_cache',
+-      'TRUNCATE TABLE civicrm_acl_contact_cache',
+-      'TRUNCATE TABLE civicrm_cache',
+-      'TRUNCATE TABLE civicrm_prevnext_cache',
++      'DELETE FROM civicrm_acl_cache',
++      'DELETE FROM civicrm_acl_contact_cache',
++      'DELETE FROM civicrm_cache',
++      'DELETE FROM civicrm_prevnext_cache',
+       'UPDATE civicrm_group SET cache_date = NULL',
+-      'TRUNCATE TABLE civicrm_group_contact_cache',
+-      'TRUNCATE TABLE civicrm_menu',
++      'DELETE FROM civicrm_group_contact_cache',
++      'DELETE FROM civicrm_menu',
+       'UPDATE civicrm_setting SET value = NULL WHERE name="navigation" AND contact_id IS NOT NULL',
+       'DELETE FROM civicrm_setting WHERE name="modulePaths"', // CRM-10543
+     );
+diff -urN civicrm-4.2.19/CRM/Core/DAO/Address.php civicrm-4.2.19-wmf/CRM/Core/DAO/Address.php
+--- civicrm-4.2.19/CRM/Core/DAO/Address.php	2014-09-09 15:41:52.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/DAO/Address.php	2015-03-11 13:31:10.286248477 -0700
+@@ -459,12 +459,11 @@
+                     'name' => 'postal_code',
+                     'type' => CRM_Utils_Type::T_STRING,
+                     'title' => ts('Postal Code') ,
+-                    'maxlength' => 12,
+-                    'size' => CRM_Utils_Type::TWELVE,
++                    'maxlength' => 64,
++                    'size' => CRM_Utils_Type::BIG,
+                     'import' => true,
+                     'where' => 'civicrm_address.postal_code',
+                     'headerPattern' => '/postal|zip/i',
+-                    'dataPattern' => '/\d?\d{4}(-\d{4})?/',
+                     'export' => true,
+                 ) ,
+                 'usps_adc' => array(
+diff -urN civicrm-4.2.19/CRM/Core/DAO/Email.php civicrm-4.2.19-wmf/CRM/Core/DAO/Email.php
+--- civicrm-4.2.19/CRM/Core/DAO/Email.php	2014-09-09 15:41:44.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/DAO/Email.php	2015-03-11 13:31:10.286248477 -0700
+@@ -207,8 +207,8 @@
+                     'name' => 'email',
+                     'type' => CRM_Utils_Type::T_STRING,
+                     'title' => ts('Email') ,
+-                    'maxlength' => 64,
+-                    'size' => CRM_Utils_Type::BIG,
++                    'maxlength' => 254,
++                    'size' => CRM_Utils_Type::HUGE,
+                     'import' => true,
+                     'where' => 'civicrm_email.email',
+                     'headerPattern' => '/e.?mail/i',
+diff -urN civicrm-4.2.19/CRM/Core/DAO.php civicrm-4.2.19-wmf/CRM/Core/DAO.php
+--- civicrm-4.2.19/CRM/Core/DAO.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/DAO.php	2015-03-11 13:31:10.286248477 -0700
+@@ -1475,7 +1475,7 @@
+     }
+ 
+     if ($trigger) {
+-      $dao->query('CREATE TRIGGER civicrm_domain_trigger BEFORE INSERT ON civicrm_domain FOR EACH ROW BEGIN END');
++      //$dao->query('CREATE TRIGGER civicrm_domain_trigger BEFORE INSERT ON civicrm_domain FOR EACH ROW BEGIN END');
+ 
+       if (PEAR::getStaticProperty('DB_DataObject', 'lastError')) {
+         CRM_Core_Error::setCallback();
+@@ -1485,7 +1485,7 @@
+         return FALSE;
+       }
+ 
+-      $dao->query('DROP TRIGGER IF EXISTS civicrm_domain_trigger');
++      //$dao->query('DROP TRIGGER IF EXISTS civicrm_domain_trigger');
+       if (PEAR::getStaticProperty('DB_DataObject', 'lastError')) {
+         CRM_Core_Error::setCallback();
+         if ($view) {
+@@ -1625,6 +1625,7 @@
+           $triggerName = "{$tableName}_{$whenName}_{$eventName}";
+           $triggerSQL  = "CREATE TRIGGER $triggerName $whenName $eventName ON $tableName FOR EACH ROW BEGIN $varString $sqlString END";
+ 
++		  /*
+           CRM_Core_DAO::executeQuery("DROP TRIGGER IF EXISTS $triggerName");
+           CRM_Core_DAO::executeQuery($triggerSQL,
+             array(),
+@@ -1633,6 +1634,7 @@
+             FALSE,
+             FALSE
+           );
++		  */
+         }
+       }
+     }
+diff -urN civicrm-4.2.19/CRM/Core/Error.php civicrm-4.2.19-wmf/CRM/Core/Error.php
+--- civicrm-4.2.19/CRM/Core/Error.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/Error.php	2015-03-11 13:31:10.294248476 -0700
+@@ -77,7 +77,7 @@
+    * If modeException == true, errors are raised as exception instead of returning civicrm_errors
+    * @static
+    */
+-  public static $modeException = NULL;
++  public static $modeException = true;
+ 
+   /**
+    * singleton function used to manage this object.
+@@ -158,6 +158,7 @@
+     $error['type']       = $pearError->getType();
+     $error['user_info']  = $pearError->getUserInfo();
+     $error['to_string']  = $pearError->toString();
++    # FIXME: db-specific error codes are already captured in PEAR_Error.userInfo
+     if (function_exists('mysql_error') &&
+       mysql_error()
+     ) {
+@@ -464,7 +465,7 @@
+    */
+   static function debug_var($variable_name,
+     $variable,
+-    $print = TRUE,
++    $print = FALSE,
+     $log   = TRUE,
+     $comp  = ''
+   ) {
+@@ -779,7 +780,7 @@
+    */
+   public static function setCallback($callback = NULL) {
+     if (!$callback) {
+-      $callback = array('CRM_Core_Error', 'handle');
++      $callback = array('CRM_Core_Error', 'exceptionHandler');
+     }
+     $GLOBALS['_PEAR_default_error_mode'] = PEAR_ERROR_CALLBACK;
+     $GLOBALS['_PEAR_default_error_options'] = $callback;
+diff -urN civicrm-4.2.19/CRM/Core/I18n/Schema.php civicrm-4.2.19-wmf/CRM/Core/I18n/Schema.php
+--- civicrm-4.2.19/CRM/Core/I18n/Schema.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/I18n/Schema.php	2015-03-11 13:31:10.294248476 -0700
+@@ -220,7 +220,7 @@
+           $when = $triggerInfo['when'];
+           $event = $triggerInfo['event'];
+           $triggerName = "{$table}_{$when}_{$event}";
+-          CRM_Core_DAO::executeQuery("DROP TRIGGER IF EXISTS {$triggerName}");
++          //CRM_Core_DAO::executeQuery("DROP TRIGGER IF EXISTS {$triggerName}");
+         }
+       }
+ 
+@@ -478,7 +478,7 @@
+     return "CREATE OR REPLACE VIEW {$table}_{$locale} AS SELECT " . implode(', ', $cols) . " FROM {$table}";
+   }
+ 
+-  function triggerInfo(&$info, $tableName = NULL) {
++  static function triggerInfo(&$info, $tableName = NULL) {
+     // get the current supported locales
+     $domain = new CRM_Core_DAO_Domain();
+     $domain->find(TRUE);
+diff -urN civicrm-4.2.19/CRM/Core/Menu.php civicrm-4.2.19-wmf/CRM/Core/Menu.php
+--- civicrm-4.2.19/CRM/Core/Menu.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/Menu.php	2015-03-11 13:31:10.298248476 -0700
+@@ -235,7 +235,7 @@
+   static function store($truncate = TRUE) {
+     // first clean up the db
+     if ($truncate) {
+-      $query = 'TRUNCATE civicrm_menu';
++      $query = 'DELETE FROM civicrm_menu';
+       CRM_Core_DAO::executeQuery($query);
+     }
+     $menuArray = self::items();
+diff -urN civicrm-4.2.19/CRM/Core/OptionGroup.php civicrm-4.2.19-wmf/CRM/Core/OptionGroup.php
+--- civicrm-4.2.19/CRM/Core/OptionGroup.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/OptionGroup.php	2015-03-11 13:31:10.298248476 -0700
+@@ -34,6 +34,7 @@
+  */
+ class CRM_Core_OptionGroup {
+   static $_values = array();
++  static $_value_cache = array();
+ 
+   /*
+      * $_domainIDGroups array maintains the list of option groups for whom
+@@ -279,6 +280,11 @@
+       return NULL;
+     }
+ 
++    $cache_key = "$groupName-$label-$valueField";
++    if ( array_key_exists( $cache_key, self::$_value_cache ) ) {
++      return self::$_value_cache[ $cache_key ];
++    }
++
+     $query = "
+ SELECT  v.label as label ,v.{$valueField} as value
+ FROM   civicrm_option_value v,
+@@ -295,8 +301,10 @@
+     );
+     $dao = CRM_Core_DAO::executeQuery($query, $p);
+     if ($dao->fetch()) {
++      $value = $dao->value;
+       $dao->free();
+-      return $dao->value;
++      self::$_value_cache[ $cache_key ] = $value;
++      return $value;
+     }
+     $dao->free();
+     return NULL;
+diff -urN civicrm-4.2.19/CRM/Core/TemporaryErrorScope.php civicrm-4.2.19-wmf/CRM/Core/TemporaryErrorScope.php
+--- civicrm-4.2.19/CRM/Core/TemporaryErrorScope.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/TemporaryErrorScope.php	2015-03-11 13:31:10.318248476 -0700
+@@ -47,6 +47,13 @@
+    * Read the active error-handler settings
+    */
+   public static function getActive() {
++    if ( !isset( $GLOBALS['_PEAR_default_error_mode'] ) ) {
++      return array(
++        '_PEAR_default_error_mode' => null,
++        '_PEAR_default_error_options' => null,
++        'modeException' => CRM_Core_Error::$modeException,
++      );
++    }
+     return array(
+       '_PEAR_default_error_mode' => $GLOBALS['_PEAR_default_error_mode'],
+       '_PEAR_default_error_options' =>$GLOBALS['_PEAR_default_error_options'],
+diff -urN civicrm-4.2.19/CRM/Export/BAO/Export.php civicrm-4.2.19-wmf/CRM/Export/BAO/Export.php
+--- civicrm-4.2.19/CRM/Export/BAO/Export.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Export/BAO/Export.php	2015-03-11 13:31:10.346248475 -0700
+@@ -59,6 +59,8 @@
+    * @param string $componentTable component table
+    * @param bool   $mergeSameAddress merge records if they have same address
+    * @param bool   $mergeSameHousehold merge records if they belong to the same household
++   * @param array  $exportParams options passed from the mapper, also used to cache static data
++   * @param string $queryOperator binary SQL operator used to join WHERE clauses
+    *
+    * @static
+    * @access public
+@@ -385,9 +387,8 @@
+     }
+ 
+     $exportParams['postal_mailing_export']['temp_columns'] = array();
+-    if ($exportParams['exportOption'] == 2 &&
+-      isset($exportParams['postal_mailing_export']) &&
+-      CRM_Utils_Array::value('postal_mailing_export', $exportParams['postal_mailing_export']) == 1
++    if (CRM_Utils_Array::value('exportOption', $exportParams) == 2 &&
++      CRM_Utils_Array::value('postal_mailing_export', $exportParams) == 1
+     ) {
+       $postalColumns = array('is_deceased', 'do_not_mail', 'street_address', 'supplemental_address_1');
+       foreach ($postalColumns as $column) {
+@@ -1060,6 +1061,11 @@
+       $sql = "DROP TABLE IF EXISTS {$exportTempTable}";
+       CRM_Core_DAO::executeQuery($sql);
+ 
++      if ($componentTable) {
++        $sql = "DROP TABLE IF EXISTS {$componentTable}";
++        CRM_Core_DAO::executeQuery( $sql );
++      }
++
+       CRM_Utils_System::civiExit();
+     }
+     else {
+diff -urN civicrm-4.2.19/CRM/Export/Form/Map.php civicrm-4.2.19-wmf/CRM/Export/Form/Map.php
+--- civicrm-4.2.19/CRM/Export/Form/Map.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Export/Form/Map.php	2015-03-11 13:31:10.346248475 -0700
+@@ -152,7 +152,11 @@
+    */
+   public function postProcess() {
+     $params = $this->controller->exportValues($this->_name);
+-    $exportParams = $this->controller->exportValues('Select');
++    if (array_key_exists('Select', $this->controller->_pages)) {
++      $exportParams = $this->controller->exportValues('Select');
++    } else {
++      $exportParams = array();
++    }
+ 
+     $greetingOptions = CRM_Export_Form_Select::getGreetingOptions();
+ 
+diff -urN civicrm-4.2.19/CRM/Logging/Schema.php civicrm-4.2.19-wmf/CRM/Logging/Schema.php
+--- civicrm-4.2.19/CRM/Logging/Schema.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Logging/Schema.php	2015-03-11 13:31:10.358248475 -0700
+@@ -120,14 +120,14 @@
+ 
+     foreach ($tableNames as $table) {
+       // before triggers
+-      $dao->executeQuery("DROP TRIGGER IF EXISTS {$table}_before_insert");
+-      $dao->executeQuery("DROP TRIGGER IF EXISTS {$table}_before_update");
+-      $dao->executeQuery("DROP TRIGGER IF EXISTS {$table}_before_delete");
++      //error_log("DROP TRIGGER IF EXISTS {$table}_before_insert");
++      //error_log("DROP TRIGGER IF EXISTS {$table}_before_update");
++      //error_log("DROP TRIGGER IF EXISTS {$table}_before_delete");
+ 
+      // after triggers
+-      $dao->executeQuery("DROP TRIGGER IF EXISTS {$table}_after_insert");
+-      $dao->executeQuery("DROP TRIGGER IF EXISTS {$table}_after_update");
+-      $dao->executeQuery("DROP TRIGGER IF EXISTS {$table}_after_delete");
++      //error_log("DROP TRIGGER IF EXISTS {$table}_after_insert");
++      //error_log("DROP TRIGGER IF EXISTS {$table}_after_update");
++      //error_log("DROP TRIGGER IF EXISTS {$table}_after_delete");
+     }
+   }
+ 
+diff -urN civicrm-4.2.19/CRM/Report/Form/Contribute/Lybunt.php civicrm-4.2.19-wmf/CRM/Report/Form/Contribute/Lybunt.php
+--- civicrm-4.2.19/CRM/Report/Form/Contribute/Lybunt.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Report/Form/Contribute/Lybunt.php	2015-03-11 13:31:10.394248474 -0700
+@@ -37,6 +37,8 @@
+ class CRM_Report_Form_Contribute_Lybunt extends CRM_Report_Form {
+ 
+ 
++  protected $sql;
++
+   protected $_charts = array(
+     '' => 'Tabular',
+     'barChart' => 'Bar Chart',
+@@ -326,9 +328,9 @@
+     $rows = $contactIds = array();
+     if (!CRM_Utils_Array::value('charts', $this->_params)) {
+       $this->limit();
+-      $getContacts = "SELECT SQL_CALC_FOUND_ROWS {$this->_aliases['civicrm_contact']}.id as cid {$this->_from} {$this->_where}  GROUP BY {$this->_aliases['civicrm_contact']}.id {$this->_limit}";
++      $this->sql = "SELECT SQL_CALC_FOUND_ROWS {$this->_aliases['civicrm_contact']}.id as cid {$this->_from} {$this->_where}  GROUP BY {$this->_aliases['civicrm_contact']}.id {$this->_limit}";
+ 
+-      $dao = CRM_Core_DAO::executeQuery($getContacts);
++      $dao = CRM_Core_DAO::executeQuery($this->sql);
+ 
+       while ($dao->fetch()) {
+         $contactIds[] = $dao->cid;
+@@ -339,13 +341,13 @@
+ 
+     if (!empty($contactIds) || CRM_Utils_Array::value('charts', $this->_params)) {
+       if (CRM_Utils_Array::value('charts', $this->_params)) {
+-        $sql = "{$this->_select} {$this->_from} {$this->_where} {$this->_groupBy}";
++        $this->sql = "{$this->_select} {$this->_from} {$this->_where} {$this->_groupBy}";
+       }
+       else {
+-        $sql = "{$this->_select} {$this->_from} WHERE {$this->_aliases['civicrm_contact']}.id IN (" . implode(',', $contactIds) . ") AND {$this->_aliases['civicrm_contribution']}.is_test = 0 {$this->_statusClause} {$this->_groupBy} ";
++        $this->sql = "{$this->_select} {$this->_from} WHERE {$this->_aliases['civicrm_contact']}.id IN (" . implode(',', $contactIds) . ") AND {$this->_aliases['civicrm_contribution']}.is_test = 0 {$this->_statusClause} {$this->_groupBy} ";
+       }
+ 
+-      $dao           = CRM_Core_DAO::executeQuery($sql);
++      $dao           = CRM_Core_DAO::executeQuery($this->sql);
+       $current_year  = $this->_params['yid_value'];
+       $previous_year = $current_year - 1;
+ 
+diff -urN civicrm-4.2.19/CRM/Report/Form.php civicrm-4.2.19-wmf/CRM/Report/Form.php
+--- civicrm-4.2.19/CRM/Report/Form.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Report/Form.php	2015-03-11 13:31:10.390248474 -0700
+@@ -387,6 +387,7 @@
+       else {
+         $this->_columns[$tableName]['alias'] = $table['alias'] . '_civireport';
+       }
++      $this->_columns[$tableName]['alias'] = str_replace('.', '_', $this->_columns[$tableName]['alias']);
+ 
+       $this->_aliases[$tableName] = $this->_columns[$tableName]['alias'];
+ 
+@@ -448,6 +449,7 @@
+             $alias = isset($field['alias']) ? $field['alias'] : (isset($this->_columns[$tableName]['alias']) ?
+                      $this->_columns[$tableName]['alias'] : $tableName
+             );
++            $alias = str_replace('.', '_', $alias);
+             $this->_columns[$tableName][$fieldGrp][$fieldName]['alias'] = $alias;
+ 
+             // set name = fieldName, unless already set
+@@ -1654,6 +1656,7 @@
+             if (CRM_Utils_Array::value('statistics', $field)) {
+               foreach ($field['statistics'] as $stat => $label) {
+                 $alias = "{$tableName}_{$fieldName}_{$stat}";
++                $alias = str_replace('.', '_', $alias);
+                 switch (strtolower($stat)) {
+                   case 'max':
+                   case 'sum':
+@@ -1684,6 +1687,7 @@
+             }
+             else {
+               $alias = "{$tableName}_{$fieldName}";
++              $alias = str_replace('.', '_', $alias);
+               $select[] = "{$field['dbAlias']} as $alias";
+               $this->_columnHeaders["{$tableName}_{$fieldName}"]['title'] = CRM_Utils_Array::value('title', $field);
+               $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
+@@ -2147,6 +2151,7 @@
+   function doTemplateAssignment(&$rows) {
+     $this->assign_by_ref('columnHeaders', $this->_columnHeaders);
+     $this->assign_by_ref('rows', $rows);
++    $this->assign('reportSql', $this->sql);
+     $this->assign('statistics', $this->statistics($rows));
+   }
+ 
+@@ -2214,8 +2219,8 @@
+                                !empty($this->_params["{$fieldName}_to_time"])
+                                ? date('His', strtotime(CRM_Utils_Array::value("{$fieldName}_to_time", $this->_params), '235959')) : '235959'
+             );
+-            $from = CRM_Utils_Date::customFormat($from, NULL, array('d'));
+-            $to = CRM_Utils_Date::customFormat($to, NULL, array('d'));
++            $from = CRM_Utils_Date::customFormat($from, '%B %E%f, %Y %H:%Mh');
++            $to = CRM_Utils_Date::customFormat($to, '%B %E%f, %Y %H:%Mh');
+ 
+             if ($from || $to) {
+               $statistics['filters'][] = array(
+@@ -2425,11 +2430,11 @@
+     $this->beginPostProcess();
+ 
+     // build query
+-    $sql = $this->buildQuery();
++    $this->sql = $this->buildQuery();
+ 
+     // build array of result based on column headers. This method also allows
+     // modifying column headers before using it to build result set i.e $rows.
+-    $this->buildRows($sql, $rows);
++    $this->buildRows($this->sql, $rows);
+ 
+     // format result set.
+     $this->formatDisplay($rows);
+diff -urN civicrm-4.2.19/CRM/Upgrade/Form.php civicrm-4.2.19-wmf/CRM/Upgrade/Form.php
+--- civicrm-4.2.19/CRM/Upgrade/Form.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Upgrade/Form.php	2015-03-11 13:31:10.414248473 -0700
+@@ -205,6 +205,7 @@
+   }
+ 
+   function runQuery($query) {
++    error_log($query);
+     return CRM_Core_DAO::executeQuery($query,
+       CRM_Core_DAO::$_nullArray
+     );
+diff -urN civicrm-4.2.19/CRM/Utils/File.php civicrm-4.2.19-wmf/CRM/Utils/File.php
+--- civicrm-4.2.19/CRM/Utils/File.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Utils/File.php	2015-03-11 13:31:10.434248473 -0700
+@@ -283,6 +283,7 @@
+     foreach ($queries as $query) {
+       $query = trim($query);
+       if (!empty($query)) {
++        error_log($query);
+         CRM_Core_Error::debug_query($query);
+         $res = &$db->query($query);
+         if (PEAR::isError($res)) {
+diff -urN civicrm-4.2.19/CRM/Utils/Hook.php civicrm-4.2.19-wmf/CRM/Utils/Hook.php
+--- civicrm-4.2.19/CRM/Utils/Hook.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Utils/Hook.php	2015-03-11 13:31:10.434248473 -0700
+@@ -966,6 +966,16 @@
+   }
+ 
+   /**
++   * This hook is used to add or modify display modes in the Contact Advanced Search form.
++   */
++  static function advancedSearchModes( &$modes ) {
++    return self::singleton( )->invoke( 1, $modes,
++      self::$_nullObject, self::$_nullObject,
++      self::$_nullObject, self::$_nullObject,
++      'civicrm_advancedSearchModes' );
++  }
++
++  /**
+    * This hook is called when we are determining the contactID for a specific
+    * email address
+    *
+diff -urN civicrm-4.2.19/CRM/Utils/Rule.php civicrm-4.2.19-wmf/CRM/Utils/Rule.php
+--- civicrm-4.2.19/CRM/Utils/Rule.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Utils/Rule.php	2015-03-11 13:31:10.438248473 -0700
+@@ -378,7 +378,7 @@
+       return TRUE;
+     }
+ 
+-    return preg_match('/(^-?\d+\.\d?\d?$)|(^-?\.\d\d?$)/', $value) ? TRUE : FALSE;
++    return preg_match('/(^-?\d+\.?\d*$)|(^-?\d*\.\d+$)/', $value) ? TRUE : FALSE;
+   }
+ 
+   static function string($value, $maxLength = 0) {
+diff -urN civicrm-4.2.19/CRM/Utils/System.php civicrm-4.2.19-wmf/CRM/Utils/System.php
+--- civicrm-4.2.19/CRM/Utils/System.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Utils/System.php	2015-03-11 13:31:10.442248473 -0700
+@@ -200,7 +200,7 @@
+     return $config->userSystem->url($path, $query, $absolute, $fragment, $htmlize, $frontend);
+   }
+ 
+-  function href($text, $path = NULL, $query = NULL, $absolute = TRUE,
++  static function href($text, $path = NULL, $query = NULL, $absolute = TRUE,
+     $fragment = NULL, $htmlize = TRUE, $frontend = FALSE
+   ) {
+     $url = self::url($path, $query, $absolute, $fragment, $htmlize, $frontend);
+diff -urN civicrm-4.2.19/css/civicrm.css civicrm-4.2.19-wmf/css/civicrm.css
+--- civicrm-4.2.19/css/civicrm.css	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/css/civicrm.css	2015-03-11 13:31:10.482248472 -0700
+@@ -85,7 +85,6 @@
+ }
+ 
+ #crm-container tr {
+-    font-size: .95em;
+     background: none;
+ }
+ 
+@@ -217,7 +216,6 @@
+     position:absolute;
+     right:5px;
+     top:2px;
+-    font-size:11px;
+     margin:0px;
+     padding:0px;
+ }
+@@ -402,7 +400,6 @@
+     text-align: right;
+     vertical-align: top;
+     padding: 5px 15px 5px 0px;
+-    font-size: .95em;
+     white-space: normal;
+ }
+ 
+@@ -890,7 +887,6 @@
+ }
+ 
+ #crm-container tr.columnheader-dark th span.extra {
+-    font-size: .95em;
+     font-weight: normal;
+ }
+ 
+@@ -1029,7 +1025,6 @@
+     display: block;
+     margin: 0px;
+     padding: 5px;
+-    font-size: 0.95em;
+ }
+ #crm-container form .section-hidden-border {
+     background-color:#5c5c59;
+@@ -1071,7 +1066,6 @@
+     margin-right: 1em;
+     padding: .5em 1em .5em;
+     text-decoration: none;
+-    font-size: .95em;
+     background-image: none;
+ }
+ #crm-container ul.wizard-bar li.current-step {
+@@ -1114,7 +1108,6 @@
+     font-weight: normal;
+     color: #4A88DF;
+     text-decoration:none;
+-    font-size: .95em
+ }
+ 
+ .block-civicrm #recently-viewed .crm-recentview-wrapper {
+@@ -1870,7 +1863,6 @@
+ #crm-container div#contactTopBar .label, 
+ #crm-container div.contactCardLeft .label, 
+ #crm-container div.contactCardRight .label {
+-    FONT-SIZE      : 11px; 
+     VERTICAL-ALIGN : top; 
+     MARGIN-RIGHT   : 10px;
+ }
+@@ -1879,7 +1871,6 @@
+ #crm-container div.contactCardRight .grouplabel {
+     BORDER-BOTTOM    : grey 1px solid; 
+     WIDTH            : 100%; 
+-    FONT-SIZE        : 0.95em; 
+     FONT-WEIGHT      : bold;
+     background-color : #ddd;
+ }
+@@ -1966,7 +1957,6 @@
+ }
+ 
+ #crm-container div.crm-table2div-layout {
+-  font-size: 11px;
+ }
+ 
+ #crm-container div.crm-config-option {
+@@ -2046,13 +2036,11 @@
+     padding          : 4px;
+     width            : 20%;
+     white-space      : normal;
+-    font-size        : 0.95em;
+ }
+ 
+ #crm-container .report-contents-right {
+     border           : 1px solid #CDCDC3;
+     padding          : 4px;
+-    font-size        : 0.95em;
+     text-align	    : right;
+ }
+ 
+@@ -2063,7 +2051,6 @@
+ }
+ 
+ #crm-container table.report-layout tr {
+-    font-size        : 0.95em; 
+ }
+ 
+ #crm-container .report-label {
+@@ -2094,7 +2081,6 @@
+ 
+ #crm-container table.view-layout .label {
+     color          : DimGray; 
+-    FONT-SIZE      : 0.95em; 
+     VERTICAL-ALIGN : top; 
+     FONT-WEIGHT    : bold; 
+     MARGIN-RIGHT   : 10px;
+@@ -2692,7 +2678,6 @@
+ div#crm-toolTip {
+     padding   : 10px;
+     background: #eef4b8;
+-    font-size : 11px;
+     color     : black;
+     text-align: left;
+     margin    : 1em;
+@@ -2775,7 +2760,6 @@
+ .crm-summary-group .crm-section .label {
+     text-align: left;
+     width:40%;
+-    font-size:11px;
+     color:#A7A7A7;
+ }
+ 
+@@ -3298,7 +3282,6 @@
+ #crm-container div.finalconf-itemdesc     { font-style:italic; padding:6px 12px 6px 12px; color:#666; float:right; width:60%; }
+ #crm-container h4.finalconf-btm           { border-bottom:1px solid #ccc; margin-bottom:20px; }
+ 
+-
+ /*Screen Reader Accessibility additions*/
+ #crm-container a.whiteanchor{
+   color:white;
+@@ -3466,3 +3449,16 @@
+ .field-action span.btn-slide{padding-left:0px;padding-right:11px;}
+ /*end crm-10345*/
+ 
++/* recurring payments */
++.failcount {
++  background-color: yellow;
++}
++.failcount1 {
++  color: black;
++}
++.failcount2 {
++  color: purple;
++}
++.failcount1 {
++  color: red;
++}
+diff -urN civicrm-4.2.19/packages/DB/common.php civicrm-4.2.19-wmf/packages/DB/common.php
+--- civicrm-4.2.19/packages/DB/common.php	2014-09-09 15:40:26.000000000 -0700
++++ civicrm-4.2.19-wmf/packages/DB/common.php	2015-03-11 13:31:10.510248471 -0700
+@@ -1148,6 +1148,22 @@
+      */
+     function modifyQuery($query)
+     {
++        /**
++         * WMF hack:
++         * Insert diagnostic info such as requesting user.
++         *
++         * Have not found a function to efficiently get uf username.
++         * Not sure if query begin time is already reported by mysql, or would be useful.
++         */
++        global $installType;
++        if ( isset( $installType ) ) {
++            $prefix = "/* Civi utils not available during installation */";
++        } else {
++            $uid = CRM_Utils_System::getLoggedInUfID();
++            $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
++        }
++        $query = $prefix . $query;
++
+         return $query;
+     }
+ 
+diff -urN civicrm-4.2.19/packages/DB/mysql.php civicrm-4.2.19-wmf/packages/DB/mysql.php
+--- civicrm-4.2.19/packages/DB/mysql.php	2014-09-09 15:40:26.000000000 -0700
++++ civicrm-4.2.19-wmf/packages/DB/mysql.php	2015-03-11 13:31:10.514248471 -0700
+@@ -832,6 +832,7 @@
+                                       'DELETE FROM \1 WHERE 1=1', $query);
+             }
+         }
++        $query = parent::modifyQuery($query);
+         return $query;
+     }
+ 
+diff -urN civicrm-4.2.19/packages/HTML/QuickForm/advcheckbox.php civicrm-4.2.19-wmf/packages/HTML/QuickForm/advcheckbox.php
+--- civicrm-4.2.19/packages/HTML/QuickForm/advcheckbox.php	2014-09-09 15:40:26.000000000 -0700
++++ civicrm-4.2.19-wmf/packages/HTML/QuickForm/advcheckbox.php	2014-12-17 10:23:51.000000000 -0800
+@@ -271,7 +271,7 @@
+     * This element has a value even if it is not checked, thus we override
+     * checkbox's behaviour here
+     */
+-    function exportValue(&$submitValues, $assoc)
++    function exportValue(&$submitValues, $assoc = false)
+     {
+         $value = $this->_findValue($submitValues);
+         if (null === $value) {
+diff -urN civicrm-4.2.19/packages/HTML/QuickForm/RuleRegistry.php civicrm-4.2.19-wmf/packages/HTML/QuickForm/RuleRegistry.php
+--- civicrm-4.2.19/packages/HTML/QuickForm/RuleRegistry.php	2014-09-09 15:40:26.000000000 -0700
++++ civicrm-4.2.19-wmf/packages/HTML/QuickForm/RuleRegistry.php	2014-12-17 10:23:51.000000000 -0800
+@@ -54,7 +54,7 @@
+      * @static
+      * @return    HTML_QuickForm_RuleRegistry
+      */
+-    function &singleton()
++    static function &singleton()
+     {
+         static $obj;
+         if (!isset($obj)) {
+diff -urN civicrm-4.2.19/packages/HTML/QuickForm.php civicrm-4.2.19-wmf/packages/HTML/QuickForm.php
+--- civicrm-4.2.19/packages/HTML/QuickForm.php	2014-09-09 15:40:26.000000000 -0700
++++ civicrm-4.2.19-wmf/packages/HTML/QuickForm.php	2015-03-11 13:31:10.514248471 -0700
+@@ -1320,6 +1320,7 @@
+     * @param    array   $b  array which will be merged into first one
+     * @return   array   merged array
+     */
++    static
+     function arrayMerge($a, $b)
+     {
+         foreach ($b as $k => $v) {
+diff -urN civicrm-4.2.19/README-wmf civicrm-4.2.19-wmf/README-wmf
+--- civicrm-4.2.19/README-wmf	1969-12-31 16:00:00.000000000 -0800
++++ civicrm-4.2.19-wmf/README-wmf	2015-03-11 13:31:10.446248473 -0700
+@@ -0,0 +1,9 @@
++== MFT ==
++Wikimedia's process for merging from a new upstream civi:
++
++* git checkout contrib
++* rsync -av --delete --exclude=".git" UNPACKED_UPSTREAM_CIVI/ ./
++* git checkout master
++* git merge -Xignore-all-space contrib
++* resolve conflicts, add and commit
++* git diff contrib > patches/civi-VERS-wmf.patch
+diff -urN civicrm-4.2.19/settings_location.php civicrm-4.2.19-wmf/settings_location.php
+--- civicrm-4.2.19/settings_location.php	1969-12-31 16:00:00.000000000 -0800
++++ civicrm-4.2.19-wmf/settings_location.php	2015-03-11 13:31:10.598248469 -0700
+@@ -0,0 +1,3 @@
++<?php
++define( 'CIVICRM_CONFDIR', realpath( dirname( __FILE__ ) . "/../../../default" )); 
++
+diff -urN civicrm-4.2.19/templates/CRM/Admin/Form/Setting/Localization.tpl civicrm-4.2.19-wmf/templates/CRM/Admin/Form/Setting/Localization.tpl
+--- civicrm-4.2.19/templates/CRM/Admin/Form/Setting/Localization.tpl	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/templates/CRM/Admin/Form/Setting/Localization.tpl	2015-03-11 13:31:10.658248467 -0700
+@@ -32,6 +32,11 @@
+                 <td>{$form.lcMessages.html}<br />
+                 <span class="description">{ts}Default language used for this installation.{/ts}</span></td>
+             </tr>
++            <tr class="crm-localization-form-block-contactLanguageHasDefault">
++                <td class="label">{$form.contactLanguageHasDefault.label}</td>
++                <td>{$form.contactLanguageHasDefault.html}<br />
++                <span class="description">{ts}New contacts without an explicit preferred_language will default to the site default language when this box is checked.  Otherwise, the contact language will default to empty, meaning it is unknown.{/ts}</span></td>
++            </tr>
+            {if $form.languageLimit}
+              <tr class="crm-localization-form-block-languageLimit"> 
+                  <td class="label">{$form.languageLimit.label}</td>
+diff -urN civicrm-4.2.19/templates/CRM/common/jcalendar.tpl civicrm-4.2.19-wmf/templates/CRM/common/jcalendar.tpl
+--- civicrm-4.2.19/templates/CRM/common/jcalendar.tpl	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/templates/CRM/common/jcalendar.tpl	2015-03-11 13:31:10.722248465 -0700
+@@ -114,7 +114,10 @@
+       // set default value to display field, setDefault param for datepicker
+       // is not working hence using below logic
+       // parse the date
+-      var displayDateValue = cj.datepicker.parseDate( altDateFormat, dateValue );
++      var displayDateValue = '';
++      if (dateValue) {
++          displayDateValue = new Date(dateValue.replace(" ", "T"));
++      }
+       
+       // format date according to display field
+       displayDateValue = cj.datepicker.formatDate( date_format, displayDateValue );
+diff -urN civicrm-4.2.19/templates/CRM/Contribute/Form/Refund.tpl civicrm-4.2.19-wmf/templates/CRM/Contribute/Form/Refund.tpl
+--- civicrm-4.2.19/templates/CRM/Contribute/Form/Refund.tpl	1969-12-31 16:00:00.000000000 -0800
++++ civicrm-4.2.19-wmf/templates/CRM/Contribute/Form/Refund.tpl	2015-03-11 13:31:10.690248466 -0700
+@@ -0,0 +1,31 @@
++{* this template is used for making refund/chargeback contributions *}
++<fieldset><legend>Refund contribution</legend>
++<div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="top"}</div>
++      <div>
++          <div class="icon inform-icon"></div>
++          {ts}Please complete to record a refund of:{/ts}
++          <div style="border: 1px solid black; margin: 10px; padding: 10px;">
++              {$contact_name}, {$original_currency} {$original_amount} on {$receive_date} (<a href="{$view_original_contribution}">View</a>)
++          </div>
++      </div>
++  <table class="form-layout-compressed">
++     <tr class="crm-contribution-form-block-type">
++	<td class="label">{$form.completed.label}
++	</td>
++	<td class="html-adjust">{$form.completed.html}
++	</td>
++     </tr>
++     <tr class="crm-contribution-form-block-type">
++	<td class="label">{$form.type.label}
++	</td>
++	<td class="html-adjust">{$form.type.html}
++	</td>
++     </tr>
++  </table>
++<div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
++</fieldset>
++
++<script type="text/javascript">
++{literal}
++{/literal}
++</script>
+diff -urN civicrm-4.2.19/templates/CRM/Custom/Page/CustomDataView.tpl civicrm-4.2.19-wmf/templates/CRM/Custom/Page/CustomDataView.tpl
+--- civicrm-4.2.19/templates/CRM/Custom/Page/CustomDataView.tpl	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/templates/CRM/Custom/Page/CustomDataView.tpl	2015-03-11 13:31:10.694248466 -0700
+@@ -32,7 +32,7 @@
+       {if $editOwnCustomData or ($showEdit and $editCustomData and $groupId)}
+         <tr>
+           <td>
+-            <a href="{crmURL p="civicrm/contact/view/cd/edit" q="tableId=`$contactId`&cid=`$contactId`&groupID=`$groupId`&action=update&reset=1"}" class="button" style="margin-left: 6px;"><span><div class="icon edit-icon"></div>{ts 1=$cd_edit.title}Edit %1{/ts}</span></a><br/><br/>
++            <a href="{crmURL p="civicrm/contact/view/cd/edit" q="tableId=`$contactId`&cid=`$contactId`&groupId=`$groupId`&action=update&reset=1"}" class="button" style="margin-left: 6px;"><span><div class="icon edit-icon"></div>{ts 1=$cd_edit.title}Edit %1{/ts}</span></a><br/><br/>
+           </td>
+         </tr>
+       {/if}
+diff -urN civicrm-4.2.19/templates/CRM/Report/Form/Fields.tpl civicrm-4.2.19-wmf/templates/CRM/Report/Form/Fields.tpl
+--- civicrm-4.2.19/templates/CRM/Report/Form/Fields.tpl	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/templates/CRM/Report/Form/Fields.tpl	2015-03-11 13:31:10.718248465 -0700
+@@ -72,6 +72,20 @@
+ {/if}
+ {/if} {* settings section ends *}
+ 
++<div class="crm-accordion-wrapper crm-report_query-accordion crm-accordion_title-accordion crm-accordion-closed">
++ <div class="crm-accordion-header">
++  <div class="icon crm-accordion-pointer"></div> 
++  	{ts}Report SQL{/ts}
++ </div><!-- /.crm-accordion-header -->
++ <div class="crm-accordion-body">
++     <div id="query_{$instanceForm}">
++        <pre>
++            {$reportSql}
++        </pre>
++     </div>
++ </div>
++</div>
++
+ {literal}
+ <script type="text/javascript">
+ cj(function() {
