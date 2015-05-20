@@ -1,0 +1,20 @@
+diff -urN civicrm-4.2.19/README-wmf civicrm-4.2.19-wmf/README-wmf
+--- civicrm-4.2.19/README-wmf	1969-12-31 16:00:00.000000000 -0800
++++ civicrm-4.2.19-wmf/README-wmf	2015-03-11 13:31:10.446248473 -0700
+@@ -0,0 +1,9 @@
++== MFT ==
++Wikimedia's process for merging from a new upstream civi:
++
++* git checkout contrib
++* rsync -av --delete --exclude=".git" UNPACKED_UPSTREAM_CIVI/ ./
++* git checkout master
++* git merge -Xignore-all-space contrib
++* resolve conflicts, add and commit
++* git diff contrib > patches/civi-VERS-wmf.patch
+diff -urN civicrm-4.2.19/settings_location.php civicrm-4.2.19-wmf/settings_location.php
+--- civicrm-4.2.19/settings_location.php	1969-12-31 16:00:00.000000000 -0800
++++ civicrm-4.2.19-wmf/settings_location.php	2015-03-11 13:31:10.598248469 -0700
+@@ -0,0 +1,3 @@
++<?php
++define( 'CIVICRM_CONFDIR', realpath( dirname( __FILE__ ) . "/../../../default" )); 
++

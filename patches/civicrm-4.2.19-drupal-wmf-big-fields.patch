@@ -1,0 +1,32 @@
+diff -urN civicrm-4.2.19/CRM/Core/DAO/Address.php civicrm-4.2.19-wmf/CRM/Core/DAO/Address.php
+--- civicrm-4.2.19/CRM/Core/DAO/Address.php	2014-09-09 15:41:52.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/DAO/Address.php	2015-03-11 13:31:10.286248477 -0700
+@@ -459,12 +459,11 @@
+                     'name' => 'postal_code',
+                     'type' => CRM_Utils_Type::T_STRING,
+                     'title' => ts('Postal Code') ,
+-                    'maxlength' => 12,
+-                    'size' => CRM_Utils_Type::TWELVE,
++                    'maxlength' => 64,
++                    'size' => CRM_Utils_Type::BIG,
+                     'import' => true,
+                     'where' => 'civicrm_address.postal_code',
+                     'headerPattern' => '/postal|zip/i',
+-                    'dataPattern' => '/\d?\d{4}(-\d{4})?/',
+                     'export' => true,
+                 ) ,
+                 'usps_adc' => array(
+diff -urN civicrm-4.2.19/CRM/Core/DAO/Email.php civicrm-4.2.19-wmf/CRM/Core/DAO/Email.php
+--- civicrm-4.2.19/CRM/Core/DAO/Email.php	2014-09-09 15:41:44.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Core/DAO/Email.php	2015-03-11 13:31:10.286248477 -0700
+@@ -207,8 +207,8 @@
+                     'name' => 'email',
+                     'type' => CRM_Utils_Type::T_STRING,
+                     'title' => ts('Email') ,
+-                    'maxlength' => 64,
+-                    'size' => CRM_Utils_Type::BIG,
++                    'maxlength' => 254,
++                    'size' => CRM_Utils_Type::HUGE,
+                     'import' => true,
+                     'where' => 'civicrm_email.email',
+                     'headerPattern' => '/e.?mail/i',

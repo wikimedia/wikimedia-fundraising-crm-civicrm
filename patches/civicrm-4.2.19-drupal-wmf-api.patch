@@ -1,0 +1,139 @@
+diff -urN civicrm-4.2.19/api/api.php civicrm-4.2.19-wmf/api/api.php
+--- civicrm-4.2.19/api/api.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/api/api.php	2015-03-11 13:31:10.446248473 -0700
+@@ -114,7 +114,7 @@
+       return 0;
+     }
+     $data = array();
+-    $err = civicrm_api3_create_error($e->getMessage(), $data, $apiRequest);
++    $err = civicrm_api3_create_error($e, $data, $apiRequest);
+     if (CRM_Utils_Array::value('debug', $apiRequest['params'])) {
+       $err['trace'] = $e->getTraceSafe();
+     }
+@@ -134,7 +134,7 @@
+       return 0;
+     }
+     $data = $e->getExtraParams();
+-    $err = civicrm_api3_create_error($e->getMessage(), $data, $apiRequest, $e->getCode());
++    $err = civicrm_api3_create_error($e, $data, $apiRequest, $e->getCode());
+     if (CRM_Utils_Array::value('debug', CRM_Utils_Array::value('params',$apiRequest))) {
+       $err['trace'] = $e->getTraceAsString();
+     }
+@@ -148,7 +148,7 @@
+       return 0;
+     }
+     $data = array();
+-    $err = civicrm_api3_create_error($e->getMessage(), $data, $apiRequest, $e->getCode());
++    $err = civicrm_api3_create_error($e, $data, $apiRequest, $e->getCode());
+     if (CRM_Utils_Array::value('debug', $apiRequest['params'])) {
+       $err['trace'] = $e->getTraceAsString();
+     }
+diff -urN civicrm-4.2.19/api/v3/EntityTag.php civicrm-4.2.19-wmf/api/v3/EntityTag.php
+--- civicrm-4.2.19/api/v3/EntityTag.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/api/v3/EntityTag.php	2015-03-11 13:31:10.458248472 -0700
+@@ -72,6 +72,16 @@
+   $params['entity_table']['api.default'] = 'civicrm_contact';
+ }
+ 
++function civicrm_api3_entity_tag_getdetails($params) {
++    $values = CRM_Core_BAO_EntityTag::getTagDetails($params['entity_id'], $params['entity_table']);
++    return civicrm_api3_create_success($values, $params);
++}
++function _civicrm_api3_entity_tag_getdetails_spec(&$params) {
++    $params['entity_id']['api.required'] = 1;
++    $params['entity_id']['api.aliases'] = array('contact_id');
++    $params['entity_table']['api.default'] = 'civicrm_contact';
++}
++
+ /**
+  *
+  * @param <type> $params
+diff -urN civicrm-4.2.19/api/v3/utils.php civicrm-4.2.19-wmf/api/v3/utils.php
+--- civicrm-4.2.19/api/v3/utils.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/api/v3/utils.php	2015-03-11 13:31:10.474248472 -0700
+@@ -152,7 +152,21 @@
+     }
+   }
+   $data['is_error'] = 1;
+-  $data['error_message'] = $msg;
++  if (is_callable(array($msg, 'getMessage'))) {
++    $data['error_message'] = $msg->getMessage();
++
++    // Digging into causes is an unfortunate hack.  begin hack.
++    if (is_callable(array($msg, 'getCause'))) {
++      $msg = $msg->getCause();
++
++      if (is_callable(array($msg, 'getDebugInfo'))) {
++        $data['debuginfo'] = json_encode($msg->getDebugInfo());
++      }
++    }
++    // </hack>
++  } else {
++    $data['error_message'] = $msg;
++  }
+   if (is_array($dao) && isset($dao['params']) && is_array($dao['params']) && CRM_Utils_Array::value('api.has_parent', $dao['params'])) {
+     throw new Exception('Error in call to ' . $dao['entity'] . '_' . $dao['action'] . ' : ' . $msg);
+   }
+@@ -309,22 +323,18 @@
+ }
+ 
+ /**
+- *  Recursive function to explode value-separated strings into arrays
++ * explode value-separated strings into arrays
+  *
+  */
+ function _civicrm_api3_separate_values(&$values) {
++  array_walk_recursive($values, "_civicrm_api3_values_to_array");
++}
++
++function _civicrm_api3_values_to_array( &$values, $key ) {
+   $sp = CRM_Core_DAO::VALUE_SEPARATOR;
+-  foreach ($values as $key => & $value) {
+-    if (is_array($value)) {
+-      _civicrm_api3_separate_values($value);
+-    }
+-    elseif (is_string($value)) {
+-      if($key == 'case_type_id'){// this is to honor the way case API was originally written
+-        $value = trim(str_replace($sp, ',', $value), ',');
+-      }
+-      elseif (strpos($value, $sp) !== FALSE) {
+-        $value = explode($sp, trim($value, $sp));
+-      }
++  if (is_string($values)) {
++    if (strpos($values, $sp) !== FALSE) {
++      $values = explode($sp, trim($values, $sp));
+     }
+   }
+ }
+@@ -1102,14 +1112,14 @@
+   //should we check first to prevent it from being copied if they have passed in sql friendly format?
+   if (CRM_Utils_Array::value($fieldInfo['name'], $params)) {
+     //accept 'whatever strtotime accepts
+-    if (strtotime($params[$fieldInfo['name']]) == 0) {
++    if (strtotime($params[$fieldInfo['name']]) === false) {
+       throw new Exception($fieldInfo['name'] . " is not a valid date: " . $params[$fieldInfo['name']]);
+     }
+     $params[$fieldInfo['name']] = CRM_Utils_Date::processDate($params[$fieldInfo['name']]);
+   }
+   if ((CRM_Utils_Array::value('name', $fieldInfo) != $fieldname) && CRM_Utils_Array::value($fieldname, $params)) {
+     //If the unique field name differs from the db name & is set handle it here
+-    if (strtotime($params[$fieldname]) == 0) {
++    if (strtotime($params[$fieldname]) === false) {
+       throw new Exception($fieldname . " is not a valid date: " . $params[$fieldname]);
+     }
+     $params[$fieldname] = CRM_Utils_Date::processDate($params[$fieldname]);
+@@ -1222,13 +1232,9 @@
+ 
+     return civicrm_api3_create_success($creates, $params);
+   }
+-  catch(PEAR_Exception$e) {
+-    $tx->rollback();
+-    return civicrm_api3_create_error($e->getMessage());
+-  }
+   catch(Exception$e) {
+     $tx->rollback();
+-    return civicrm_api3_create_error($e->getMessage());
++    return civicrm_api3_create_error($e);
+   }
+ }
+ 

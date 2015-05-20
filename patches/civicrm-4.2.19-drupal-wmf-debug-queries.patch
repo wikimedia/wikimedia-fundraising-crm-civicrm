@@ -1,0 +1,61 @@
+diff -urN civicrm-4.2.19/packages/DB/common.php civicrm-4.2.19-wmf/packages/DB/common.php
+--- civicrm-4.2.19/packages/DB/common.php	2014-09-09 15:40:26.000000000 -0700
++++ civicrm-4.2.19-wmf/packages/DB/common.php	2015-03-11 13:31:10.510248471 -0700
+@@ -1148,6 +1148,22 @@
+      */
+     function modifyQuery($query)
+     {
++        /**
++         * WMF hack:
++         * Insert diagnostic info such as requesting user.
++         *
++         * Have not found a function to efficiently get uf username.
++         * Not sure if query begin time is already reported by mysql, or would be useful.
++         */
++        global $installType;
++        if ( isset( $installType ) ) {
++            $prefix = "/* Civi utils not available during installation */";
++        } else {
++            $uid = CRM_Utils_System::getLoggedInUfID();
++            $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
++        }
++        $query = $prefix . $query;
++
+         return $query;
+     }
+ 
+diff -urN civicrm-4.2.19/packages/DB/mysql.php civicrm-4.2.19-wmf/packages/DB/mysql.php
+--- civicrm-4.2.19/packages/DB/mysql.php	2014-09-09 15:40:26.000000000 -0700
++++ civicrm-4.2.19-wmf/packages/DB/mysql.php	2015-03-11 13:31:10.514248471 -0700
+@@ -832,6 +832,7 @@
+                                       'DELETE FROM \1 WHERE 1=1', $query);
+             }
+         }
++        $query = parent::modifyQuery($query);
+         return $query;
+     }
+ 
+diff -urN civicrm-4.2.19/templates/CRM/Report/Form/Fields.tpl civicrm-4.2.19-wmf/templates/CRM/Report/Form/Fields.tpl
+--- civicrm-4.2.19/templates/CRM/Report/Form/Fields.tpl	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/templates/CRM/Report/Form/Fields.tpl	2015-03-11 13:31:10.718248465 -0700
+@@ -72,6 +72,20 @@
+ {/if}
+ {/if} {* settings section ends *}
+ 
++<div class="crm-accordion-wrapper crm-report_query-accordion crm-accordion_title-accordion crm-accordion-closed">
++ <div class="crm-accordion-header">
++  <div class="icon crm-accordion-pointer"></div> 
++  	{ts}Report SQL{/ts}
++ </div><!-- /.crm-accordion-header -->
++ <div class="crm-accordion-body">
++     <div id="query_{$instanceForm}">
++        <pre>
++            {$reportSql}
++        </pre>
++     </div>
++ </div>
++</div>
++
+ {literal}
+ <script type="text/javascript">
+ cj(function() {

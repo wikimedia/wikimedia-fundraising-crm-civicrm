@@ -1,0 +1,65 @@
+diff -urN civicrm-4.2.19/CRM/ACL/BAO/ACL.php civicrm-4.2.19-wmf/CRM/ACL/BAO/ACL.php
+--- civicrm-4.2.19/CRM/ACL/BAO/ACL.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/ACL/BAO/ACL.php	2015-03-11 13:31:10.174248480 -0700
+@@ -44,6 +44,7 @@
+   static $_operation = NULL;
+ 
+   static $_fieldKeys = NULL;
++  static $_group_cache = array();
+   static
+   function entityTable() {
+     if (!self::$_entityTable) {
+@@ -848,7 +849,11 @@
+       $aclKeys = array_keys($acls);
+       $aclKeys = implode(',', $aclKeys);
+ 
+-      $query = "
++      $cache_key = "$tableName-$aclKeys";
++      if ( array_key_exists( $cache_key, self::$_group_cache ) ) {
++          $ids = self::$_group_cache[ $cache_key ];
++      } else {
++        $query = "
+ SELECT   a.operation, a.object_id
+   FROM   civicrm_acl_cache c, civicrm_acl a
+  WHERE   c.acl_id       =  a.id
+@@ -857,24 +862,26 @@
+    AND   a.id        IN ( $aclKeys )
+ ORDER BY a.object_id
+ ";
+-      $params = array(1 => array($tableName, 'String'));
+-      $dao = CRM_Core_DAO::executeQuery($query, $params);
+-      while ($dao->fetch()) {
+-        if ($dao->object_id) {
+-          if (self::matchType($type, $dao->operation)) {
+-            $ids[] = $dao->object_id;
++        $params = array(1 => array($tableName, 'String'));
++        $dao = CRM_Core_DAO::executeQuery($query, $params);
++        while ($dao->fetch()) {
++          if ($dao->object_id) {
++            if (self::matchType($type, $dao->operation)) {
++              $ids[] = $dao->object_id;
++            }
+           }
+-        }
+-        else {
+-          // this user has got the permission for all objects of this type
+-          // check if the type matches
+-          if (self::matchType($type, $dao->operation)) {
+-            foreach ($allGroups as $id => $dontCare) {
+-              $ids[] = $id;
++          else {
++            // this user has got the permission for all objects of this type
++            // check if the type matches
++            if (self::matchType($type, $dao->operation)) {
++              foreach ($allGroups as $id => $dontCare) {
++                $ids[] = $id;
++              }
+             }
++            break;
+           }
+-          break;
+         }
++        self::$_group_cache[ $cache_key ] = $ids;
+       }
+     }
+ 
