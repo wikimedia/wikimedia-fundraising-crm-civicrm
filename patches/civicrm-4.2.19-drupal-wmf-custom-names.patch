@@ -1,3 +1,7 @@
+Note: this code was wrong for the case where table_name is not passed in.
+The change has been upstreamed correctly, abandon this.
+
+I donno what the is_view thing was about.
 diff -urN civicrm-4.2.19/CRM/Core/BAO/CustomField.php civicrm-4.2.19-wmf/CRM/Core/BAO/CustomField.php
 --- civicrm-4.2.19/CRM/Core/BAO/CustomField.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Core/BAO/CustomField.php	2015-03-11 13:31:10.274248477 -0700

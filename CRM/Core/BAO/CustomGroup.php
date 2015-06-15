@@ -140,15 +140,6 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
       $group->created_id = CRM_Utils_Array::value('created_id', $params);
       $group->created_date = CRM_Utils_Array::value('created_date', $params);
 
-
-      // lets create the table associated with the group and save it
-      if (isset($params['table_name'])) {
-          $tableName = $params['table_name'];
-      } else {
-          $munged_title = strtolower(CRM_Utils_String::munge($group->title, '_', 32));
-          $tableName = "civicrm_value_{$munged_title}_{$group->id}";
-      }
-
       // we do this only once, so name never changes
       $group->name = CRM_Utils_String::munge($params['title'], '_', 64);
       if (isset($params['name'])) {
@@ -163,7 +154,15 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
     $transaction = new CRM_Core_Transaction();
 
     $group->save();
-    if ($tableName) {
+
+    if (isset($params['table_name'])) {
+      $tableName = $params['table_name'];
+    } else {
+      $munged_title = strtolower(CRM_Utils_String::munge($group->title, '_', 32));
+      $tableName = "civicrm_value_{$munged_title}_{$group->id}";
+    }
+
+    if (!isset($params['id'])) {
       $group->table_name = $tableName;
       CRM_Core_DAO::setFieldValue('CRM_Core_DAO_CustomGroup',
         $group->id,
@@ -190,7 +189,7 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
     // reset the cache
     CRM_Utils_System::flushCache();
 
-    if ($tableName) {
+    if (!isset($params['id'])) {
       CRM_Utils_Hook::post('create', 'CustomGroup', $group->id, $group);
     }
     else {

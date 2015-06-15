@@ -2225,6 +2225,7 @@ WHERE      ( f.label = %1 OR f.name = %1 )
       return $dao->id;
     }
     else {
+      // FIXME: This should be an exception.
       return NULL;
     }
   }
