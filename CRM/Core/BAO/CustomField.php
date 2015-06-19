@@ -2050,8 +2050,10 @@ INNER JOIN  civicrm_custom_field f ON ( g.id = f.option_group_id )
       return;
     }
 
-    // check if option group is related to any other field
-    self::checkOptionGroup($currentOptionGroupId);
+    if ($currentOptionGroupId) {
+      // check if option group is related to any other field
+      self::checkOptionGroup($currentOptionGroupId);
+    }
   }
 
   /**
