@@ -437,7 +437,7 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
 
     if (!isset($columnsOf[$table]) || $force) {
       $errorScope = CRM_Core_TemporaryErrorScope::ignoreException();
-      $dao = CRM_Core_DAO::executeQuery("SHOW COLUMNS FROM $from");
+      $dao = CRM_Core_DAO::executeQuery("SHOW COLUMNS FROM $from", CRM_Core_DAO::$_nullArray, TRUE, NULL, FALSE, FALSE);
       if (is_a($dao, 'DB_Error')) {
         return array();
       }
@@ -556,7 +556,7 @@ WHERE  table_schema IN ('{$this->db}', '{$civiDB}')";
    * Create a log table with schema mirroring the given table’s structure and seeding it with the given table’s contents.
    */
   private function createLogTableFor($table) {
-    $dao = CRM_Core_DAO::executeQuery("SHOW CREATE TABLE $table");
+    $dao = CRM_Core_DAO::executeQuery("SHOW CREATE TABLE $table",  CRM_Core_DAO::$_nullArray, TRUE, NULL, FALSE, FALSE);
     $dao->fetch();
     $query = $dao->Create_Table;
 
@@ -594,10 +594,10 @@ COLS;
     $query = self::fixTimeStampAndNotNullSQL($query);
     $query = preg_replace("/^\) /m", "$cols\n) ", $query);
 
-    CRM_Core_DAO::executeQuery($query);
+    CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray, TRUE, NULL, FALSE, FALSE);
 
     $columns = implode(', ', $this->columnsOf($table));
-    CRM_Core_DAO::executeQuery("INSERT INTO `{$this->db}`.log_$table ($columns, log_conn_id, log_user_id, log_action) SELECT $columns, CONNECTION_ID(), @civicrm_user_id, 'Initialization' FROM {$table}");
+    CRM_Core_DAO::executeQuery("INSERT INTO `{$this->db}`.log_$table ($columns, log_conn_id, log_user_id, log_action) SELECT $columns, CONNECTION_ID(), @civicrm_user_id, 'Initialization' FROM {$table}", CRM_Core_DAO::$_nullArray, TRUE, NULL, FALSE, FALSE);
 
     $this->tables[] = $table;
     $this->logs[$table] = "log_$table";
