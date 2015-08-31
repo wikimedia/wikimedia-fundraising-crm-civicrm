@@ -1,4 +1,14 @@
 diff -urN civicrm-4.2.19/CRM/Core/Error.php civicrm-4.2.19-wmf/CRM/Core/Error.php
+
+Status: Needs more review
+Background: note that calling civicrm_api3 rather than civicrm_api causes exceptions to be thrown.
+Commit comments: (FR #1066) Overly specific hack to bubble up DB_Error details
+(FR #1238) Always throw an exception, do not display the fatal error page
+Handle recursive data during exception handling  print_r is causing out-of-memory under PHP 5.4.4 when debug dumping data with recursive content,
+so fall back to existing var_dump print variant, which can handle the recursion. Both code paths partially emulate var_export, sigh.
+
+Issue: CRM-14674
+
 --- civicrm-4.2.19/CRM/Core/Error.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Core/Error.php	2015-03-11 13:31:10.294248476 -0700
 @@ -77,7 +77,7 @@

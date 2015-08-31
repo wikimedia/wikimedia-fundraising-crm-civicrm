@@ -1,4 +1,15 @@
 diff -urN civicrm-4.2.19/CRM/Upgrade/Form.php civicrm-4.2.19-wmf/CRM/Upgrade/Form.php
+
+Status: Agreed Ditch the debug , upstream money rule (CRM-17157).
+
+Recommendation: This adds some debug during upgrade. We could also get this by turning on query logging while upgrading
+or reviewing the upgrade script so not sure it's worth carrying as a patch.
+
+ISSUE: CRM-17157
+There is also a fix to "Correct money rule to accept any decent decimal  We should not reject harmless anomalies such as sub-penny shavings. "
+
+Not sure the reasoning for this - if there is a good case then we could upstream it.
+
 --- civicrm-4.2.19/CRM/Upgrade/Form.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Upgrade/Form.php	2015-03-11 13:31:10.414248473 -0700
 @@ -205,6 +205,7 @@

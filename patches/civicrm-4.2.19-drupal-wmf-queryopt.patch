@@ -1,4 +1,9 @@
 diff -urN civicrm-4.2.19/CRM/Contribute/BAO/Contribution.php civicrm-4.2.19-wmf/CRM/Contribute/BAO/Contribution.php
+
+Status: Resolved 4.4 and 4.6
+Background: This is a performance fix since fixed in core
+JIRA: CRM-13321
+
 --- civicrm-4.2.19/CRM/Contribute/BAO/Contribution.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Contribute/BAO/Contribution.php	2015-03-11 13:31:10.254248478 -0700
 @@ -1826,22 +1826,40 @@

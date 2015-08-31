@@ -1,4 +1,8 @@
 diff -urN civicrm-4.2.19/CRM/ACL/BAO/ACL.php civicrm-4.2.19-wmf/CRM/ACL/BAO/ACL.php
+
+Status: Resolved for 4.4 and 4.6
+Background: This is already in core upstream.
+
 --- civicrm-4.2.19/CRM/ACL/BAO/ACL.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/ACL/BAO/ACL.php	2015-03-11 13:31:10.174248480 -0700
 @@ -502,7 +503,7 @@

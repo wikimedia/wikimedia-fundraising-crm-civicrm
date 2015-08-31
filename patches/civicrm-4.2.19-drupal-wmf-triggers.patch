@@ -1,4 +1,14 @@
 diff -urN civicrm-4.2.19/CRM/Core/DAO.php civicrm-4.2.19-wmf/CRM/Core/DAO.php
+
+Status: needs confirmation
+Recommendation: I think this can be ignored until such time as WMF enables logging.
+Background: My take on this is that it is to reduce trigger rebuilding activity. This should not be a problem
+if logging is not enabled, unless there was an extra bug in 4.2, this routine should not be triggered.
+
+JIRA: CRM-12315
+Commit comments: revert annoying TRIGGER logging from civi core.
+The intention was to catch new and substantial usages of triggers, but this has not happened yet. So the logging is annoying.
+
 --- civicrm-4.2.19/CRM/Core/DAO.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Core/DAO.php	2015-03-11 13:31:10.286248477 -0700
 @@ -1475,7 +1475,7 @@

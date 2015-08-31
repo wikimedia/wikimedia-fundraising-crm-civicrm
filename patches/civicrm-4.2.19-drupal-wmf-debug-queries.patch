@@ -1,4 +1,11 @@
 diff -urN civicrm-4.2.19/packages/DB/common.php civicrm-4.2.19-wmf/packages/DB/common.php
+
+Status: needs more review
+Background: This patch appears to be about tracking queries for performance monitoring?
+How does this compare with setting queries to DEBUG_LOG_QUERY?
+Issues: CRM-17144
+        CRM-17156
+
 --- civicrm-4.2.19/packages/DB/common.php	2014-09-09 15:40:26.000000000 -0700
 +++ civicrm-4.2.19-wmf/packages/DB/common.php	2015-03-11 13:31:10.510248471 -0700
 @@ -1148,6 +1148,22 @@

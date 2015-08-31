@@ -1,4 +1,10 @@
 diff -urN civicrm-4.2.19/CRM/Contribute/Form/Search.php civicrm-4.2.19-wmf/CRM/Contribute/Form/Search.php
+
+Status: needs upstreaming
+Background: patch prevents form from forcing a search when there is no qfKey in the url as it hammers the DB.
+I can't see any evidence of it being upstream yet.
+Issue: CRM-17158
+
 --- civicrm-4.2.19/CRM/Contribute/Form/Search.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Contribute/Form/Search.php	2015-03-11 13:31:10.262248477 -0700
 @@ -159,6 +159,13 @@

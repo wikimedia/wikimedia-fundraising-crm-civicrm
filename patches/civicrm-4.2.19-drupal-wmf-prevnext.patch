@@ -1,4 +1,14 @@
 diff -urN civicrm-4.2.19/CRM/Contact/Selector.php civicrm-4.2.19-wmf/CRM/Contact/Selector.php
+
+Status: Fixes to this are in 4.4 and 4.6 but needs more review - the deleteItem changes don't seem to be in core.
+Background: These are performance fixes relevant to the prev_next cache. In 4.4 this was tackled (funded by NYSS).
+JIRA: CRM-12638, CRM-12341
+usages of civicrm_prevnext_cache  Sort of brute force approach. These queries were really expensive, and for no reason.
+I'd like to just match the damn key, but will conservatively only rewrite infix searches as prefix searches.
+
+Rewrite all "LIKE" queries on civicrm_prevnext_cache  We can't afford to be this sloppy.
+Anyway, wish us luck keeping this in sync with upstream changes.
+
 --- civicrm-4.2.19/CRM/Contact/Selector.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Contact/Selector.php	2015-03-11 13:31:10.250248478 -0700
 @@ -799,7 +799,7 @@

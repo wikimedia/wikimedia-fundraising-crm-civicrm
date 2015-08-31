@@ -1,4 +1,14 @@
 diff -urN civicrm-4.2.19/CRM/Report/Form/Contribute/Lybunt.php civicrm-4.2.19-wmf/CRM/Report/Form/Contribute/Lybunt.php
+
+Status: Perhaps move the approach from extended report into core?
+Background: Possibly part of the Giant Rabbit reports? This appears to be part of some method of monitoring sql queries?
+In 4.6 the report UI has changed a bit & I added a developer tab to the extended reports which makes
+it possible for someone with the permission to see the sql - would putting that in core work?
+
+Commit Comment: Make compatible with raw SQL instrumentation
+
+Store the intermediate SQL query in our standard member variable, so it can be displayed in the GUI.
+
 --- civicrm-4.2.19/CRM/Report/Form/Contribute/Lybunt.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Report/Form/Contribute/Lybunt.php	2015-03-11 13:31:10.394248474 -0700
 @@ -37,6 +37,8 @@
