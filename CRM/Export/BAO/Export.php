@@ -274,7 +274,7 @@ class CRM_Export_BAO_Export {
       $primary = TRUE;
       $fields = CRM_Contact_BAO_Contact::exportableFields('All', TRUE, TRUE);
       foreach ($fields as $key => $var) {
-        if ($key && (substr($key, 0, 6) != 'custom')) {
+        if ($key) {
           //for CRM=952
           $returnProperties[$key] = 1;
         }
