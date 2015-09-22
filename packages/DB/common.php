@@ -1158,9 +1158,10 @@ class DB_common extends PEAR
         global $installType;
         if ( isset( $installType ) ) {
             $prefix = "/* Civi utils not available during installation */";
-        } else {
-            $uid = CRM_Utils_System::getLoggedInUfID();
-            $prefix = "/* https://civicrm.wikimedia.org/user/{$uid} */ ";
+        }
+        else {
+            global $user;
+            $prefix = "/* https://civicrm.wikimedia.org/user/{$user->uid} */ ";
         }
         $query = $prefix . $query;
 
