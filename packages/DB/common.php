@@ -1161,7 +1161,12 @@ class DB_common extends PEAR
         }
         else {
             global $user;
-            $prefix = "/* https://civicrm.wikimedia.org/user/{$user->uid} */ ";
+            if (empty($user)) {
+                $prefix = 'phpunit-test';
+            }
+            else {
+                $prefix = "/* https://civicrm.wikimedia.org/user/{$user->uid} */ ";
+            }
         }
         $query = $prefix . $query;
 
