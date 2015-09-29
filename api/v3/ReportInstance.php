@@ -66,6 +66,12 @@ function civicrm_api3_report_instance_create($params) {
 function _civicrm_api3_report_instance_create_spec(&$params) {
   $params['report_id']['api.required'] = 1;
   $params['title']['api.required'] = 1;
+  $params['view_mode']['title'] = ts('Report output mode');
+  $params['view_mode']['type'] = CRM_Utils_Type::T_STRING;
+  $params['view_mode']['options'] = array(
+    'view' => 'View Results',
+    'criteria' => 'Show criteria',
+  );
 }
 
 /**

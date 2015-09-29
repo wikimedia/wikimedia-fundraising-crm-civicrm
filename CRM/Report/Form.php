@@ -1446,7 +1446,7 @@ class CRM_Report_Form extends CRM_Core_Form {
    *
    * @return array
    */
-  function getActions($instanceId) {
+  protected function getActions($instanceId) {
     $actions = array(
       'html' => $this->getResultsLabel(),
       'save' => 'Update',
@@ -1479,10 +1479,9 @@ class CRM_Report_Form extends CRM_Core_Form {
       }
     }
 
-    // @todo implement delete
-    // if (CRM_Core_Permission::check('administer Reports')) {
-    //   $actions['delete'] = 'Delete report';
-    // }
+    if (CRM_Core_Permission::check('administer Reports')) {
+      $actions['delete'] = 'Delete report';
+    }
 
     return $actions;
   }
@@ -2639,19 +2638,9 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
    * Set output mode.
    */
   public function processReportMode() {
+    $this->setOutputMode();
+
     $buttonName = $this->controller->getButtonName();
-
-    $this->_outputMode = CRM_Utils_Request::retrieve(
-      'output',
-      'String',
-      CRM_Core_DAO::$_nullObject,
-      FALSE,
-      CRM_Utils_Array::value('task', $this->_params)
-    );
-    if ($buttonName == $this->_instanceButtonName) {
-      $this->_outputMode = 'save';
-    }
-
     $this->_sendmail
       = CRM_Utils_Request::retrieve(
         'sendmail',
@@ -2664,7 +2653,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
     $this->assign('printOnly', FALSE);
 
     if ($this->_outputMode == 'print' ||
-      ($this->_sendmail && !$this->_outputMode )
+      ($this->_sendmail && !$this->_outputMode)
     ) {
       $this->assign('printOnly', TRUE);
       $printOnly = TRUE;
@@ -2740,6 +2729,9 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
       $this->_createNew = ($this->_outputMode == 'copy');
       // Don't pass go. Do not collect another chance to re-run the same query.
       CRM_Report_Form_Instance::postProcess($this);
+    }
+    if ($this->_outputMode == 'delete') {
+      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/report/instance/' . $this->_id, 'action=delete'));
     }
     $this->beginPostProcessCommon();
   }
@@ -4589,6 +4581,26 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
   public function getResultsLabel() {
     $showResultsLabel = $this->resultsDisplayed() ? ts('Refresh results') : ts('View results');
     return $showResultsLabel;
+  }
+
+  /**
+   * Determine the output mode from the url or input.
+   *
+   * @return string
+   */
+  protected function setOutputMode() {
+    $buttonName = $this->controller->getButtonName();
+    $this->_outputMode = CRM_Utils_Request::retrieve(
+      'output',
+      'String',
+      CRM_Core_DAO::$_nullObject,
+      FALSE,
+      CRM_Utils_Array::value('task', $this->_params)
+    );
+
+    if ($buttonName && $buttonName == $this->_instanceButtonName) {
+      $this->_outputMode = 'save';
+    }
   }
 
 }
