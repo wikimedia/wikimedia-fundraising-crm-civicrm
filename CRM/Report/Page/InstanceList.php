@@ -162,10 +162,9 @@ class CRM_Report_Page_InstanceList extends CRM_Core_Page {
         $rows[$dao->compName][$dao->id]['title'] = $dao->title;
         $rows[$dao->compName][$dao->id]['label'] = $dao->label;
         $rows[$dao->compName][$dao->id]['description'] = $dao->description;
-        $rows[$dao->compName][$dao->id]['url'] = CRM_Utils_System::url("{$url}/{$dao->id}", "reset=1");
-        if (CRM_Core_Permission::check('administer Reports')) {
-          $rows[$dao->compName][$dao->id]['deleteUrl'] = CRM_Utils_System::url("{$url}/{$dao->id}", 'action=delete&reset=1');
-        }
+        $rows[$dao->compName][$dao->id]['url'] = CRM_Utils_System::url("{$url}/{$dao->id}", "reset=1&output=criteria");
+        $rows[$dao->compName][$dao->id]['viewUrl'] = CRM_Utils_System::url("{$url}/{$dao->id}", 'force=1&reset=1');
+        $rows[$dao->compName][$dao->id]['actions'] = $this->getActionLinks($dao->id);
       }
     }
     return $rows;
@@ -213,4 +212,37 @@ class CRM_Report_Page_InstanceList extends CRM_Core_Page {
     return parent::run();
   }
 
+  /**
+   * Get action links.
+   *
+   * @param int $instanceID
+   *
+   * @return array
+   */
+  function getActionLinks($instanceID) {
+    $urlCommon = 'civicrm/report/instance/' . $instanceID;
+    return array(
+      'save' => array(
+        'url' => CRM_Utils_System::url($urlCommon, 'reset=1&output=save'),
+        'label' => ts('Save a Copy'),
+      ),
+      'pdf' => array(
+        'url' => CRM_Utils_System::url($urlCommon, 'reset=1&force=1&output=pdf'),
+        'label' => ts('View as pdf'),
+      ),
+      'print' => array(
+        'url' => CRM_Utils_System::url($urlCommon, 'reset=1&force=1output=print'),
+        'label' => ts('Print report'),
+      ),
+      'csv' => array(
+        'url' => CRM_Utils_System::url($urlCommon, 'reset=1&force=1&output=csv'),
+        'label' => ts('Export to csv'),
+      ),
+      'delete' => array(
+        'url' => CRM_Utils_System::url($urlCommon, 'action=delete'),
+        'label' => ts('Delete report'),
+        // @todo define some confirm.
+      ),
+    );
+  }
 }

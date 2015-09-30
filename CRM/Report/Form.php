@@ -2730,9 +2730,6 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
       // Don't pass go. Do not collect another chance to re-run the same query.
       CRM_Report_Form_Instance::postProcess($this);
     }
-    if ($this->_outputMode == 'delete') {
-      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/report/instance/' . $this->_id, 'action=delete'));
-    }
     $this->beginPostProcessCommon();
   }
 
