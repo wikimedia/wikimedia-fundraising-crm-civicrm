@@ -866,32 +866,25 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     );
     $this->assign('outBound_option', $mailingInfo['outBound_option']);
 
-    $buttons = array(
-      array(
-        'type' => 'upload',
-        'name' => ts('Save'),
-        'js' => $js,
-        'isDefault' => TRUE,
-      ),
-      array(
-        'type' => 'upload',
-        'name' => ts('Save and New'),
-        'js' => $js,
-        'subName' => 'new',
-      ),
-      array(
-        'type' => 'cancel',
-        'name' => ts('Cancel'),
-      ),
+    $this->addButtons(array(
+        array(
+          'type' => 'upload',
+          'name' => ts('Save'),
+          'js' => $js,
+          'isDefault' => TRUE,
+        ),
+        array(
+          'type' => 'upload',
+          'name' => ts('Save and New'),
+          'js' => $js,
+          'subName' => 'new',
+        ),
+        array(
+          'type' => 'cancel',
+          'name' => ts('Cancel'),
+        ),
+      )
     );
-    if ($this->_id) {
-      $buttons[] = array (
-        'type' => 'refund',
-        'js' => array( 'onclick' => "document.location = '" . CRM_Utils_System::url( 'civicrm/contribute/refund', "id={$this->_id}", false, null, false ) . "'; return false;" ),
-        'name' => ts('Refund'),
-      );
-    }
-    $this->addButtons($buttons);
 
     // if status is Cancelled freeze Amount, Payment Instrument, Check #, Financial Type,
     // Net and Fee Amounts are frozen in AdditionalInfo::buildAdditionalDetail
