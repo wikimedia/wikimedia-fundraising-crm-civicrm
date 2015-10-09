@@ -514,6 +514,9 @@ ORDER BY parent_id, weight";
         }
         $url = CRM_Utils_System::url($urlParam[0], $urlParam[1], FALSE, NULL, TRUE);
       }
+      elseif (strpos($url, '&amp;') === FALSE) {
+        $url = htmlspecialchars($url);
+      }
       $makeLink = TRUE;
     }
 
@@ -566,6 +569,7 @@ ORDER BY parent_id, weight";
     }
 
     if ($makeLink) {
+      $url = CRM_Utils_System::evalUrl($url);
       if ($target) {
         $name = "<a href=\"{$url}\" target=\"{$target}\">{$name}</a>";
       }

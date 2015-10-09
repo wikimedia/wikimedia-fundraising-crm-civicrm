@@ -1372,10 +1372,17 @@ class CRM_Contact_BAO_Query {
           // make more sense that globally applying the requirements of one form.
           if (!isset($group->saved_search_id) && $this->_returnProperties != array('contact_id')) {
             $tbName = "`civicrm_group_contact-{$groupId}`";
-            $this->_select['group_contact_id'] = "$tbName.id as group_contact_id";
-            $this->_element['group_contact_id'] = 1;
-            $this->_select['status'] = "$tbName.status as status";
-            $this->_element['status'] = 1;
+            // CRM-17254 don't retrieve extra fields if contact_id is specifically requested
+            // as this will add load to an intentionally light query.
+            // ideally this code would be removed as it appears to be to support CRM-1203
+            // and passing in the required returnProperties from the url would
+            // make more sense that globally applying the requirements of one form.
+            if (($this->_returnProperties != array('contact_id'))) {
+              $this->_select['group_contact_id'] = "$tbName.id as group_contact_id";
+              $this->_element['group_contact_id'] = 1;
+              $this->_select['status'] = "$tbName.status as status";
+              $this->_element['status'] = 1;
+            }
           }
         }
         $this->_useGroupBy = TRUE;
@@ -1529,11 +1536,16 @@ class CRM_Contact_BAO_Query {
       elseif (preg_match('/_date_relative$/', $id) ||
         $id == 'event_relative' ||
         $id == 'case_from_relative' ||
-        $id == 'case_to_relative'
+        $id == 'case_to_relative' ||
+        $id == 'participant_relative'
       ) {
         if ($id == 'event_relative') {
           $fromRange = 'event_start_date_low';
           $toRange = 'event_end_date_high';
+        }
+        elseif ($id == 'participant_relative') {
+          $fromRange = 'participant_register_date_low';
+          $toRange = 'participant_register_date_high';
         }
         elseif ($id == 'case_from_relative') {
           $fromRange = 'case_from_start_date_low';

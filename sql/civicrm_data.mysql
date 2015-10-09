@@ -21430,11 +21430,11 @@ INSERT INTO civicrm_msg_template
       <table border="0" cellpadding="0" cellspacing="0" >
         <tr>
           <td>
-          <a href="http://www.civicrm.org"><img src="http://civicrm.org/sites/civicrm.org/files/top-logo_2.png" border=0 alt="Replace this logo with the URL to your own"></a>
+          <a href="https://civicrm.org"><img src="https://civicrm.org/sites/civicrm.org/files/top-logo_2.png" border=0 alt="Replace this logo with the URL to your own"></a>
           </td>
           <td>&nbsp; &nbsp;</td>
           <td>
-          <a href="http://www.civicrm.org" style="text-decoration: none;"><font size=5 face="Arial, Verdana, sans-serif" color="#8bc539">Your Newsletter Title</font></a>
+          <a href="https://civicrm.org" style="text-decoration: none;"><font size=5 face="Arial, Verdana, sans-serif" color="#8bc539">Your Newsletter Title</font></a>
           </td>
         </tr>
       </table>
@@ -23451,13 +23451,13 @@ SET @adminHelplastID:=LAST_INSERT_ID();
 INSERT INTO civicrm_navigation
     ( domain_id, url, label, name, permission, permission_operator, parent_id, is_active, has_separator, weight )
 VALUES
-    ( @domainID, 'http://civicrm.org/get-started?src=iam',        '',        'Get started',        NULL, 'AND', @adminHelplastID, '1', NULL, 1 ),
-    ( @domainID, 'http://civicrm.org/documentation?src=iam',      '',      'Documentation',      NULL, 'AND', @adminHelplastID, '1', NULL, 2 ),
-    ( @domainID, 'http://civicrm.org/ask-a-question?src=iam',     '',     'Ask a question',     NULL, 'AND', @adminHelplastID, '1', NULL, 3 ),
-    ( @domainID, 'http://civicrm.org/experts?src=iam', 		  '',    'Get expert help',    NULL, 'AND', @adminHelplastID, '1', NULL, 4 ),
-    ( @domainID, 'http://civicrm.org/about?src=iam', 		  '',      'About CiviCRM',      NULL, 'AND', @adminHelplastID, '1', 1, 5 ),
-    ( @domainID, 'http://civicrm.org/register-your-site?src=iam', '', 'Register your site', NULL, 'AND', @adminHelplastID, '1', NULL, 6 ),    
-    ( @domainID, 'http://civicrm.org/become-member?src=iam',      '',       'Join CiviCRM',       NULL, 'AND', @adminHelplastID, '1', NULL, 7 );
+    ( @domainID, 'https://civicrm.org/get-started?src=iam',        '',        'Get started',        NULL, 'AND', @adminHelplastID, '1', NULL, 1 ),
+    ( @domainID, 'https://civicrm.org/documentation?src=iam',      '',      'Documentation',      NULL, 'AND', @adminHelplastID, '1', NULL, 2 ),
+    ( @domainID, 'https://civicrm.org/ask-a-question?src=iam',     '',     'Ask a question',     NULL, 'AND', @adminHelplastID, '1', NULL, 3 ),
+    ( @domainID, 'https://civicrm.org/experts?src=iam', 		  '',    'Get expert help',    NULL, 'AND', @adminHelplastID, '1', NULL, 4 ),
+    ( @domainID, 'https://civicrm.org/about?src=iam', 		  '',      'About CiviCRM',      NULL, 'AND', @adminHelplastID, '1', 1, 5 ),
+    ( @domainID, 'https://civicrm.org/register-your-site?src=iam&sid={sid}', '', 'Register your site', NULL, 'AND', @adminHelplastID, '1', NULL, 6 ),
+    ( @domainID, 'https://civicrm.org/become-a-member?src=iam&sid={sid}',      '',       'Join CiviCRM',       NULL, 'AND', @adminHelplastID, '1', NULL, 7 );
 
 INSERT INTO civicrm_navigation
 ( domain_id, url, label, name, permission, permission_operator, parent_id, is_active, has_separator, weight )
@@ -23469,7 +23469,7 @@ INSERT INTO civicrm_navigation
 ( domain_id, url, label, name, permission, permission_operator, parent_id, is_active, has_separator, weight )
 VALUES
 ( @domainID, 'civicrm/api', '','API Explorer', 'administer CiviCRM', '', @devellastID, '1', NULL, 1 ),
-( @domainID, 'http://civicrm.org/developer-documentation?src=iam', '', 'Developer Docs', 'administer CiviCRM', '', @devellastID, '1', NULL, 3 );
+( @domainID, 'https://civicrm.org/developer-documentation?src=iam', '', 'Developer Docs', 'administer CiviCRM', '', @devellastID, '1', NULL, 3 );
 
 INSERT INTO civicrm_navigation
     ( domain_id, url, label, name, permission, permission_operator, parent_id, is_active, has_separator, weight )
