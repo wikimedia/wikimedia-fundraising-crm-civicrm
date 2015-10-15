@@ -1,4 +1,8 @@
 diff -urN civicrm-4.2.19/css/civicrm.css civicrm-4.2.19-wmf/css/civicrm.css
+
+Recommendation: move into a theme, or, worst case an extension could add this css.
+Background: Loads of css changes in later versions & this isn't the place to maintain css overrides.
+
 --- civicrm-4.2.19/css/civicrm.css	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/css/civicrm.css	2015-03-11 13:31:10.482248472 -0700
 @@ -85,7 +85,6 @@

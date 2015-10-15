@@ -1,4 +1,18 @@
 diff -urN civicrm-4.2.19/CRM/Contact/Form/Search/Custom/DateAdded.php civicrm-4.2.19-wmf/CRM/Contact/Form/Search/Custom/DateAdded.php
+
+Status: No action - let this die a natural patch.
+Recommendation: Discard the patch
+Background: This looks like the remnants of a patch to me. It alters a custom search to prevent the $justIDS
+parameter from working. I originally thought there might be some smart groups using it but then I found this
+https://github.com/CiviCRM42/civicrm42-core/commit/e44ebf8dacdb8d6f17d7082c6bcef552fc2bda53
+and I think someone made a boo-boo & wmf didn't merge in the boo-boo reversal.
+
+This search shouldn't really make sense from 4.4 onwards as the created_date field is in the contact record from 4.3,
+meaning that this search would no longer add much value.
+
+JIRA: CRM-13887
+JIRA: CRM-17124
+
 --- civicrm-4.2.19/CRM/Contact/Form/Search/Custom/DateAdded.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Contact/Form/Search/Custom/DateAdded.php	2015-03-11 13:31:10.234248478 -0700
 @@ -121,7 +121,6 @@

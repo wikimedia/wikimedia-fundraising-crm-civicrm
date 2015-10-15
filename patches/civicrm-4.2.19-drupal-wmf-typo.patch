@@ -1,4 +1,12 @@
 diff -urN civicrm-4.2.19/CRM/Contact/Form/CustomData.php civicrm-4.2.19-wmf/CRM/Contact/Form/CustomData.php
+
+Status: need to ascertain if there is a technical reason for this.
+Recommendation: allow it to die a natural death
+Background: This patch changes groupID in the url to groupId. I think it may be aesthetic.
+Tim wasn't terribly keen on altering a url without a technical reason & there are 5 other instances of groupID and
+one of groupId.
+Commit notes: Looking at the commit history it seems like it is possibly mostly to do with the porting history.
+
 --- civicrm-4.2.19/CRM/Contact/Form/CustomData.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Contact/Form/CustomData.php	2015-03-11 13:31:10.230248478 -0700
 @@ -122,7 +122,7 @@

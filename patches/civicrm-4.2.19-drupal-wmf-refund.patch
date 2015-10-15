@@ -1,4 +1,9 @@
 diff -urN civicrm-4.2.19/CRM/Contribute/Form/Contribution.php civicrm-4.2.19-wmf/CRM/Contribute/Form/Contribution.php
+
+Status: This should be upstreamed into core.
+Background: This adds refunds to the UI.
+JIRA: CRM-11503
+
 --- civicrm-4.2.19/CRM/Contribute/Form/Contribution.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Contribute/Form/Contribution.php	2015-03-11 13:31:10.258248477 -0700
 @@ -1044,7 +1044,7 @@

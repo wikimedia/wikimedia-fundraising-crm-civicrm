@@ -1,4 +1,12 @@
 diff -urN civicrm-4.2.19/CRM/ACL/BAO/ACL.php civicrm-4.2.19-wmf/CRM/ACL/BAO/ACL.php
+
+Status: needs confirmation
+Recommendation: no further action.
+Background: This appears to be primarily about adding caching to the CRM_ACL_BAO_ACL::group function.
+In 4.4 there appears to be caching submitted by Adam.
+
+JIRA: CRM-11275 (tangental I think)
+
 --- civicrm-4.2.19/CRM/ACL/BAO/ACL.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/ACL/BAO/ACL.php	2015-03-11 13:31:10.174248480 -0700
 @@ -44,6 +44,7 @@

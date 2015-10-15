@@ -1,4 +1,10 @@
 diff -urN civicrm-4.2.19/api/api.php civicrm-4.2.19-wmf/api/api.php
+
+Status: api.php code too changed to apply api wrapper changes.
+      performance issue being tracked in CRM-17000
+Background: patch is to prevent 'bubble up DB_Error details'
+Commit comment: (FR #1066) Overly specific hack to bubble up DB_Error details
+
 --- civicrm-4.2.19/api/api.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/api/api.php	2015-03-11 13:31:10.446248473 -0700
 @@ -114,7 +114,7 @@
@@ -34,7 +40,7 @@ diff -urN civicrm-4.2.19/api/v3/EntityTag.php civicrm-4.2.19-wmf/api/v3/EntityTa
 @@ -72,6 +72,16 @@
    $params['entity_table']['api.default'] = 'civicrm_contact';
  }
- 
+
 +function civicrm_api3_entity_tag_getdetails($params) {
 +    $values = CRM_Core_BAO_EntityTag::getTagDetails($params['entity_id'], $params['entity_table']);
 +    return civicrm_api3_create_success($values, $params);
@@ -76,7 +82,7 @@ diff -urN civicrm-4.2.19/api/v3/utils.php civicrm-4.2.19-wmf/api/v3/utils.php
    }
 @@ -309,22 +323,18 @@
  }
- 
+
  /**
 - *  Recursive function to explode value-separated strings into arrays
 + * explode value-separated strings into arrays
@@ -123,7 +129,7 @@ diff -urN civicrm-4.2.19/api/v3/utils.php civicrm-4.2.19-wmf/api/v3/utils.php
      }
      $params[$fieldname] = CRM_Utils_Date::processDate($params[$fieldname]);
 @@ -1222,13 +1232,9 @@
- 
+
      return civicrm_api3_create_success($creates, $params);
    }
 -  catch(PEAR_Exception$e) {
@@ -136,4 +142,4 @@ diff -urN civicrm-4.2.19/api/v3/utils.php civicrm-4.2.19-wmf/api/v3/utils.php
 +    return civicrm_api3_create_error($e);
    }
  }
- 
+

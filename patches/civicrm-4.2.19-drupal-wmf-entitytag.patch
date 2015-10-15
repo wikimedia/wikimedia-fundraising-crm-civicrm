@@ -1,4 +1,11 @@
 diff -urN civicrm-4.2.19/CRM/Core/BAO/EntityTag.php civicrm-4.2.19-wmf/CRM/Core/BAO/EntityTag.php
+
+Status: needs review
+Background: adds new api civicrm_api('entity_tag', 'getdetails'). I suspect there is a more api-way of doing this. But,
+it could go in an extension too.
+Apparently used in
+./donor_review/Crm.php
+
 --- civicrm-4.2.19/CRM/Core/BAO/EntityTag.php	2014-09-09 15:40:20.000000000 -0700
 +++ civicrm-4.2.19-wmf/CRM/Core/BAO/EntityTag.php	2015-03-11 13:31:10.274248477 -0700
 @@ -64,6 +64,42 @@
