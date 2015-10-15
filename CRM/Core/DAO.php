@@ -1815,7 +1815,8 @@ SELECT contact_id
       }
     }
 
-    if ($trigger) {
+    // WMF: disabled triggers to limit database permissions
+    if (false && $trigger) {
       $result = $dao->query('CREATE TRIGGER civicrm_domain_trigger BEFORE INSERT ON civicrm_domain FOR EACH ROW BEGIN END');
       if (PEAR::getStaticProperty('DB_DataObject', 'lastError') || is_a($result, 'DB_Error')) {
         if ($view) {
@@ -1824,7 +1825,7 @@ SELECT contact_id
         return FALSE;
       }
 
-      //$dao->query('DROP TRIGGER IF EXISTS civicrm_domain_trigger');
+      $dao->query('DROP TRIGGER IF EXISTS civicrm_domain_trigger');
       if (PEAR::getStaticProperty('DB_DataObject', 'lastError')) {
         if ($view) {
           $dao->query('DROP VIEW IF EXISTS civicrm_domain_view');
