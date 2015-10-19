@@ -1402,7 +1402,7 @@ class CRM_Report_Form extends CRM_Core_Form {
         ts('Save a Copy') . '...');
     }
     $this->addElement('submit', $this->_instanceButtonName,
-      ts('Save') . '...');
+      ts('Update Report'));
 
     $this->assign('instanceForm', $this->_instanceForm);
 
