@@ -64,7 +64,11 @@ class CRM_Core_BAO_EntityTag extends CRM_Core_DAO_EntityTag {
   }
 
     /**
-     * Get array of tag details the contact belongs to.
+     * @deprecated
+     *
+     * This is ported from wmf 4.2 but (hopefully) no longer used
+     * and should be removed after another a few more checks to ensure it
+     * is not called.
      *
      * @param int $entityID id of the entity usually the contactID.
      * @param string $entityTable name of the entity table usually 'civicrm_contact'

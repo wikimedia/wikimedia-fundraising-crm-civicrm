@@ -70,10 +70,21 @@ function _civicrm_api3_entity_tag_get_spec(&$params) {
   $params['entity_table']['api.default'] = 'civicrm_contact';
 }
 
+/**
+ * @deprecated
+ *
+ * This is ported from wmf 4.2 but (hopefully) no longer used
+ * and should be removed after another a few more checks to ensure it
+ * is not called.
+ *
+ * @param $params
+ * @return array
+ */
 function civicrm_api3_entity_tag_getdetails($params) {
     $values = CRM_Core_BAO_EntityTag::getTagDetails($params['entity_id'], $params['entity_table']);
     return civicrm_api3_create_success($values, $params);
 }
+
 function _civicrm_api3_entity_tag_getdetails_spec(&$params) {
     $params['entity_id']['api.required'] = 1;
     $params['entity_id']['api.aliases'] = array('contact_id');
