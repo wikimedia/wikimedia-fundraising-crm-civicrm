@@ -103,6 +103,10 @@
         {ts}Select the sections that should be included when adding or editing a contact record. EXAMPLE: If your organization does not record Gender and Birth Date for individuals, then simplify the form by un-checking this option. Drag interface allows you to change the order of the panes displayed on contact add/edit screen.{/ts}
       </td>
     </tr>
+    <tr>
+      <td class="label"></td>
+      <td>{$form.isDedupeOnSave.html} {$form.isDedupeOnSave.label}</td>
+    </tr>
     <tr class="crm-preferences-display-form-block-advanced_search_options">
       <td class="label">{$form.advanced_search_options.label}</td>
       <td>{$form.advanced_search_options.html}</td>

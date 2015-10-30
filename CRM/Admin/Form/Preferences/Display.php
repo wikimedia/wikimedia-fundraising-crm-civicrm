@@ -101,6 +101,11 @@ class CRM_Admin_Form_Preferences_Display extends CRM_Admin_Form_Preferences {
           'title' => ts('Enable Popup Forms'),
           'weight' => 12,
         ),
+        'isDedupeOnSave' => array(
+          'html_type' => 'checkbox',
+          'title' => ts('Dedupe contacts during save'),
+          'weight' => 13,
+        ),
       ),
     );
 
