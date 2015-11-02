@@ -1,0 +1,20 @@
+diff -urN civicrm-4.2.19/templates/CRM/common/jcalendar.tpl civicrm-4.2.19-wmf/templates/CRM/common/jcalendar.tpl
+
+Status: needs more diagnosis.
+Background: This is a tweak to the calender widget. It could just be a merge-history thing as there were a bunch of changes but
+only this is left. This code has been rapidly moving so whatever the cause is likely to have changed.
+
+--- civicrm-4.2.19/templates/CRM/common/jcalendar.tpl	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/templates/CRM/common/jcalendar.tpl	2015-03-11 13:31:10.722248465 -0700
+@@ -114,7 +114,10 @@
+       // set default value to display field, setDefault param for datepicker
+       // is not working hence using below logic
+       // parse the date
+-      var displayDateValue = cj.datepicker.parseDate( altDateFormat, dateValue );
++      var displayDateValue = '';
++      if (dateValue) {
++          displayDateValue = new Date(dateValue.replace(" ", "T"));
++      }
+       
+       // format date according to display field
+       displayDateValue = cj.datepicker.formatDate( date_format, displayDateValue );

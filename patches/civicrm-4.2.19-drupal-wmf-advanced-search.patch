@@ -1,0 +1,39 @@
+diff -urN civicrm-4.2.19/CRM/Contact/Form/Search.php civicrm-4.2.19-wmf/CRM/Contact/Form/Search.php
+
+Status: I think this hook (in 4.4) http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_queryObjects possibly
+supercedes this proposed hook.
+
+Recommendation : grep & make sure the only use is still the commented out one & if so don't port to upgraded version
+
+JIRA: CRM-10674
+
+--- civicrm-4.2.19/CRM/Contact/Form/Search.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Contact/Form/Search.php	2015-03-11 13:31:10.234248478 -0700
+@@ -329,6 +329,7 @@
+           'taskClassName' => 'CRM_Contact_Task',
+         ),
+       );
++      CRM_Utils_Hook::advancedSearchModes(self::$_modeValues);
+     }
+   }
+ 
+diff -urN civicrm-4.2.19/CRM/Utils/Hook.php civicrm-4.2.19-wmf/CRM/Utils/Hook.php
+--- civicrm-4.2.19/CRM/Utils/Hook.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Utils/Hook.php	2015-03-11 13:31:10.434248473 -0700
+@@ -966,6 +966,16 @@
+   }
+ 
+   /**
++   * This hook is used to add or modify display modes in the Contact Advanced Search form.
++   */
++  static function advancedSearchModes( &$modes ) {
++    return self::singleton( )->invoke( 1, $modes,
++      self::$_nullObject, self::$_nullObject,
++      self::$_nullObject, self::$_nullObject,
++      'civicrm_advancedSearchModes' );
++  }
++
++  /**
+    * This hook is called when we are determining the contactID for a specific
+    * email address
+    *

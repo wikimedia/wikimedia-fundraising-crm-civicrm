@@ -1,6 +1,6 @@
 [gerrit]
 host=gerrit.wikimedia.org
 port=29418
-project=wikimedia/fundraising/crm.git
-defaultbranch=civi-4.6.9
+project=wikimedia/fundraising/crm/civicrm.git
+defaultbranch=civi-4.6.9-deployment
 defaultrebase=0
