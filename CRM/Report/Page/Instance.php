@@ -1,11 +1,9 @@
 <?php
-// $Id$
-
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.2                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2012                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,12 +23,12 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
-*/
+ */
 
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2012
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -40,16 +38,20 @@
  */
 class CRM_Report_Page_Instance extends CRM_Core_Page {
   /**
-   * run this page (figure out the action needed and perform it).
+   * Run this page (figure out the action needed and perform it).
    *
    * @return void
    */
-  function run() {
+  public function run() {
     $instanceId = CRM_Report_Utils_Report::getInstanceID();
     if (!$instanceId) {
       $instanceId = CRM_Report_Utils_Report::getInstanceIDForPath();
     }
-    $action    = CRM_Utils_Request::retrieve('action', 'String', $this);
+    if (is_numeric($instanceId)) {
+      $instanceURL = CRM_Utils_System::url("civicrm/report/instance/{$instanceId}", 'reset=1');
+      CRM_Core_Session::singleton()->replaceUserContext($instanceURL);
+    }
+    $action = CRM_Utils_Request::retrieve('action', 'String', $this);
     $optionVal = CRM_Report_Utils_Report::getValueFromUrl($instanceId);
     $reportUrl = CRM_Utils_System::url('civicrm/report/list', "reset=1");
 
@@ -59,8 +61,8 @@ class CRM_Report_Page_Instance extends CRM_Core_Page {
         CRM_Core_Error::statusBounce($statusMessage, $reportUrl);
       }
 
-      $navId = CRM_Core_DAO::getFieldValue('CRM_Report_DAO_Instance', $instanceId, 'navigation_id', 'id');
-      CRM_Report_BAO_Instance::delete($instanceId);
+      $navId = CRM_Core_DAO::getFieldValue('CRM_Report_DAO_ReportInstance', $instanceId, 'navigation_id', 'id');
+      CRM_Report_BAO_ReportInstance::del($instanceId);
 
       //delete navigation if exists
       if ($navId) {
@@ -68,13 +70,12 @@ class CRM_Report_Page_Instance extends CRM_Core_Page {
         CRM_Core_BAO_Navigation::resetNavigation();
       }
 
-      CRM_Core_Session::setStatus(ts('Selected Instance has been deleted.'));
+      CRM_Core_Session::setStatus(ts('Selected report has been deleted.'), ts('Deleted'), 'success');
     }
     else {
       $templateInfo = CRM_Core_OptionGroup::getRowValues('report_template', "{$optionVal}", 'value');
       if (empty($templateInfo)) {
-        CRM_Core_Session::setStatus(ts('Could not find template for the instance.'));
-        return;
+        CRM_Core_Error::statusBounce('You have tried to access a report that does not exist.');
       }
 
       $extKey = strpos($templateInfo['name'], '.');
@@ -82,14 +83,14 @@ class CRM_Report_Page_Instance extends CRM_Core_Page {
       $reportClass = NULL;
 
       if ($extKey !== FALSE) {
-        $ext = new CRM_Core_Extensions();
+        $ext = CRM_Extension_System::singleton()->getMapper();
         $reportClass = $ext->keyToClass($templateInfo['name'], 'report');
         $templateInfo['name'] = $reportClass;
       }
 
       if (strstr($templateInfo['name'], '_Form') || !is_null($reportClass)) {
         $instanceInfo = array();
-        CRM_Report_BAO_Instance::retrieve(array('id' => $instanceId), $instanceInfo);
+        CRM_Report_BAO_ReportInstance::retrieve(array('id' => $instanceId), $instanceInfo);
 
         if (!empty($instanceInfo['title'])) {
           CRM_Utils_System::setTitle($instanceInfo['title']);
@@ -104,9 +105,9 @@ class CRM_Report_Page_Instance extends CRM_Core_Page {
         return $wrapper->run($templateInfo['name'], NULL, NULL);
       }
 
-      CRM_Core_Session::setStatus(ts('Could not find template for the instance.'));
+      CRM_Core_Session::setStatus(ts('Could not find template for the instance.'), ts('Template Not Found'), 'error');
     }
     return CRM_Utils_System::redirect($reportUrl);
   }
-}
 
+}
