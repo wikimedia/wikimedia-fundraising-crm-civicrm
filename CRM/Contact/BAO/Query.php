@@ -1634,12 +1634,6 @@ class CRM_Contact_BAO_Query {
       $likeNames = array('sort_name', 'email', 'note', 'display_name');
     }
 
-    // email comes in via advanced search
-    // so use wildcard always
-    if ($id == 'email') {
-      $wildcard = 1;
-    }
-
     if (!$useEquals && in_array($id, $likeNames)) {
       $result = array($id, 'LIKE', $values, 0, 1);
     }
