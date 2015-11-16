@@ -99,15 +99,19 @@ class CRM_Core_DAO extends DB_DataObject {
    *
    * @param string $dsn
    *   The database connection string.
-   *
-   * @return void
    */
   public static function init($dsn) {
+    Civi::$statics[__CLASS__]['init'] = 1;
     $options = &PEAR::getStaticProperty('DB_DataObject', 'options');
     $options['database'] = $dsn;
     if (defined('CIVICRM_DAO_DEBUG')) {
       self::DebugLevel(CIVICRM_DAO_DEBUG);
     }
+    CRM_Core_DAO::setFactory(new CRM_Contact_DAO_Factory());
+    if (CRM_Utils_Constant::value('CIVICRM_MYSQL_STRICT', CRM_Utils_System::isDevelopment())) {
+      CRM_Core_DAO::executeQuery('SET SESSION sql_mode = STRICT_TRANS_TABLES');
+    }
+    CRM_Core_DAO::executeQuery('SET NAMES utf8');
   }
 
   /**
@@ -360,7 +364,12 @@ class CRM_Core_DAO extends DB_DataObject {
    */
   public function initialize() {
     $this->_connect();
-    $this->query("SET NAMES utf8");
+    if (empty(Civi::$statics[__CLASS__]['init'])) {
+      // CRM_Core_DAO::init() must be called before CRM_Core_DAO->initialize().
+      // This occurs very early in bootstrap - error handlers may not be wired up.
+      echo "Inconsistent system initialization sequence. Premature access of (" . get_class($this) . ")";
+      CRM_Utils_System::civiExit();
+    }
   }
 
   /**
