@@ -246,7 +246,7 @@ class CRM_Report_Page_InstanceList extends CRM_Core_Page {
     $urlCommon = 'civicrm/report/instance/' . $instanceID;
     $actions = array(
       'save' => array(
-        'url' => CRM_Utils_System::url($urlCommon, 'reset=1&output=save'),
+        'url' => CRM_Utils_System::url($urlCommon, 'reset=1&output=copy'),
         'label' => ts('Save a Copy'),
       ),
       'pdf' => array(

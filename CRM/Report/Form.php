@@ -179,6 +179,13 @@ class CRM_Report_Form extends CRM_Core_Form {
   protected $tabs = array();
 
   /**
+   * Should we add paging.
+   *
+   * @var bool
+   */
+  protected $addPaging = TRUE;
+
+  /**
    * An attribute for checkbox/radio form field layout
    *
    * @var array
@@ -524,11 +531,25 @@ class CRM_Report_Form extends CRM_Core_Form {
         $this->_formValues = NULL;
       }
 
+      $this->setOutputMode();
+
+      if ($this->_outputMode == 'copy') {
+        $this->_createNew = TRUE;
+        $this->_params = $this->_formValues;
+        $this->_params['view_mode'] = 'criteria';
+        $this->_params['title'] = $this->getTitle() . ts(' (copy created by %1)', array(
+          CRM_Core_Session::singleton()->getLoggedInContactDisplayName(),
+          'string',
+        ));
+        // Do not pass go. Do not collect another chance to re-run the same query.
+        CRM_Report_Form_Instance::postProcess($this);
+      }
+
       // lets always do a force if reset is found in the url.
       // Hey why not? see CRM-17225 for more about this. The use of reset to be force is historical for reasons stated
       // in the comment line above these 2.
-      if (!empty($_REQUEST['reset']) && CRM_Utils_Request::retrieve('output', 'String') != 'criteria'
-          && CRM_Utils_Request::retrieve('output', 'String') != 'save') {
+      if (!empty($_REQUEST['reset'])
+        && !in_array(CRM_Utils_Request::retrieve('output', 'String'), array('save', 'criteria'))) {
         $this->_force = 1;
       }
 
