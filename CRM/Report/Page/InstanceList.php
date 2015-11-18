@@ -254,7 +254,7 @@ class CRM_Report_Page_InstanceList extends CRM_Core_Page {
         'label' => ts('View as pdf'),
       ),
       'print' => array(
-        'url' => CRM_Utils_System::url($urlCommon, 'reset=1&force=1output=print'),
+        'url' => CRM_Utils_System::url($urlCommon, 'reset=1&force=1&output=print'),
         'label' => ts('Print report'),
       ),
       'csv' => array(
