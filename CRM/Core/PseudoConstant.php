@@ -182,7 +182,11 @@ class CRM_Core_PseudoConstant {
   private static $accountOptionValues;
 
   /**
-   * Tax Rates
+   * Tax Rates.
+   *
+   * Do not declare this as an array without fixing here. Caching relies on
+   * it being null if not set - to differentiate between not set & empty.
+   *
    * @var array
    */
   private static $taxRates;
@@ -1847,7 +1851,7 @@ WHERE  id = %1
    *   array list of tax rates with the financial type
    */
   public static function getTaxRates() {
-    if (!self::$taxRates) {
+    if (!is_array(self::$taxRates)) {
       self::$taxRates = array();
       $sql = "
         SELECT fa.tax_rate, efa.entity_id
