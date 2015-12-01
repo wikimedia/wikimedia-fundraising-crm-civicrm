@@ -229,6 +229,18 @@ function civicrm_api3_contribution_get($params) {
 }
 
 /**
+ * Get number of contacts matching the supplied criteria.
+ *
+ * @param array $params
+ *
+ * @return int
+ */
+function civicrm_api3_contribution_getcount($params) {
+  $count = _civicrm_api3_get_using_query_object('Contribution', $params, array(), TRUE, CRM_Contact_BAO_Query::MODE_CONTRIBUTE);
+  return (int) $count;
+}
+
+/**
  * This function is used to format the soft credit for backward compatibility.
  *
  * As of v4.4 we support multiple soft credit, so now contribution returns array with 'soft_credit' as key
