@@ -400,10 +400,13 @@ class CRM_Report_Form_Contribute_Lybunt extends CRM_Report_Form {
    *
    * @param string $fieldName
    *
+   * @param int $current_year
    * @return null|string
    */
-  public function whereClauseLastYear($fieldName) {
-    $current_year = $this->_params['yid_value'];
+  public function whereClauseLastYear($fieldName, $current_year = NULL) {
+    if (empty($current_year)) {
+      $current_year = $this->_params['yid_value'];
+    }
     $previous_year = $current_year - 1;
     if (CRM_Utils_Array::value('yid_op', $this->_params) == 'calendar') {
       $firstDateOfYear = "{$previous_year}-01-01";
@@ -439,13 +442,22 @@ class CRM_Report_Form_Contribute_Lybunt extends CRM_Report_Form {
   public function statistics(&$rows) {
     $statistics = parent::statistics($rows);
     if (!empty($rows)) {
-      $select = "SELECT SUM({$this->_aliases['civicrm_contribution']}.total_amount ) as amount ";
+      $select = "
+        SELECT SUM({$this->_aliases['civicrm_contribution']}.total_amount ) as amount,
+        SUM(IF( " . $this->whereClauseLastYear('receive_date') . ", total_amount, 0)) as last_year";
+
       $where = "WHERE {$this->_aliases['civicrm_contact']}.id IN (" . implode(',', $this->_contactIds) . ")
         AND {$this->_aliases['civicrm_contribution']}.is_test = 0 {$this->_statusClause}";
 
       $sql = "{$select} {$this->_from} {$where}";
+
       $dao = CRM_Core_DAO::executeQuery($sql);
       if ($dao->fetch()) {
+        $statistics['counts']['last_year_amount'] = array(
+          'value' => $dao->last_year,
+          'title' => 'Total ' . ($this->_params['yid_value'] - 1),
+          'type' => CRM_Utils_Type::T_MONEY,
+        );
         $statistics['counts']['amount'] = array(
           'value' => $dao->amount,
           'title' => 'Total LifeTime',
