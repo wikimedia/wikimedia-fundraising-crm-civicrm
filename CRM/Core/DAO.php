@@ -78,6 +78,12 @@ class CRM_Core_DAO extends DB_DataObject {
   static $_checkedSqlFunctionsExist = FALSE;
 
   /**
+   * https://issues.civicrm.org/jira/browse/CRM-17748
+   * internal variable for DAO to hold per-query settings
+   */
+  protected $_options = array();
+
+  /**
    * Class constructor.
    *
    * @return \CRM_Core_DAO
@@ -321,12 +327,20 @@ class CRM_Core_DAO extends DB_DataObject {
    */
   public function query($query, $i18nRewrite = TRUE) {
     // rewrite queries that should use $dbLocale-based views for multi-language installs
-    global $dbLocale;
+    global $dbLocale, $_DB_DATAOBJECT;
+
+    $conn = &$_DB_DATAOBJECT['CONNECTIONS'][$this->_database_dsn_md5];
+    $orig_options = $conn->options;
+    $this->_setDBOptions($this->_options);
+
     if ($i18nRewrite and $dbLocale) {
       $query = CRM_Core_I18n_Schema::rewriteQuery($query);
     }
 
-    return parent::query($query);
+    $ret = parent::query($query);
+
+    $this->_setDBOptions($orig_options);
+    return $ret;
   }
 
   /**
@@ -1156,6 +1170,64 @@ FROM   civicrm_domain
     $object->entity_table = 'civicrm_contact';
     $object->entity_id = $contactId;
     $object->delete();
+  }
+
+  /**
+   * execute an unbuffered query.  This is a wrapper around new functionality
+   * exposed with CRM-17748.
+   *
+   * @param string $query query to be executed
+   *
+   * @return Object CRM_Core_DAO object that points to an unbuffered result set
+   * @static
+   * @access public
+   */
+  static public function executeUnbufferedQuery(
+    $query,
+    $params = array(),
+    $abort = TRUE,
+    $daoName = NULL,
+    $freeDAO = FALSE,
+    $i18nRewrite = TRUE,
+    $trapException = FALSE
+  ) {
+    $queryStr = self::composeQuery($query, $params, $abort);
+    //CRM_Core_Error::debug( 'q', $queryStr );
+    if (!$daoName) {
+      $dao = new CRM_Core_DAO();
+    }
+    else {
+      $dao = new $daoName();
+    }
+
+    if ($trapException) {
+      CRM_Core_Error::ignoreException();
+    }
+
+    // set the DAO object to use an unbuffered query
+    $dao->setOptions(array('result_buffering' => 0));
+
+    $result = $dao->query($queryStr, $i18nRewrite);
+
+    if ($trapException) {
+      CRM_Core_Error::setCallback();
+    }
+
+    if (is_a($result, 'DB_Error')) {
+      return $result;
+    }
+
+    // since it is unbuffered, ($dao->N==0) is true.  This blocks the standard fetch() mechanism.
+    $dao->N = TRUE;
+
+    if ($freeDAO ||
+      preg_match('/^(insert|update|delete|create|drop|replace)/i', $queryStr)
+    ) {
+      // we typically do this for insert/update/delete stataments OR if explicitly asked to
+      // free the dao
+      $dao->free();
+    }
+    return $dao;
   }
 
   /**
@@ -2410,6 +2482,37 @@ SELECT contact_id
   }
 
   /**
+   * https://issues.civicrm.org/jira/browse/CRM-17748
+   * Sets the internal options to be used on a query
+   *
+   * @param array $options
+   *
+   */
+  function setOptions($options) {
+    if (is_array($options)) {
+      $this->_options = $options;
+    }
+  }
+
+  /**
+   * https://issues.civicrm.org/jira/browse/CRM-17748
+   * wrapper to pass internal DAO options down to DB_mysql/DB_Common level
+   *
+   * @param array $options
+   *
+   */
+  protected function _setDBOptions($options) {
+    global $_DB_DATAOBJECT;
+
+    if (is_array($options) && count($options)) {
+      $conn = &$_DB_DATAOBJECT['CONNECTIONS'][$this->_database_dsn_md5];
+      foreach ($options as $option_name => $option_value) {
+        $conn->setOption($option_name, $option_value);
+      }
+    }
+  }
+
+   /**
    * @param array $params
    */
   public function setApiFilter(&$params) {
