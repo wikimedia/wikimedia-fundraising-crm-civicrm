@@ -121,13 +121,6 @@ class CRM_Core_Config extends CRM_Core_Config_Variables {
   public $customPHPPathDir;
 
   /**
-   * The factory class used to instantiate our DB objects
-   *
-   * @var string
-   */
-  private $DAOFactoryClass = 'CRM_Contact_DAO_Factory';
-
-  /**
    * The handle to the log that we are using
    * @var object
    */
@@ -381,7 +374,7 @@ class CRM_Core_Config extends CRM_Core_Config_Variables {
       exit();
     }
 
-    $this->_initDAO();
+    CRM_Core_DAO::init($this->dsn);
 
     if (defined('CIVICRM_UF')) {
       $this->userFramework = CIVICRM_UF;
@@ -399,22 +392,6 @@ class CRM_Core_Config extends CRM_Core_Config_Variables {
     // between CRM_Core_Config and CRM_Core_Component (they
     // are co-dependant)
     $this->componentRegistry = new CRM_Core_Component();
-  }
-
-  /**
-   * Initialize the DataObject framework.
-   *
-   * @return void
-   */
-  private function _initDAO() {
-    CRM_Core_DAO::init($this->dsn);
-
-    $factoryClass = $this->DAOFactoryClass;
-    require_once str_replace('_', DIRECTORY_SEPARATOR, $factoryClass) . '.php';
-    CRM_Core_DAO::setFactory(new $factoryClass());
-    if (CRM_Utils_Constant::value('CIVICRM_MYSQL_STRICT', CRM_Utils_System::isDevelopment())) {
-      CRM_Core_DAO::executeQuery('SET SESSION sql_mode = STRICT_TRANS_TABLES');
-    }
   }
 
   /**
