@@ -297,11 +297,20 @@ class CRM_Report_Form extends CRM_Core_Form {
   protected $_aclWhere = NULL;
 
   /**
-   * Array of DAO tables having columns included in SELECT or ORDER BY clause
+   * Array of DAO tables having columns included in SELECT or ORDER BY clause.
+   *
+   * Where has also been added to this although perhaps the 'includes both' array should have a different name.
    *
    * @var array
    */
   protected $_selectedTables;
+
+  /**
+   * Array of DAO tables having columns included in WHERE or HAVING clause
+   *
+   * @var array
+   */
+  protected $filteredTables;
 
   /**
    * Output mode e.g 'print', 'csv', 'pdf'.
@@ -400,6 +409,13 @@ class CRM_Report_Form extends CRM_Core_Form {
   protected $_createNew;
 
   /**
+   *  When a grand total row has calculated the status we pop it off to here.
+   *
+   * This allows us to access it from the stats function and avoid recalculating.
+   */
+  protected $rollupRow = array();
+
+  /**
    * SQL being run in this report.
    *
    * The sql in the report is stored in this variable in order to be displayed on the developer tab.
@@ -408,6 +424,16 @@ class CRM_Report_Form extends CRM_Core_Form {
    */
 
   protected $sql;
+
+  /**
+   * SQL being run in this report as an array.
+   *
+   * The sql in the report is stored in this variable in order to be returned to api & test calls.
+   *
+   * @var string
+   */
+
+  protected $sqlArray;
   /**
    * Class constructor.
    */
@@ -1248,6 +1274,7 @@ class CRM_Report_Form extends CRM_Core_Form {
     if (!CRM_Core_Permission::check('view report sql')) {
       return;
     }
+
     $this->tabs['Developer'] = array(
       'title' => ts('Developer'),
       'tpl' => 'Developer',
@@ -1255,6 +1282,7 @@ class CRM_Report_Form extends CRM_Core_Form {
     );
 
     $this->assignTabs();
+    $this->sqlArray[] = $sql;
     foreach (array('LEFT JOIN') as $term) {
       $sql = str_replace($term, '<br>&nbsp&nbsp' . $term, $sql);
     }
@@ -2307,26 +2335,30 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
    * @return bool
    */
   public function grandTotal(&$rows) {
-    if (!$this->_rollup || ($this->_rollup == '') ||
+    if (!$this->_rollup || ($this->_rollup == '' || count($rows) == 1) ||
       ($this->_limit && count($rows) >= self::ROW_COUNT_LIMIT)
     ) {
       return FALSE;
     }
-    $lastRow = array_pop($rows);
+
+    $this->rollupRow = array_pop($rows);
 
     foreach ($this->_columnHeaders as $fld => $val) {
       if (!in_array($fld, $this->_statFields)) {
         if (!$this->_grandFlag) {
-          $lastRow[$fld] = "Grand Total";
+          $this->rollupRow[$fld] = "Grand Total";
           $this->_grandFlag = TRUE;
         }
         else {
-          $lastRow[$fld] = "";
+          $this->rollupRow[$fld] = "";
         }
       }
     }
+    if ($this->_grandFlag) {
+      $this->moveSummaryColumnsToTheRightHandSide();
+    }
 
-    $this->assign('grandStat', $lastRow);
+    $this->assign('grandStat', $this->rollupRow);
     return TRUE;
   }
 
@@ -2874,7 +2906,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
         }
 
         if (!empty($orderByField)) {
-          $this->_orderByFields[] = $orderByField;
+          $this->_orderByFields[$orderByField['tplField']] = $orderByField;
           $orderBys[] = "{$orderByField['dbAlias']} {$orderBy['order']}";
 
           // Record any section headers for assignment to the template
@@ -2897,22 +2929,8 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
    * @return array
    */
   public function unselectedSectionColumns() {
-    $selectColumns = array();
-    foreach ($this->_columns as $tableName => $table) {
-      if (array_key_exists('fields', $table)) {
-        foreach ($table['fields'] as $fieldName => $field) {
-          if (!empty($field['required']) ||
-            !empty($this->_params['fields'][$fieldName])
-          ) {
-
-            $selectColumns["{$tableName}_{$fieldName}"] = 1;
-          }
-        }
-      }
-    }
-
     if (is_array($this->_sections)) {
-      return array_diff_key($this->_sections, $selectColumns);
+      return array_diff_key($this->_sections, $this->getSelectColumns());
     }
     else {
       return array();
@@ -3025,9 +3043,18 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
    * Modify column headers.
    */
   public function modifyColumnHeaders() {
-    // use this method to modify $this->_columnHeaders
   }
 
+  /**
+   * Move totals columns to the right edge of the table.
+   *
+   * It seems like a more logical layout to have any totals columns on the far right regardless of
+   * the location of the rest of their table.
+   */
+  public function moveSummaryColumnsToTheRightHandSide() {
+    $statHeaders = (array_intersect_key($this->_columnHeaders, array_flip($this->_statFields)));
+    $this->_columnHeaders = array_merge(array_diff_key($this->_columnHeaders, $statHeaders), $this->_columnHeaders, $statHeaders);
+  }
   /**
    * Assign rows to the template.
    *
@@ -3052,7 +3079,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
     $statistics = array();
 
     $count = count($rows);
-
+    // Why do we increment the count for rollup seems to artificially inflate the count.
     if ($this->_rollup && ($this->_rollup != '') && $this->_grandFlag) {
       $count++;
     }
@@ -3351,6 +3378,15 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
   }
 
   /**
+   * Get the sql used to generate the report.
+   *
+   * @return string
+   */
+  public function getReportSql() {
+    return $this->sqlArray;
+  }
+
+  /**
    * Use the form name to create the tpl file name.
    *
    * @return string
@@ -3462,7 +3498,6 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
    * @param int $rowCount
    */
   public function setPager($rowCount = self::ROW_COUNT_LIMIT) {
-
     // CRM-14115, over-ride row count if rowCount is specified in URL
     if ($this->_dashBoardRowCount) {
       $rowCount = $this->_dashBoardRowCount;
@@ -3477,8 +3512,12 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
         'status' => ts('Records') . ' %%StatusMessage%%',
         'buttonBottom' => 'PagerBottomButton',
         'buttonTop' => 'PagerTopButton',
-        'pageID' => $this->get(CRM_Utils_Pager::PAGE_ID),
       );
+      if (!empty($this->controller)) {
+        // This happens when being called from the api Really we want the api to be able to
+        // pass paging parameters, but at this stage just preventing test crashes.
+        $params['pageID'] = $this->get(CRM_Utils_Pager::PAGE_ID);
+      }
 
       $pager = new CRM_Utils_Pager($params);
       $this->assign_by_ref('pager', $pager);
@@ -3821,21 +3860,22 @@ ORDER BY cg.weight, cf.weight";
 
   /**
    * Build custom data from clause.
+   *
+   * @param bool $joinsForFiltersOnly
+   *   Only include joins to support filters. This would be used if creating a table of contacts to include first.
    */
-  public function customDataFrom() {
+  public function customDataFrom($joinsForFiltersOnly = FALSE) {
     if (empty($this->_customGroupExtends)) {
       return;
     }
     $mapper = CRM_Core_BAO_CustomQuery::$extendsMap;
+    $customTables = explode(',', CRM_Core_DAO::singleValueQuery("SELECT GROUP_CONCAT(table_name) FROM civicrm_custom_group"));
 
     foreach ($this->_columns as $table => $prop) {
-      if (substr($table, 0, 13) == 'civicrm_value' ||
-        substr($table, 0, 12) == 'custom_value'
-      ) {
+      if (in_array($table, $customTables)) {
         $extendsTable = $mapper[$prop['extends']];
-
-        // check field is in params
-        if (!$this->isFieldSelected($prop)) {
+        // Check field is required for rendering the report.
+        if ((!$this->isFieldSelected($prop)) || ($joinsForFiltersOnly && !$this->isFieldFiltered($prop))) {
           continue;
         }
         $baseJoin = CRM_Utils_Array::value($prop['extends'], $this->_customGroupExtendsJoin, "{$this->_aliases[$extendsTable]}.id");
@@ -3910,7 +3950,18 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
         }
       }
     }
+    return $this->isFieldFiltered($prop);
 
+  }
+
+  /**
+   * Check if the field is used as a filter.
+   *
+   * @param string $prop
+   *
+   * @return bool
+   */
+  protected function isFieldFiltered($prop) {
     if (!empty($prop['filters']) && $this->_customGroupFilters) {
       foreach ($prop['filters'] as $fieldAlias => $val) {
         foreach (array(
@@ -3937,7 +3988,6 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
         }
       }
     }
-
     return FALSE;
   }
 
@@ -3997,6 +4047,22 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
   }
 
   /**
+   * Check if table name has columns in WHERE or HAVING clause.
+   *
+   * @param string $tableName
+   *   Name of table (index of $this->_columns array).
+   *
+   * @return bool
+   */
+  public function isTableFiltered($tableName) {
+    // Cause the array to be generated if not previously done.
+    if (!$this->_selectedTables && ! $this->filteredTables) {
+      $this->selectedTables();
+    }
+    return in_array($tableName, $this->filteredTables);
+  }
+
+  /**
    * Fetch array of DAO tables having columns included in SELECT or ORDER BY clause.
    *
    * If the array is unset it will be built.
@@ -4043,6 +4109,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
               'nnll'
             ) {
               $this->_selectedTables[] = $tableName;
+              $this->filteredTables[] = $tableName;
               break;
             }
           }
@@ -4232,15 +4299,17 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
     if (array_key_exists('civicrm_address_country_id', $row)) {
       if ($value = $row['civicrm_address_country_id']) {
         $rows[$rowNum]['civicrm_address_country_id'] = CRM_Core_PseudoConstant::country($value, FALSE);
-        $url = CRM_Report_Utils_Report::getNextUrl($baseUrl,
-          "reset=1&force=1&{$criteriaQueryParams}&" .
-          "country_id_op=in&country_id_value={$value}",
-          $this->_absoluteUrl, $this->_id
-        );
-        $rows[$rowNum]['civicrm_address_country_id_link'] = $url;
-        $rows[$rowNum]['civicrm_address_country_id_hover'] = ts("%1 for this country.",
-          array(1 => $linkText)
-        );
+        if ($baseUrl) {
+          $url = CRM_Report_Utils_Report::getNextUrl($baseUrl,
+            "reset=1&force=1&{$criteriaQueryParams}&" .
+            "country_id_op=in&country_id_value={$value}",
+            $this->_absoluteUrl, $this->_id
+          );
+          $rows[$rowNum]['civicrm_address_country_id_link'] = $url;
+          $rows[$rowNum]['civicrm_address_country_id_hover'] = ts("%1 for this country.",
+            array(1 => $linkText)
+          );
+        }
       }
 
       $entryFound = TRUE;
@@ -4248,15 +4317,17 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
     if (array_key_exists('civicrm_address_county_id', $row)) {
       if ($value = $row['civicrm_address_county_id']) {
         $rows[$rowNum]['civicrm_address_county_id'] = CRM_Core_PseudoConstant::county($value, FALSE);
-        $url = CRM_Report_Utils_Report::getNextUrl($baseUrl,
-          "reset=1&force=1&{$criteriaQueryParams}&" .
-          "county_id_op=in&county_id_value={$value}",
-          $this->_absoluteUrl, $this->_id
-        );
-        $rows[$rowNum]['civicrm_address_county_id_link'] = $url;
-        $rows[$rowNum]['civicrm_address_county_id_hover'] = ts("%1 for this county.",
-          array(1 => $linkText)
-        );
+        if ($baseUrl) {
+          $url = CRM_Report_Utils_Report::getNextUrl($baseUrl,
+            "reset=1&force=1&{$criteriaQueryParams}&" .
+            "county_id_op=in&county_id_value={$value}",
+            $this->_absoluteUrl, $this->_id
+          );
+          $rows[$rowNum]['civicrm_address_county_id_link'] = $url;
+          $rows[$rowNum]['civicrm_address_county_id_hover'] = ts("%1 for this county.",
+            array(1 => $linkText)
+          );
+        }
       }
       $entryFound = TRUE;
     }
@@ -4264,15 +4335,16 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
     if (array_key_exists('civicrm_address_state_province_id', $row)) {
       if ($value = $row['civicrm_address_state_province_id']) {
         $rows[$rowNum]['civicrm_address_state_province_id'] = CRM_Core_PseudoConstant::stateProvince($value, FALSE);
-
-        $url = CRM_Report_Utils_Report::getNextUrl($baseUrl,
-          "reset=1&force=1&{$criteriaQueryParams}&state_province_id_op=in&state_province_id_value={$value}",
-          $this->_absoluteUrl, $this->_id
-        );
-        $rows[$rowNum]['civicrm_address_state_province_id_link'] = $url;
-        $rows[$rowNum]['civicrm_address_state_province_id_hover'] = ts("%1 for this state.",
-          array(1 => $linkText)
-        );
+        if ($baseUrl) {
+          $url = CRM_Report_Utils_Report::getNextUrl($baseUrl,
+            "reset=1&force=1&{$criteriaQueryParams}&state_province_id_op=in&state_province_id_value={$value}",
+            $this->_absoluteUrl, $this->_id
+          );
+          $rows[$rowNum]['civicrm_address_state_province_id_link'] = $url;
+          $rows[$rowNum]['civicrm_address_state_province_id_hover'] = ts("%1 for this state.",
+            array(1 => $linkText)
+          );
+        }
       }
       $entryFound = TRUE;
     }
@@ -4300,10 +4372,21 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
       if (array_key_exists('civicrm_contact_' . $fieldName, $row)) {
         if (($value = $row['civicrm_contact_' . $fieldName]) != FALSE) {
           $rows[$rowNum]['civicrm_contact_' . $fieldName] = CRM_Core_Pseudoconstant::getLabel('CRM_Contact_BAO_Contact', $fieldName, $value);
-          if (($title = CRM_Utils_Array::value($fieldName, $addLinks)) != FALSE) {
+          if ($baseUrl && ($title = CRM_Utils_Array::value($fieldName, $addLinks)) != FALSE) {
             $this->addLinkToRow($rows[$rowNum], $baseUrl, $linkText, $value, $fieldName, 'civicrm_contact', $title);
           }
         }
+        $entryFound = TRUE;
+      }
+    }
+    $yesNoFields = array(
+      'do_not_email', 'is_deceased', 'do_not_phone', 'do_not_sms', 'do_not_mail', 'is_opt_out',
+    );
+    foreach ($yesNoFields as $fieldName) {
+      if (array_key_exists('civicrm_contact_' . $fieldName, $row)) {
+        // Since these are essentially 'negative fields' it feels like it
+        // makes sense to only highlight the exceptions hence no 'No'.
+        $rows[$rowNum]['civicrm_contact_' . $fieldName] = !empty($rows[$rowNum]['civicrm_contact_' . $fieldName]) ? ts('Yes') : '';
         $entryFound = TRUE;
       }
     }
@@ -4430,7 +4513,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
     return array(
       'sort_name' => array(
         'title' => ts('Contact Name'),
-        'required' => TRUE,
+        'required' => FALSE,
         'default' => TRUE,
       ),
       'id' => array(
@@ -4483,6 +4566,12 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
       'external_identifier' => array(
         'title' => ts('Contact identifier from external system'),
       ),
+      'do_not_email' => array(),
+      'do_not_phone' => array(),
+      'do_not_mail' => array(),
+      'do_not_sms' => array(),
+      'is_opt_out' => array(),
+      'is_deceased' => array(),
     );
   }
 
@@ -4625,6 +4714,54 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
       if ($buttonName == $this->_createNewButtonName) {
         $this->_outputMode = 'copy';
       }
+    }
+  }
+
+
+  /**
+   * @return array
+   */
+  public function getSelectColumns()
+  {
+    $selectColumns = array();
+    foreach ($this->_columns as $tableName => $table) {
+      if (array_key_exists('fields', $table)) {
+        foreach ($table['fields'] as $fieldName => $field) {
+          if (!empty($field['required']) ||
+            !empty($this->_params['fields'][$fieldName])
+          ) {
+
+            $selectColumns["{$tableName}_{$fieldName}"] = 1;
+          }
+        }
+      }
+    }
+    return $selectColumns;
+  }
+
+  /**
+   * Add location tables to the query if they are used for filtering.
+   *
+   * This is for when we are running the query separately for filtering and retrieving display fields.
+   */
+  public function selectivelyAddLocationTablesJoinsToFilterQuery() {
+    if ($this->isTableFiltered('civicrm_email')) {
+      $this->_from .= "
+          LEFT  JOIN civicrm_email  {$this->_aliases['civicrm_email']}
+            ON {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_email']}.contact_id
+            AND {$this->_aliases['civicrm_email']}.is_primary = 1";
+    }
+    if ($this->isTableFiltered('civicrm_phone')) {
+      $this->_from .= "
+          LEFT  JOIN civicrm_phone  {$this->_aliases['civicrm_phone']}
+            ON {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_phone']}.contact_id
+            AND {$this->_aliases['civicrm_phone']}.is_primary = 1";
+    }
+    if ($this->isTableFiltered('civicrm_address')) {
+      $this->_from .= "
+          LEFT JOIN civicrm_address {$this->_aliases['civicrm_address']}
+          ON ({$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_address']}.contact_id)
+          AND {$this->_aliases['civicrm_address']}.is_primary = 1\n";
     }
   }
 
