@@ -3796,6 +3796,9 @@ WHERE con.id = {$contributionId}
    *   Credit Note Id.
    */
   public static function createCreditNoteId() {
+    // CRM-17235 introduced this but it's really slowwww and since we don't care about creditnote_ids
+    // we will short circuit the pain until an upstream fix is found.
+    return NULL;
     $prefixValue = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME, 'contribution_invoice_settings');
 
     $creditNoteNum = CRM_Core_DAO::singleValueQuery("SELECT count(creditnote_id) as creditnote_number FROM civicrm_contribution");
