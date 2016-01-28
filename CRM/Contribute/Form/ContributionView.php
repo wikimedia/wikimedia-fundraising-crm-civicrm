@@ -46,13 +46,15 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
    */
   public function preProcess() {
     $id = $this->get('id');
-    $values = $ids = array();
     $params = array('id' => $id);
     $context = CRM_Utils_Request::retrieve('context', 'String', $this);
     $this->assign('context', $context);
 
-    CRM_Contribute_BAO_Contribution::getValues($params, $values, $ids);
+    $values = CRM_Contribute_BAO_Contribution::getValuesWithMappings($params);
+
     CRM_Contribute_BAO_Contribution::resolveDefaults($values);
+    // @todo - I believe this cancelledStatus is unused - if someone reaches the same conclusion
+    // by grepping then the next few lines can go.
     $cancelledStatus = TRUE;
     $status = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
     if (CRM_Utils_Array::value('contribution_status_id', $values) == array_search('Cancelled', $status)) {
@@ -152,6 +154,9 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
     if ($campaignId = CRM_Utils_Array::value('campaign_id', $values)) {
       $campaigns = CRM_Campaign_BAO_Campaign::getCampaigns($campaignId);
       $values['campaign'] = $campaigns[$campaignId];
+    }
+    if ($values['contribution_status'] == 'Refunded') {
+      $this->assign('refund_trxn_id', CRM_Core_BAO_FinancialTrxn::getRefundTransactionTrxnID($id));
     }
 
     // assign values to the template
