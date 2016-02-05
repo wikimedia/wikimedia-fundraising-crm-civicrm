@@ -1270,9 +1270,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         $params['receipt_date'] = date("Y-m-d");
       }
 
-      if ($params['contribution_status_id'] == CRM_Core_OptionGroup::getValue('contribution_status', 'Cancelled', 'name')
-        || $params['contribution_status_id'] == CRM_Core_OptionGroup::getValue('contribution_status', 'Refunded', 'name')
-      ) {
+      if (CRM_Contribute_BAO_Contribution::isContributionStatusNegative($params['contribution_status_id'])) {
         if (CRM_Utils_System::isNull(CRM_Utils_Array::value('cancel_date', $params))) {
           $params['cancel_date'] = date('YmdHis');
         }
