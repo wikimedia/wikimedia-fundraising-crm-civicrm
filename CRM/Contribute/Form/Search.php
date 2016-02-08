@@ -287,17 +287,8 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
         //'contribution_trxn_id',
         'invoice_id',
       );
-      foreach ($specialParams as $element) {
-        $value = CRM_Utils_Array::value($element, $this->_formValues);
-        if ($value) {
-          if (is_array($value)) {
-            $this->_formValues[$element] = array('IN' => $value);
-          }
-          else {
-            $this->_formValues[$element] = array('LIKE' => "%$value%");
-          }
-        }
-      }
+
+      CRM_Contact_BAO_Query::processSpecialFormValue($this->_formValues, $specialParams);
 
       $tags = CRM_Utils_Array::value('contact_tags', $this->_formValues);
       if ($tags && !is_array($tags)) {

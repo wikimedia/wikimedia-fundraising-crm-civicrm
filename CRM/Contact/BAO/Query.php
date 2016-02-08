@@ -3323,7 +3323,7 @@ WHERE  id IN ( $groupIDs )
     $value = $strtolower(CRM_Core_DAO::escapeString(trim($value)));
     if (strlen($value)) {
       $fieldsub = array();
-      $value = "'" . $this->getWildCardedValue($wildcard, $op, $value) . "'";
+      $value = "'" . self::getWildCardedValue($wildcard, $op, $value) . "'";
       if ($fieldName == 'sort_name') {
         $wc = self::caseImportant($op) ? "LOWER(contact_a.sort_name)" : "contact_a.sort_name";
       }
@@ -3386,7 +3386,7 @@ WHERE  id IN ( $groupIDs )
         $op = '=';
       }
       else {
-        $value = $this->getWildCardedValue($wildcard, $op, $n);
+        $value = self::getWildCardedValue($wildcard, $op, $n);
       }
       $this->_qill[$grouping][] = ts('Email') . " $op '$n'";
       $this->_where[$grouping][] = self::buildClause('civicrm_email.email', $op, $value, 'String');
@@ -5899,7 +5899,7 @@ AND   displayRelType.is_active = 1
    *
    * @return string
    */
-  public function getWildCardedValue($wildcard, $op, $value) {
+  public static function getWildCardedValue($wildcard, $op, $value) {
     if ($wildcard && $op == 'LIKE') {
       if (CRM_Core_Config::singleton()->includeWildCardInName && (substr($value, 0, 1) != '%')) {
         return "%$value%";
@@ -5913,4 +5913,33 @@ AND   displayRelType.is_active = 1
     }
   }
 
+
+  /**
+   * Process special fields of Search Form in OK (Operator in Key) format
+   *
+   * @param array $formValues
+   * @param array $specialFields
+   *    Special params to be processed
+   * @param array $changeNames
+   *   Array of fields whose name should be changed
+   */
+  public static function processSpecialFormValue(&$formValues, $specialFields, $changeNames = array()) {
+    foreach ($specialFields as $element) {
+      $value = CRM_Utils_Array::value($element, $formValues);
+      if ($value) {
+        if (is_array($value)) {
+          if (in_array($element, array_keys($changeNames))) {
+            unset($formValues[$element]);
+            $element = $changeNames[$element];
+          }
+          $formValues[$element] = array('IN' => $value);
+        }
+        else {
+          // if wildcard is already present return searchString as it is OR append and/or prepend with wildcard
+          $isWildcard = strstr($value, '%') ? FALSE : CRM_Core_Config::singleton()->includeWildCardInName;
+          $formValues[$element] = array('LIKE' => self::getWildCardedValue($isWildcard, 'LIKE', $value));
+        }
+      }
+    }
+  }
 }
