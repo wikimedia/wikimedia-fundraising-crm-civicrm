@@ -3388,7 +3388,6 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
 
     // build query
     $sql = $this->buildQuery();
-    $this->addToDeveloperTab($sql);
 
     // build array of result based on column headers. This method also allows
     // modifying column headers before using it to build result set i.e $rows.
