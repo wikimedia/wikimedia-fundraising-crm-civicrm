@@ -41,7 +41,7 @@ class CRM_Export_BAO_Export {
   // increase this number a lot to avoid making too many queries
   // LIMIT is not much faster than a no LIMIT query
   // CRM-7675
-  const EXPORT_ROW_COUNT = 10000;
+  const EXPORT_ROW_COUNT = 100000;
 
   /**
    * Get the list the export fields.
@@ -663,15 +663,17 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
     foreach ($returnProperties as $key => $value) {
       $outputColumns[$key] = $value;
     }
-    while (1) {
+    $limitReached = FALSE;
+    while (!$limitReached) {
       $limitQuery = "{$queryString} LIMIT {$offset}, {$rowCount}";
-      $dao = CRM_Core_DAO::executeQuery($limitQuery);
-      if ($dao->N <= 0) {
-        break;
-      }
+      $dao = CRM_Core_DAO::executeUnbufferedQuery($limitQuery);
+      // If this is less than our limit by the end of the iteration we do not need to run the query again to
+      // check if some remain.
+      $rowsThisIteration = 0;
 
       while ($dao->fetch()) {
         $count++;
+        $rowsThisIteration ++;
         $row = array();
 
         //convert the pseudo constants
@@ -1124,6 +1126,9 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
         }
       }
       $dao->free();
+      if ($rowsThisIteration < self::EXPORT_ROW_COUNT) {
+        $limitReached = TRUE;
+      }
       $offset += $rowCount;
     }
 
