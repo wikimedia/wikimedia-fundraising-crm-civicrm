@@ -79,7 +79,7 @@ class CRM_Core_PseudoConstant {
    * States/provinces abbreviations
    * @var array
    */
-  private static $stateProvinceAbbreviation;
+  private static $stateProvinceAbbreviation = array();
 
   /**
    * Country.
@@ -760,23 +760,24 @@ class CRM_Core_PseudoConstant {
    * @return array
    *   array reference of all State/Province abbreviations.
    */
-  public static function &stateProvinceAbbreviation($id = FALSE, $limit = TRUE) {
-    if ($id > 1) {
-      $query = "
-SELECT abbreviation
+  public static function stateProvinceAbbreviation($id = FALSE, $limit = TRUE) {
+
+    if ($id && is_numeric($id)) {
+      if (!array_key_exists($id, self::$stateProvinceAbbreviation)) {
+        $query = "SELECT abbreviation
 FROM   civicrm_state_province
 WHERE  id = %1";
-      $params = array(
-        1 => array(
-          $id,
-          'Integer',
-        ),
-      );
-      return CRM_Core_DAO::singleValueQuery($query, $params);
+        $params = array(
+          1 => array(
+            $id,
+            'Integer',
+          ),
+        );
+        self::$stateProvinceAbbreviation[$id] = CRM_Core_DAO::singleValueQuery($query, $params);
+      }
+      return self::$stateProvinceAbbreviation[$id];
     }
-
-    if (!self::$stateProvinceAbbreviation || !$id) {
-
+    else {
       $whereClause = FALSE;
 
       if ($limit) {
@@ -798,15 +799,6 @@ WHERE  id = %1";
       self::populate(self::$stateProvinceAbbreviation, 'CRM_Core_DAO_StateProvince', TRUE, 'abbreviation', 'is_active', $whereClause);
     }
 
-    if ($id) {
-      if (array_key_exists($id, self::$stateProvinceAbbreviation)) {
-        return self::$stateProvinceAbbreviation[$id];
-      }
-      else {
-        $result = NULL;
-        return $result;
-      }
-    }
     return self::$stateProvinceAbbreviation;
   }
 
