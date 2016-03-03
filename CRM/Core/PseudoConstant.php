@@ -763,7 +763,7 @@ class CRM_Core_PseudoConstant {
   public static function stateProvinceAbbreviation($id = FALSE, $limit = TRUE) {
 
     if ($id && is_numeric($id)) {
-      if (!array_key_exists($id, self::$stateProvinceAbbreviation)) {
+      if (!array_key_exists($id, (array) self::$stateProvinceAbbreviation)) {
         $query = "SELECT abbreviation
 FROM   civicrm_state_province
 WHERE  id = %1";
