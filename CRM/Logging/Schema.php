@@ -625,9 +625,7 @@ COLS;
    * Predicate whether logging is enabled.
    */
   public function isEnabled() {
-    $config = CRM_Core_Config::singleton();
-
-    if ($config->logging) {
+    if (CRM_Core_Config::singleton()->logging) {
       return $this->tablesExist() and $this->triggersExist();
     }
     return FALSE;
@@ -638,6 +636,19 @@ COLS;
    */
   private function tablesExist() {
     return !empty($this->logs);
+  }
+
+  /**
+   * Drop all log tables.
+   *
+   * This does not currently have a usage outside the tests.
+   */
+  public function dropAllLogTables() {
+    if ($this->tablesExist()) {
+      foreach ($this->logs as $log_table) {
+        CRM_Core_DAO::executeQuery("DROP TABLE $log_table");
+      }
+    }
   }
 
   /**
