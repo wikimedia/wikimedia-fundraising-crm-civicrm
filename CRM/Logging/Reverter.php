@@ -38,7 +38,9 @@ class CRM_Logging_Reverter {
   private $log_date;
 
   /**
-   * @param int $log_conn_id
+   * Class constructor.
+   *
+   * @param string $log_conn_id
    * @param $log_date
    */
   public function __construct($log_conn_id, $log_date) {
@@ -169,7 +171,7 @@ class CRM_Logging_Reverter {
                 ORDER BY log_date DESC LIMIT 1
             ";
       $params = array(
-        1 => array($this->log_conn_id, 'Integer'),
+        1 => array($this->log_conn_id, 'String'),
         2 => array($this->log_date, 'String'),
       );
       $cid = CRM_Core_DAO::singleValueQuery($query, $params);
