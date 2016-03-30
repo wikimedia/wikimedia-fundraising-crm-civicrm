@@ -51,6 +51,7 @@ class CRM_Admin_Form_Setting_Miscellaneous extends CRM_Admin_Form_Setting {
     'doNotAttachPDFReceipt' => CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
     'secondDegRelPermissions' => CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
     'checksumTimeout' => CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+    'logging' => CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
   );
 
   public $_uploadMaxSize;
@@ -155,24 +156,7 @@ class CRM_Admin_Form_Setting_Miscellaneous extends CRM_Admin_Form_Setting {
 
 
   public function postProcess() {
-    // store the submitted values in an array
-    $config = CRM_Core_Config::singleton();
-    $params = $this->controller->exportValues($this->_name);
-
-    // get current logging status
-    $values = $this->exportValues();
-
     parent::postProcess();
-
-    if ($config->logging != $values['logging']) {
-      $logging = new CRM_Logging_Schema();
-      if ($values['logging']) {
-        $logging->enableLogging();
-      }
-      else {
-        $logging->disableLogging();
-      }
-    }
   }
 
 }
