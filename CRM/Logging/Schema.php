@@ -644,14 +644,17 @@ WHERE  table_schema IN ('{$this->db}', '{$civiDB}')";
 
   /**
    * Create a log table with schema mirroring the given table’s structure and seeding it with the given table’s contents.
+   *
+   * @param string $table
    */
   private function createLogTableFor($table) {
-    $dao = CRM_Core_DAO::executeQuery("SHOW CREATE TABLE $table",  CRM_Core_DAO::$_nullArray, TRUE, NULL, FALSE, FALSE);
+    $dao = CRM_Core_DAO::executeQuery("SHOW CREATE TABLE $table", CRM_Core_DAO::$_nullArray, TRUE, NULL, FALSE, FALSE);
     $dao->fetch();
     $query = $dao->Create_Table;
 
     // rewrite the queries into CREATE TABLE queries for log tables:
     $cols = <<<COLS
+            ,
             log_date    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             log_conn_id VARCHAR(17),
             log_user_id INTEGER,
@@ -880,15 +883,14 @@ COLS;
   }
 
   /**
-   * This allow logging to be temporarily disabled for certain cases
-   * where we want to do a mass cleanup but dont want to bother with
-   * an audit trail
+   * Disable logging temporarily.
    *
+   * This allow logging to be temporarily disabled for certain cases
+   * where we want to do a mass cleanup but do not want to bother with
+   * an audit trail.
    */
   public static function disableLoggingForThisConnection() {
-    // do this only if logging is enabled
-    $config = CRM_Core_Config::singleton();
-    if ($config->logging) {
+    if (CRM_Core_Config::singleton()->logging) {
       CRM_Core_DAO::executeQuery('SET @civicrm_disable_logging = 1');
     }
   }
