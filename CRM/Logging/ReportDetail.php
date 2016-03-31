@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Logging_ReportDetail extends CRM_Report_Form {
   protected $cid;
@@ -50,13 +48,18 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
   protected $summary;
 
   /**
+   * Don't display the Add these contacts to Group button.
+   *
+   * @var bool
+   */
+  protected $_add2groupSupported = FALSE;
+
+  /**
+   * Class constructor.
    */
   public function __construct() {
-    // don’t display the ‘Add these Contacts to Group’ button
-    $this->_add2groupSupported = FALSE;
 
-    $dsn = defined('CIVICRM_LOGGING_DSN') ? DB::parseDSN(CIVICRM_LOGGING_DSN) : DB::parseDSN(CIVICRM_DSN);
-    $this->db = $dsn['database'];
+    $this->setDB();
 
     $this->getPropertiesFromUrl();
 
@@ -83,16 +86,8 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
     );
     CRM_Utils_System::appendBreadCrumb($breadcrumb);
 
-    if (CRM_Utils_Request::retrieve('revert', 'Boolean', CRM_Core_DAO::$_nullObject)) {
-      $reverter = new CRM_Logging_Reverter($this->log_conn_id, $this->log_date);
-      $reverter->revert($this->tables);
-      CRM_Core_Session::setStatus(ts('The changes have been reverted.'), ts('Reverted'), 'success');
-      if ($this->cid) {
-        CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contact/view', "reset=1&selectedChild=log&cid={$this->cid}", FALSE, NULL, FALSE));
-      }
-      else {
-        CRM_Utils_System::redirect(CRM_Report_Utils_Report::getNextUrl($this->summary, 'reset=1', FALSE, TRUE));
-      }
+    if (CRM_Utils_Request::retrieve('revert', 'Boolean')) {
+      $this->revert();
     }
 
     // make sure the report works even without the params
@@ -218,11 +213,6 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
   public function buildQuickForm() {
     parent::buildQuickForm();
 
-    $params = array(
-      1 => array($this->log_conn_id, 'String'),
-      2 => array($this->log_date, 'String'),
-    );
-
     $this->assign('whom_url', CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$this->cid}"));
     $this->assign('who_url', CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$this->altered_by_id}"));
     $this->assign('whom_name', $this->altered_name);
@@ -247,6 +237,29 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
     $this->altered_name = CRM_Utils_Request::retrieve('alteredName', 'String', CRM_Core_DAO::$_nullObject);
     $this->altered_by = CRM_Utils_Request::retrieve('alteredBy', 'String', CRM_Core_DAO::$_nullObject);
     $this->altered_by_id = CRM_Utils_Request::retrieve('alteredById', 'Integer', CRM_Core_DAO::$_nullObject);
+   }
+
+   /**
+   * Store the dsn for the logging database in $this->db.
+   */
+  protected function setDB() {
+    $dsn = defined('CIVICRM_LOGGING_DSN') ? DB::parseDSN(CIVICRM_LOGGING_DSN) : DB::parseDSN(CIVICRM_DSN);
+    $this->db = $dsn['database'];
+  }
+
+  /**
+   * Revert the changes defined by the parameters.
+   */
+  protected function revert() {
+    $reverter = new CRM_Logging_Reverter($this->log_conn_id, $this->log_date);
+    $reverter->revert($this->tables);
+    CRM_Core_Session::setStatus(ts('The changes have been reverted.'), ts('Reverted'), 'success');
+    if ($this->cid) {
+      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contact/view', "reset=1&selectedChild=log&cid={$this->cid}", FALSE, NULL, FALSE));
+    }
+    else {
+      CRM_Utils_System::redirect(CRM_Report_Utils_Report::getNextUrl($this->summary, 'reset=1', FALSE, TRUE));
+    }
   }
 
 }
