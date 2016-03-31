@@ -137,6 +137,9 @@ AND    TABLE_NAME LIKE 'civicrm_%'
     $this->tables = preg_grep('/^civicrm_queue_/', $this->tables, PREG_GREP_INVERT);
     $this->tables = preg_grep('/^civicrm_menu/', $this->tables, PREG_GREP_INVERT); //CRM-14672
     $this->tables = preg_grep('/_temp_/', $this->tables, PREG_GREP_INVERT);
+    // CRM-18178
+    $this->tables = preg_grep('/_bak$/', $this->tables, PREG_GREP_INVERT);
+    $this->tables = preg_grep('/_backup$/', $this->tables, PREG_GREP_INVERT);
 
     // do not log civicrm_mailing_event* tables, CRM-12300
     $this->tables = preg_grep('/^civicrm_mailing_event_/', $this->tables, PREG_GREP_INVERT);
