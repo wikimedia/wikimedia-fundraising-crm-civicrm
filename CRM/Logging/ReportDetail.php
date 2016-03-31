@@ -237,9 +237,9 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
     $this->altered_name = CRM_Utils_Request::retrieve('alteredName', 'String', CRM_Core_DAO::$_nullObject);
     $this->altered_by = CRM_Utils_Request::retrieve('alteredBy', 'String', CRM_Core_DAO::$_nullObject);
     $this->altered_by_id = CRM_Utils_Request::retrieve('alteredById', 'Integer', CRM_Core_DAO::$_nullObject);
-   }
+  }
 
-   /**
+  /**
    * Store the dsn for the logging database in $this->db.
    */
   protected function setDB() {
@@ -252,7 +252,8 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
    */
   protected function revert() {
     $reverter = new CRM_Logging_Reverter($this->log_conn_id, $this->log_date);
-    $reverter->revert($this->tables);
+    $reverter->calculateDiffsFromLogConnAndDate($this->tables);
+    $reverter->revert();
     CRM_Core_Session::setStatus(ts('The changes have been reverted.'), ts('Reverted'), 'success');
     if ($this->cid) {
       CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contact/view', "reset=1&selectedChild=log&cid={$this->cid}", FALSE, NULL, FALSE));
