@@ -2417,6 +2417,9 @@ INNER JOIN  civicrm_option_group grp ON ( grp.id = val.option_group_id AND grp.n
       if ($sourceContactId) {
         $allow = CRM_Contact_BAO_Contact_Permission::allow($sourceContactId, $permission);
       }
+      else {
+        $allow = TRUE;
+      }
     }
 
     //check for target and assignee contacts.
