@@ -474,7 +474,12 @@ class CRM_Activity_Page_AJAX {
     $sort = isset($_REQUEST['iSortCol_0']) ? CRM_Utils_Array::value(CRM_Utils_Type::escape($_REQUEST['iSortCol_0'], 'Integer'), $sortMapper) : NULL;
     $sortOrder = isset($_REQUEST['sSortDir_0']) ? CRM_Utils_Type::escape($_REQUEST['sSortDir_0'], 'String') : 'asc';
 
-    $params = $_POST;
+    $params = self::getWhiteListedParametersFromPost(array(
+      'contact_id' => 'Integer',
+      'activity_type_exclude_id' => 'Integer',
+      'activity_type_id' => 'Integer',
+    ));
+
     if ($sort && $sortOrder) {
       $params['sortBy'] = $sort . ' ' . $sortOrder;
     }
@@ -497,8 +502,7 @@ class CRM_Activity_Page_AJAX {
     }
 
     // store the activity filter preference CRM-11761
-    $session = CRM_Core_Session::singleton();
-    $userID = $session->get('userID');
+    $userID = CRM_Core_Session::singleton()->getLoggedInContactID();;
     if ($userID) {
       //flush cache before setting filter to account for global cache (memcache)
       $domainID = CRM_Core_Config::domainID();
@@ -546,6 +550,23 @@ class CRM_Activity_Page_AJAX {
     header('Content-Type: application/json');
     echo CRM_Utils_JSON::encodeDataTableSelector($activities, $sEcho, $iTotal, $iFilteredTotal, $selectorElements);
     CRM_Utils_System::civiExit();
+  }
+
+  /**
+   * Get parameters from the POST according to a specified white list.
+   * @param $postParams
+   * @return array
+   */
+  protected static function getWhiteListedParametersFromPost($postParams) {
+    $params = array();
+    foreach ($postParams as $postParam => $paramType) {
+      // Note that as all the existing ones are Integers they do not need escaping.
+      $params[$postParam] = CRM_Utils_Request::retrieve($postParam, $paramType);
+      if ($params[$postParam] && $paramType != 'Integer') {
+        $params[$postParam] = CRM_Utils_Type::escape($postParam, $paramType);
+      }
+    }
+    return $params;
   }
 
 }
