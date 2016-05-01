@@ -4586,7 +4586,7 @@ civicrm_relationship.is_permission_a_b = 0
   public static function filterCountryFromValuesIfStateExists(&$formValues)
   {
     if (!empty($formValues['country'])) {
-      if (isset($formValues['state_province'])) {
+      if (!empty($formValues['state_province'])) {
         // The use of array map sanitises the data by ensuring we are dealing with integers.
         $states = implode(', ', array_map('intval', $formValues['state_province']));
         $countryList = CRM_Core_DAO::singleValueQuery(
