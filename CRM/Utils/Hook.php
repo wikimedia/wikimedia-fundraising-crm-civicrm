@@ -1433,11 +1433,11 @@ abstract class CRM_Utils_Hook {
    *
    * @return mixed
    */
-  public static function logTableSpec(&$logTableSpec) {
+  public static function alterLogTables(&$logTableSpec) {
     return self::singleton()->invoke(1, $logTableSpec, $_nullObject,
       self::$_nullObject, self::$_nullObject, self::$_nullObject,
       self::$_nullObject,
-      'civicrm_logTableSpec'
+      'civicrm_alterLogTables'
     );
   }
 

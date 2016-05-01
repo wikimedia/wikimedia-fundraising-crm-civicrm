@@ -150,7 +150,7 @@ AND    TABLE_NAME LIKE 'civicrm_%'
     foreach ($this->exceptions as $tableName => $fields) {
       $this->logTableSpec[$tableName]['exceptions'] = $fields;
     }
-    CRM_Utils_Hook::logTableSpec($this->logTableSpec);
+    CRM_Utils_Hook::alterLogTables($this->logTableSpec);
     $this->tables = array_keys($this->logTableSpec);
     $nonStandardTableNameString = $this->getNonStandardTableNameFilterString();
 
