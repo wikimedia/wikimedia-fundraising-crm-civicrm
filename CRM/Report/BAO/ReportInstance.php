@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
 
@@ -163,6 +161,12 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
       unset($params['is_navigation']);
     }
 
+    $viewMode = !empty($params['view_mode']) ? $params['view_mode'] : FALSE;
+    if ($viewMode) {
+      // Do not save to the DB - it's saved in the url.
+      unset($params['view_mode']);
+    }
+
     // add to dashboard
     $dashletParams = array();
     if (!empty($params['addToDashboard'])) {
@@ -188,7 +192,7 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
       if (empty($params['id']) && empty($params['instance_id']) && !empty($navigationParams['id'])) {
         unset($navigationParams['id']);
       }
-      $navigationParams['url'] = "civicrm/report/instance/{$instance->id}?reset=1";
+      $navigationParams['url'] = "civicrm/report/instance/{$instance->id}" . ($viewMode == 'view' ? '?reset=1&force=1' : '?reset=1&output=criteria');
       $navigation = CRM_Core_BAO_Navigation::add($navigationParams);
 
       if (!empty($navigationParams['is_active'])) {
@@ -241,8 +245,10 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
   }
 
   /**
+   * Retrieve instance.
+   *
    * @param array $params
-   * @param $defaults
+   * @param array $defaults
    *
    * @return CRM_Report_DAO_ReportInstance|null
    */
@@ -256,58 +262,6 @@ class CRM_Report_BAO_ReportInstance extends CRM_Report_DAO_ReportInstance {
       return $instance;
     }
     return NULL;
-  }
-
-  /**
-   * Check if report is private.
-   *
-   * @param int $instance_id
-   *
-   * @return bool
-   */
-  static function reportIsPrivate($instance_id) {
-    $owner_id = CRM_Core_DAO::getFieldValue('CRM_Report_DAO_ReportInstance', $instance_id, 'owner_id', 'id');
-    if ($owner_id) {
-      return TRUE;
-    }
-    return FALSE;
-  }
-
-  /**
-   * Check if the logged in user is the owner.
-   *
-   * @param int $instance_id
-   *
-   * @return TRUE if contact owns the report, FALSE if not
-   */
-  static function contactIsOwner($instance_id) {
-    $session = CRM_Core_Session::singleton();
-    $contact_id = $session->get('userID');
-    $owner_id = CRM_Core_DAO::getFieldValue('CRM_Report_DAO_ReportInstance', $instance_id, 'owner_id', 'id');
-    if ($contact_id === $owner_id) {
-      return TRUE;
-    }
-    return FALSE;
-  }
-
-  /**
-   * Check if the logged in contact can administer the report.
-   *
-   * @param int $instance_id
-   *
-   * @return bool
-   *   True if contact can edit the private report, FALSE if not.
-   */
-  static function contactCanAdministerReport($instance_id) {
-    if (self::reportIsPrivate($instance_id)) {
-      if (self::contactIsOwner($instance_id) || CRM_Core_Permission::check('access all private reports')) {
-        return TRUE;
-      }
-    }
-    elseif (CRM_Core_Permission::check('administer Reports')) {
-      return TRUE;
-    }
-    return FALSE;
   }
 
 }

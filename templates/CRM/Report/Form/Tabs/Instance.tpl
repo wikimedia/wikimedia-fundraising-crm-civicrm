@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -66,7 +66,7 @@
   <table class="form-layout">
     <tr class="crm-report-instanceForm-form-block-is_navigation">
       <td class="report-label">{$form.is_navigation.label}</td>
-      <td>{$form.is_navigation.html}<br />
+      <td>{$form.is_navigation.html} {ts}Link to {/ts}  {$form.view_mode.html}<br />
         <span class="description">{ts}All report instances are automatically included in the Report Listing page. Check this box to also add this report to the navigation menu.{/ts}</span>
       </td>
     </tr>
@@ -88,12 +88,6 @@
         <td>{$form.grouprole.html|crmAddClass:huge}</td>
       </tr>
     {/if}
-    <tr class="crm-report-instanceForm-form-block-add-to-my-reports">
-      <td class="report-label">{$form.add_to_my_reports.label} {help id="id-add_to_my_reports" file="CRM/Report/Form/Tabs/Settings.hlp"}</td>
-      <td>{$form.add_to_my_reports.html}
-        <span class="description">{ts}If set to Yes, this report will appear in the My Reports section of the reports listing page and will only be visible by you.{/ts}</span>
-      </td>
-    </tr>
     <tr class="crm-report-instanceForm-form-block-isReserved">
       <td class="report-label">{$form.is_reserved.label} {help id="id-is_reserved" file="CRM/Report/Form/Tabs/Settings.hlp"}</td>
       <td>{$form.is_reserved.html}
