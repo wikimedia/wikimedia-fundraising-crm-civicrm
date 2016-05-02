@@ -183,7 +183,7 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
    * @return string
    */
   protected function getSortNameLabelWithEmail() {
-    return ts('Pledger Name or email');
+    return ts('Pledger Name or Email');
   }
 
   /**

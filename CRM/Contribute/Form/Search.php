@@ -224,7 +224,7 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
    * @return string
    */
   protected function getSortNameLabelWithEmail() {
-    return ts('Contributor Name or email');
+    return ts('Contributor Name or Email');
   }
 
   /**

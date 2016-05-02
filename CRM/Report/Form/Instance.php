@@ -229,11 +229,18 @@ class CRM_Report_Form_Instance {
     }
 
     $config = CRM_Core_Config::singleton();
+
+    // Add a special region for the default HTML header of printed reports.  It
+    // won't affect reports with customized headers, just ones with the default.
+    $printHeaderRegion = CRM_Core_Region::instance('default-report-header', FALSE);
+    $htmlHeader = ($printHeaderRegion) ? $printHeaderRegion->render('', FALSE) : '';
+
     $defaults['report_header'] = $report_header = "<html>
   <head>
     <title>CiviCRM Report</title>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
     <style type=\"text/css\">@import url({$config->userFrameworkResourceURL}css/print.css);</style>
+    {$htmlHeader}
   </head>
   <body><div id=\"crm-container\">";
 
@@ -365,6 +372,7 @@ class CRM_Report_Form_Instance {
     unset($formValues['add_to_my_reports']);
 
     $view_mode = $formValues['view_mode'];
+
     // pass form_values as string
     $params['form_values'] = serialize($formValues);
 

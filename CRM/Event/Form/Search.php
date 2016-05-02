@@ -249,7 +249,7 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
    * @return string
    */
   protected function getSortNameLabelWithEmail() {
-    return ts('Participant Name or email');
+    return ts('Participant Name or Email');
   }
 
   /**

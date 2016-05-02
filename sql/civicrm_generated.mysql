@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.5.34, for osx10.6 (i386)
+-- MySQL dump 10.13  Distrib 5.5.42, for osx10.6 (i386)
 --
--- Host: 127.0.0.1    Database: d46civi_hc3u1
+-- Host: 127.0.0.1    Database: d46civi_3rt8y
 -- ------------------------------------------------------
--- Server version	5.5.34
+-- Server version	5.5.42
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;

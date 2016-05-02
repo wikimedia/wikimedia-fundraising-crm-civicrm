@@ -65,6 +65,23 @@ class CRM_Mailing_Info extends CRM_Core_Component_Info {
    * @see CRM_Utils_Hook::angularModules
    */
   public function getAngularModules() {
+    // load angular files only if valid permissions are granted to the user
+    if (!CRM_Core_Permission::check('access CiviMail')
+      && !CRM_Core_Permission::check('create mailings')
+      && !CRM_Core_Permission::check('schedule mailings')
+      && !CRM_Core_Permission::check('approve mailings')
+    ) {
+      return array();
+    }
+
+    $reportIds = array();
+    $reportTypes = array('detail', 'opened', 'bounce', 'clicks');
+    foreach ($reportTypes as $report) {
+      $result = civicrm_api3('ReportInstance', 'get', array(
+        'sequential' => 1,
+        'report_id' => 'mailing/' . $report));
+      $reportIds[$report] = $result['values'][0]['id'];
+    }
     $result = array();
     $result['crmMailing'] = array(
       'ext' => 'civicrm',
@@ -167,6 +184,7 @@ class CRM_Mailing_Info extends CRM_Core_Component_Info {
             )),
           'visibility' => CRM_Utils_Array::makeNonAssociative(CRM_Core_SelectValues::groupVisibility()),
           'workflowEnabled' => CRM_Mailing_Info::workflowEnabled(),
+          'reportIds' => $reportIds,
         ),
       ))
       ->addPermissions(array(

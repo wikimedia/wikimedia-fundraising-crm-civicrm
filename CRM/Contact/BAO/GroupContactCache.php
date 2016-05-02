@@ -334,6 +334,7 @@ SET    cache_date = null,
 ";
       }
       else {
+
         $query = "
 DELETE     gc
 FROM       civicrm_group_contact_cache gc
