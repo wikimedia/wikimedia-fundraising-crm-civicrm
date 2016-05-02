@@ -248,26 +248,16 @@ class CRM_Report_Form_Instance {
 </html>
 ";
 
-    // CRM-17225 view_mode currently supports 'view' or 'criteria'.
-    // Prior to 4.7 'view' meant reset=1 in the url & if not set
-    // then show criteria.
-    // From 4.7 we will pro-actively set 'force=1' but still respect the old behaviour.
-    // we may look to add pdf, print_view, csv & various charts as these could simply
-    // be added to the url allowing us to conceptualise 'view right now' vs saved view
-    // & using a multiselect (option value?) could help here.
-    // Note that accessing reports without reset=1 in the url turns out to be
-    // dangerous as it seems to carry actions like 'delete' from one report to another.
-    $defaults['view_mode'] = 'view';
-    $output = CRM_Utils_Request::retrieve('output', 'String');
-    if ($output == 'criteria') {
-      $defaults['view_mode'] = 'criteria';
-    }
-
     if ($instanceID) {
       // this is already retrieved via Form.php
       $defaults['description'] = CRM_Utils_Array::value('description', $defaults);
-      $defaults['report_header'] = CRM_Utils_Array::value('header', $defaults);
-      $defaults['report_footer'] = CRM_Utils_Array::value('footer', $defaults);
+      if (!empty($defaults['header'])) {
+        $defaults['report_header'] = $defaults['header'];
+      }
+      if (!empty($defaults['footer'])) {
+        $defaults['report_footer'] = $defaults['footer'];
+      }
+
       // CRM-17310 private reports option.
       $defaults['add_to_my_reports'] = 0;
       if (CRM_Utils_Array::value('owner_id', $defaults) != NULL) {
