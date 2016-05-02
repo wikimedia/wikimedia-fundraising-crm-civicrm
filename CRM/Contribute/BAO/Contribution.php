@@ -4660,6 +4660,9 @@ LIMIT 1;";
    *   Credit Note Id.
    */
   public static function createCreditNoteId() {
+    // CRM-17235 introduced this but it's really slowwww and since we don't care about creditnote_ids
+    // we will short circuit the pain until an upstream fix is found.
+    return NULL;
     $prefixValue = Civi::settings()->get('contribution_invoice_settings');
 
     $creditNoteNum = CRM_Core_DAO::singleValueQuery("SELECT count(creditnote_id) as creditnote_number FROM civicrm_contribution");

@@ -4431,7 +4431,7 @@ CREATE TABLE `civicrm_address` (
      `county_id` int unsigned    COMMENT 'Which County does this address belong to.',
      `state_province_id` int unsigned    COMMENT 'Which State_Province does this address belong to.',
      `postal_code_suffix` varchar(12)    COMMENT 'Store the suffix, like the +4 part in the USPS system.',
-     `postal_code` varchar(12)    COMMENT 'Store both US (zip5) AND international postal codes. App is responsible for country/region appropriate validation.',
+     `postal_code` varchar(64)    COMMENT 'Store both US (zip5) AND international postal codes. App is responsible for country/region appropriate validation.',
      `usps_adc` varchar(32)    COMMENT 'USPS Bulk mailing code.',
      `country_id` int unsigned    COMMENT 'Which Country does this address belong to.',
      `geo_code_1` double    COMMENT 'Latitude',

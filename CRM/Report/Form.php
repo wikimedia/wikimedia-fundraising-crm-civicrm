@@ -562,7 +562,10 @@ class CRM_Report_Form extends CRM_Core_Form {
         $this->_createNew = TRUE;
         $this->_params = $this->_formValues;
         $this->_params['view_mode'] = 'criteria';
-        $this->_params['title'] = ts('(copy)') . $this->getTitle();
+        $this->_params['title'] = $this->getTitle() . ts(' (copy created by %1)', array(
+          CRM_Core_Session::singleton()->getLoggedInContactDisplayName(),
+          'string',
+        ));
         // Do not pass go. Do not collect another chance to re-run the same query.
         CRM_Report_Form_Instance::postProcess($this);
       }
@@ -623,9 +626,6 @@ class CRM_Report_Form extends CRM_Core_Form {
 
     $this->_instanceButtonName = $this->getButtonName('submit', 'save');
     $this->_createNewButtonName = $this->getButtonName('submit', 'next');
-    $this->_printButtonName = $this->getButtonName('submit', 'print');
-    $this->_pdfButtonName = $this->getButtonName('submit', 'pdf');
-    $this->_csvButtonName = $this->getButtonName('submit', 'csv');
     $this->_groupButtonName = $this->getButtonName('submit', 'group');
     $this->_chartButtonName = $this->getButtonName('submit', 'chart');
   }
@@ -1328,7 +1328,9 @@ class CRM_Report_Form extends CRM_Core_Form {
         }
       }
     }
-    if (!empty($this->_options)) {
+    if (!empty($this->_options) &&
+        (!$this->_id || ($this->_id && CRM_Report_BAO_ReportInstance::contactCanAdministerReport($this->_id))
+      )) {
       $this->tabs['ReportOptions'] = array(
         'title' => ts('Display Options'),
         'tpl' => 'ReportOptions',
@@ -1452,30 +1454,17 @@ class CRM_Report_Form extends CRM_Core_Form {
    */
   public function buildInstanceAndButtons() {
     CRM_Report_Form_Instance::buildForm($this);
-
-    $label = $this->_id ? ts('Update Report') : ts('Create Report');
-
-    $this->addElement('submit', $this->_instanceButtonName, $label);
-    $this->addElement('submit', $this->_printButtonName, ts('Print Report'));
-    $this->addElement('submit', $this->_pdfButtonName, ts('PDF'));
+    $this->_actionButtonName = $this->getButtonName('submit');
+    $this->addTaskMenu($this->getActions($this->_id));
 
     if ($this->_id) {
       $this->addElement('submit', $this->_createNewButtonName,
         ts('Save a Copy') . '...');
     }
+    $this->addElement('submit', $this->_instanceButtonName,
+      ts('Update Report'));
+
     $this->assign('instanceForm', $this->_instanceForm);
-
-    $label = $this->_id ? ts('Print Report') : ts('Print Preview');
-    $this->addElement('submit', $this->_printButtonName, $label);
-
-    $label = $this->_id ? ts('PDF') : ts('Preview PDF');
-    $this->addElement('submit', $this->_pdfButtonName, $label);
-
-    $label = $this->_id ? ts('Export to CSV') : ts('Preview CSV');
-
-    if ($this->_csvSupported) {
-      $this->addElement('submit', $this->_csvButtonName, $label);
-    }
 
     // CRM-16274 Determine if user has 'edit all contacts' or equivalent
     $permission = CRM_Core_Permission::getPermission();
@@ -1493,14 +1482,75 @@ class CRM_Report_Form extends CRM_Core_Form {
     $this->addElement('submit', $this->_groupButtonName, '', array('style' => 'display: none;'));
 
     $this->addChartOptions();
+    $showResultsLabel = $this->getResultsLabel();
     $this->addButtons(array(
         array(
           'type' => 'submit',
-          'name' => ts('Preview Report'),
+          'name' => $showResultsLabel,
           'isDefault' => TRUE,
         ),
       )
     );
+  }
+
+  /**
+   * Has this form been submitted already?
+   *
+   * @return bool
+   */
+  public function resultsDisplayed() {
+    $buttonName = $this->controller->getButtonName();
+    return ($buttonName || $this->_outputMode);
+  }
+
+  /**
+   * Get the actions for this report instance.
+   *
+   * @param int $instanceId
+   *
+   * @return array
+   */
+  protected function getActions($instanceId) {
+    $actions = array(
+      'html' => $this->getResultsLabel(),
+      'save' => 'Update',
+      'copy' => 'Save a Copy',
+      'print' => 'Print Report',
+      'pdf' => 'Print to PDF',
+    );
+    if (empty($instanceId)) {
+      $actions['save'] = ts('Create Report');
+    }
+    elseif (!CRM_Report_BAO_ReportInstance::contactCanAdministerReport($instanceId)) {
+      unset($actions['save']);
+    }
+
+    if ($this->_outputMode || $this->_id) {
+      $actions['html'] = 'Refresh Results';
+    }
+
+    if ($this->_csvSupported) {
+      $actions['csv'] = 'Export as CSV';
+    }
+
+    if (!empty($this->_charts)) {
+      $this->assign('charts', $this->_charts);
+      if ($this->_format != '') {
+        $actions['tabular'] = 'View as tabular data';
+      }
+      if ($this->_format != 'pieChart') {
+        $actions['pieChart'] = 'View as pie chart';
+      }
+      if ($this->_format != 'barChart') {
+        $actions['barChart'] = 'View as bar graph';
+      }
+    }
+
+    if ($instanceId && CRM_Report_BAO_ReportInstance::contactCanAdministerReport($instanceId)) {
+      $actions['delete'] = 'Delete report';
+    }
+
+    return $actions;
   }
 
   /**
@@ -1984,14 +2034,16 @@ class CRM_Report_Form extends CRM_Core_Form {
     list($from, $to) = $this->getFromTo($relative, $from, $to);
 
     if ($from) {
-      $clauses[] = CRM_Utils_Date::customFormat($from, NULL, array('m', 'M'));
+      // wmf patch for custom format, reason for not using setting not yet determined.
+      $clauses[] = CRM_Utils_Date::customFormat($from, '%B %E%f, %Y %H:%Mh', array('m', 'M'));
     }
     else {
       $clauses[] = 'Past';
     }
 
     if ($to) {
-      $clauses[] = CRM_Utils_Date::customFormat($to, NULL, array('m', 'M'));
+      // wmf patch for custom format, reason for not using setting not yet determined.
+      $clauses[] = CRM_Utils_Date::customFormat($to, '%B %E%f, %Y %H:%Mh', array('m', 'M'));
     }
     else {
       $clauses[] = 'Today';
@@ -2520,6 +2572,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
   public function processReportMode() {
     $this->setOutputMode();
 
+    $buttonName = $this->controller->getButtonName();
     $this->_sendmail
       = CRM_Utils_Request::retrieve(
         'sendmail',
@@ -2562,6 +2615,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
     elseif ($this->_outputMode == 'copy' && $this->_criteriaForm) {
       $this->_createNew = TRUE;
     }
+    $this->assign('outputMode', $this->_outputMode);
 
     $this->assign('outputMode', $this->_outputMode);
     $this->assign('printOnly', $printOnly);
@@ -2609,9 +2663,6 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
 
     if ($this->_outputMode == 'save' || $this->_outputMode == 'copy') {
       $this->_createNew = ($this->_outputMode == 'copy');
-      // Do not pass go. Do not collect another chance to re-run the same query.
-      // This will be called from the button - there is an earlier response to the url
-      // perhaps they can still be consolidated more.
       CRM_Report_Form_Instance::postProcess($this);
     }
     $this->beginPostProcessCommon();
@@ -4654,6 +4705,9 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
           LEFT JOIN civicrm_address {$this->_aliases['civicrm_address']}
           ON ({$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_address']}.contact_id)
           AND {$this->_aliases['civicrm_address']}.is_primary = 1\n";
+      if ($buttonName == $this->_createNewButtonName) {
+        $this->_outputMode = 'copy';
+      }
     }
   }
 

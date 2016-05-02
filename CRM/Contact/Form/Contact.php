@@ -1140,6 +1140,14 @@ class CRM_Contact_Form_Contact extends CRM_Core_Form {
    *   Contact type.
    */
   public static function checkDuplicateContacts(&$fields, &$errors, $contactID, $contactType) {
+    // If this site is not configured to check for duplicates during save, return without doing anything.
+    $isDedupeOnSave = (bool) CRM_Core_BAO_Setting::getItem(
+      CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'isDedupeOnSave', NULL, TRUE
+    );
+    if (!$isDedupeOnSave) {
+      return;
+    }
+
     // if this is a forced save, ignore find duplicate rule
     if (empty($fields['_qf_Contact_upload_duplicate'])) {
 

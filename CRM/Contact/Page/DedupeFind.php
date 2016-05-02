@@ -173,6 +173,12 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
       if ($context == 'conflicts') {
         $where .= " AND pn.is_selected = 1";
       }
+      // WMF Hack.
+      if ( empty( $contactIds ) ) {
+        CRM_Core_Session::singleton()->setStatus( "I'm sorry Dave, I can't do that right now.  Crazy deduping of the entire database is not supported at the moment.  Please try merging contacts from the Search Results page, if are feeling that kind of itch." );
+        CRM_Utils_System::redirect( CRM_Utils_System::url( 'civicrm' ) );
+      }
+
       $this->_mainContacts = CRM_Core_BAO_PrevNextCache::retrieve($cacheKeyString, $join, $where);
       if (empty($this->_mainContacts)) {
         if ($context == 'conflicts') {
@@ -186,6 +192,7 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
           }
           CRM_Utils_System::redirect(CRM_Utils_System::url(CRM_Utils_System::currentPath(), $sourceParams));
         }
+
         if ($gid) {
           $foundDupes = $this->get("dedupe_dupes_$gid");
           if (!$foundDupes) {
