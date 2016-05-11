@@ -222,7 +222,7 @@ WHERE  cacheKey     = %3 AND
 SELECT SQL_CALC_FOUND_ROWS {$selectString}
 FROM   civicrm_prevnext_cache pn
        {$join}
-WHERE  (pn.cacheKey = %1 OR pn.cacheKey = %2)
+WHERE  (pn.cacheKey = %1)
 ";
     $params = array(
       1 => array($cacheKey, 'String'),
@@ -307,20 +307,6 @@ SELECT COUNT(*) FROM civicrm_prevnext_cache pn
 WHERE (pn.cacheKey $op %1 OR pn.cacheKey $op %2)
 ";
 
-    if ($op === 'LIKE') {
-      $query .= "WHERE (cacheKey = %1 OR cacheKey = %2)";
-      $params = array(
-        1 => array($cacheKey, 'String'),
-        2 => array($cacheKey . '_alphabet', 'String'),
-      );
-    }
-    else {
-      $query .= "WHERE cacheKey = %1";
-      $params = array(
-        1 => array($cacheKey, 'String'),
-      );
-    }
-
     if ($where) {
       $query .= " AND {$where}";
     }
@@ -341,10 +327,7 @@ WHERE (pn.cacheKey $op %1 OR pn.cacheKey $op %2)
    */
   public static function refillCache($rgid = NULL, $gid = NULL, $cacheKeyString = NULL) {
     if (!$cacheKeyString && $rgid) {
-      $contactType = CRM_Core_DAO::getFieldValue('CRM_Dedupe_DAO_RuleGroup', $rgid, 'contact_type');
-      $cacheKeyString = "merge {$contactType}";
-      $cacheKeyString .= $rgid ? "_{$rgid}" : '_0';
-      $cacheKeyString .= $gid ? "_{$gid}" : '_0';
+      $cacheKeyString = CRM_Dedupe_Merger::getMergeCacheKeyString($rgid, $gid);
     }
 
     if (!$cacheKeyString) {

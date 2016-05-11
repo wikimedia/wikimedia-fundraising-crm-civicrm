@@ -726,7 +726,7 @@ LIMIT {$offset}, {$rowCount}
     if ($selected) {
       $whereClause .= ' AND pn.is_selected = 1';
     }
-    $join .= " LEFT JOIN civicrm_dedupe_exception de ON ( pn.entity_id1 = de.contact_id1 AND pn.entity_id2 = de.contact_id2 )";
+    $join .= CRM_Dedupe_Merger::getJoinOnDedupeTable();
 
     $select = array(
       'cc1.contact_type'     => 'src_contact_type',
@@ -892,8 +892,8 @@ LIMIT {$offset}, {$rowCount}
       INNER JOIN civicrm_prevnext_cache old on cpc.id = old.id
       SET cpc.entity_id1 = cpc.entity_id2, cpc.entity_id2 = old.entity_id1 ";
     if (is_array($prevNextId) && !CRM_Utils_Array::crmIsEmptyArray($prevNextId)) {
+      CRM_Utils_Type::escapeAll($prevNextId, 'Positive');
       $prevNextId = implode(', ', $prevNextId);
-      $prevNextId = CRM_Utils_Type::escape($prevNextId, 'String');
       $query     .= "WHERE cpc.id IN ({$prevNextId}) AND cpc.is_selected = 1";
     }
     else {
@@ -978,10 +978,7 @@ LIMIT {$offset}, {$rowCount}
     $pnid = $_REQUEST['pnid'];
     $isSelected = CRM_Utils_Type::escape($_REQUEST['is_selected'], 'Boolean');
 
-    $contactType = CRM_Core_DAO::getFieldValue('CRM_Dedupe_DAO_RuleGroup', $rgid, 'contact_type');
-    $cacheKeyString  = "merge $contactType";
-    $cacheKeyString .= $rgid ? "_{$rgid}" : '_0';
-    $cacheKeyString .= $gid ? "_{$gid}" : '_0';
+    $cacheKeyString = CRM_Dedupe_Merger::getMergeCacheKeyString($rgid, $gid);
 
     $params = array(
       1 => array($isSelected, 'Boolean'),
@@ -991,8 +988,8 @@ LIMIT {$offset}, {$rowCount}
     //check pnid is_array or integer
     $whereClause = NULL;
     if (is_array($pnid) && !CRM_Utils_Array::crmIsEmptyArray($pnid)) {
+      CRM_Utils_Type::escapeAll($pnid, 'Positive');
       $pnid = implode(', ', $pnid);
-      $pnid = CRM_Utils_Type::escape($pnid, 'String');
       $whereClause = " id IN ( {$pnid} ) ";
     }
     else {

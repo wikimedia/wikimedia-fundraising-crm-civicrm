@@ -694,7 +694,7 @@ CREATE TABLE `civicrm_contact` (
      `display_name` varchar(128)    COMMENT 'Formatted name representing preferred format for display/print/other output.',
      `nick_name` varchar(128)    COMMENT 'Nickname.',
      `legal_name` varchar(128)    COMMENT 'Legal Name.',
-     `image_URL` varchar(255)    COMMENT 'optional URL for preferred image (photo, logo, etc.) to display for this contact.',
+     `image_URL` varchar(512)    COMMENT 'optional URL for preferred image (photo, logo, etc.) to display for this contact.',
      `preferred_communication_method` varchar(255)    COMMENT 'What is the preferred mode of communication.',
      `preferred_language` varchar(5)    COMMENT 'Which language is preferred for communication. FK to languages in civicrm_option_value.',
      `preferred_mail_format` varchar(8)   DEFAULT "Both" COMMENT 'What is the preferred mode of sending an email.',

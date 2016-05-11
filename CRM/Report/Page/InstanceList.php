@@ -178,7 +178,7 @@ class CRM_Report_Page_InstanceList extends CRM_Core_Page {
         $rows[$report_grouping][$dao->id]['description'] = $dao->description;
         $rows[$report_grouping][$dao->id]['url'] = CRM_Utils_System::url("{$url}/{$dao->id}", "reset=1&output=criteria");
         $rows[$report_grouping][$dao->id]['viewUrl'] = CRM_Utils_System::url("{$url}/{$dao->id}", 'force=1&reset=1');
-        $rows[$report_grouping][$dao->id]['actions'] = $this->getActionLinks($dao->id);
+        $rows[$report_grouping][$dao->id]['actions'] = $this->getActionLinks($dao->id, $dao->class_name);
       }
     }
     // Move My Reports to the beginning of the reports list
