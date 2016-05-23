@@ -171,22 +171,20 @@ class CRM_Dedupe_BAO_Rule extends CRM_Dedupe_DAO_Rule {
       $where[] = "t1.{$this->rule_field} IS NOT NULL";
       $where[] = "t1.{$this->rule_field} <> ''";
     }
-    $query = "SELECT $select FROM $from WHERE " . implode(' AND ', $where);
     if ($this->contactIds) {
       $cids = array();
       foreach ($this->contactIds as $cid) {
         $cids[] = CRM_Utils_Type::escape($cid, 'Integer');
       }
       if (count($cids) == 1) {
-        $query .= " AND (t1.$id = {$cids[0]} UNION $query AND t2.$id = {$cids[0]})";
+        $where[] = "(t1.$id = {$cids[0]} OR t2.$id = {$cids[0]})";
       }
       else {
-        $query .= " AND (t1.$id IN (" . implode(',', $cids) . "))
-        UNION $query AND (t2.$id IN (" . implode(',', $cids) . "))";
+        $where[] = "(t1.$id IN (" . implode(',', $cids) . ") OR t2.$id IN (" . implode(',', $cids) . "))";
       }
     }
 
-    return $query;
+    return "SELECT $select FROM $from WHERE " . implode(' AND ', $where);
   }
 
   /**
