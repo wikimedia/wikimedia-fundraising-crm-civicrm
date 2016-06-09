@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -91,8 +89,7 @@ class CRM_Price_Form_Field extends CRM_Core_Form {
   }
 
   /**
-   * Set default values for the form. Note that in edit/view mode
-   * the default values are retrieved from the database
+   * Set default values for the form.
    *
    * @return array
    *   array of default values
@@ -108,12 +105,14 @@ class CRM_Price_Form_Field extends CRM_Core_Form {
 
       // if text, retrieve price
       if ($defaults['html_type'] == 'Text') {
+        $isActive = $defaults['is_active'];
         $valueParams = array('price_field_id' => $this->_fid);
 
         CRM_Price_BAO_PriceFieldValue::retrieve($valueParams, $defaults);
 
         // fix the display of the monetary value, CRM-4038
         $defaults['price'] = CRM_Utils_Money::format($defaults['amount'], NULL, '%a');
+        $defaults['is_active'] = $isActive;
       }
 
       if (!empty($defaults['active_on'])) {
@@ -182,6 +181,13 @@ class CRM_Price_Form_Field extends CRM_Core_Form {
 
     // Financial Type
     $financialType = CRM_Financial_BAO_FinancialType::getIncomeFinancialType();
+    foreach ($financialType as $finTypeId => $type) {
+      if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()
+        && !CRM_Core_Permission::check('add contributions of type ' . $type)
+      ) {
+        unset($financialType[$finTypeId]);
+      }
+    }
     if (count($financialType)) {
       $this->assign('financialType', $financialType);
     }
@@ -337,22 +343,21 @@ class CRM_Price_Form_Field extends CRM_Core_Form {
 
     // add buttons
     $this->addButtons(array(
-        array(
-          'type' => 'next',
-          'name' => ts('Save'),
-          'isDefault' => TRUE,
-        ),
-        array(
-          'type' => 'next',
-          'name' => ts('Save and New'),
-          'subName' => 'new',
-        ),
-        array(
-          'type' => 'cancel',
-          'name' => ts('Cancel'),
-        ),
-      )
-    );
+      array(
+        'type' => 'next',
+        'name' => ts('Save'),
+        'isDefault' => TRUE,
+      ),
+      array(
+        'type' => 'next',
+        'name' => ts('Save and New'),
+        'subName' => 'new',
+      ),
+      array(
+        'type' => 'cancel',
+        'name' => ts('Cancel'),
+      ),
+    ));
     // is public?
     $this->add('select', 'visibility_id', ts('Visibility'), CRM_Core_PseudoConstant::visibility());
 
@@ -597,7 +602,6 @@ class CRM_Price_Form_Field extends CRM_Core_Form {
     // store the submitted values in an array
     $params = $this->controller->exportValues('Field');
 
-    $params['name'] = CRM_Utils_String::titleToVar($params['label']);
     $params['is_display_amounts'] = CRM_Utils_Array::value('is_display_amounts', $params, FALSE);
     $params['is_required'] = CRM_Utils_Array::value('is_required', $params, FALSE);
     $params['is_active'] = CRM_Utils_Array::value('is_active', $params, FALSE);
@@ -647,7 +651,6 @@ class CRM_Price_Form_Field extends CRM_Core_Form {
       //$params['option_description']  = array( 1 => $params['description'] );
       $params['option_weight'] = array(1 => $params['weight']);
       $params['option_financial_type_id'] = array(1 => $params['financial_type_id']);
-      $params['is_active'] = array(1 => 1);
     }
 
     if ($this->_fid) {

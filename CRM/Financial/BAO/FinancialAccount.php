@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Financial_BAO_FinancialAccount extends CRM_Financial_DAO_FinancialAccount {
 
@@ -121,15 +119,15 @@ class CRM_Financial_BAO_FinancialAccount extends CRM_Financial_DAO_FinancialAcco
    * @param int $financialAccountId
    */
   public static function del($financialAccountId) {
-    //checking if financial type is present
+    // checking if financial type is present
     $check = FALSE;
 
     //check dependencies
-    $dependancy = array(
+    $dependency = array(
       array('Core', 'FinancialTrxn', 'to_financial_account_id'),
       array('Financial', 'FinancialTypeAccount', 'financial_account_id'),
     );
-    foreach ($dependancy as $name) {
+    foreach ($dependency as $name) {
       require_once str_replace('_', DIRECTORY_SEPARATOR, "CRM_" . $name[0] . "_BAO_" . $name[1]) . ".php";
       $className = "CRM_{$name[0]}_BAO_{$name[1]}";
       $bao = new $className();
@@ -144,7 +142,7 @@ class CRM_Financial_BAO_FinancialAccount extends CRM_Financial_DAO_FinancialAcco
       return CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/admin/financial/financialAccount', "reset=1&action=browse"));
     }
 
-    //delete from financial Type table
+    // delete from financial Type table
     $financialAccount = new CRM_Financial_DAO_FinancialAccount();
     $financialAccount->id = $financialAccountId;
     $financialAccount->delete();
@@ -190,8 +188,7 @@ WHERE cft.id = %1
    */
   public static function getARAccounts($financialAccountId, $financialAccountTypeId = NULL, $accountTypeCode = 'ar') {
     if (!$financialAccountTypeId) {
-      $financialAccountType = CRM_Core_PseudoConstant::accountOptionValues('financial_account_type');
-      $financialAccountTypeId = array_search('Asset', $financialAccountType);
+      $financialAccountTypeId = key(CRM_Core_PseudoConstant::accountOptionValues('financial_account_type', NULL, " AND v.name LIKE 'Asset' "));
     }
     $query = "SELECT count(id) FROM civicrm_financial_account WHERE financial_account_type_id = %1 AND LCASE(account_type_code) = %2
       AND id != %3 AND is_active = 1;";
@@ -221,32 +218,32 @@ WHERE cft.id = %1
    */
   public static function getFinancialAccountForFinancialTypeByRelationship($financialTypeID, $relationshipType) {
     $relationTypeId = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE '{$relationshipType}' "));
-    static $accounts = array();
-    if (!isset($accounts[$financialTypeID][$relationTypeId])) {
+
+    if (!isset(Civi::$statics[__CLASS__]['entity_financial_account'][$financialTypeID][$relationTypeId])) {
       $accounts = civicrm_api3('EntityFinancialAccount', 'get', array(
         'entity_id' => $financialTypeID,
         'entity_table' => 'civicrm_financial_type',
       ));
 
       foreach ($accounts['values'] as $account) {
-        $accounts[$financialTypeID][$account['account_relationship']] = $account['financial_account_id'];
+        Civi::$statics[__CLASS__]['entity_financial_account'][$financialTypeID][$account['account_relationship']] = $account['financial_account_id'];
       }
 
       $accountRelationships = CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL);
 
       $incomeAccountRelationshipID = array_search('Income Account is', $accountRelationships);
-      $incomeAccountFinancialAccountID = $accounts[$financialTypeID][$incomeAccountRelationshipID];
+      $incomeAccountFinancialAccountID = Civi::$statics[__CLASS__]['entity_financial_account'][$financialTypeID][$incomeAccountRelationshipID];
 
       foreach (array('Chargeback Account is', 'Credit/Contra Revenue Account is') as $optionalAccountRelationship) {
 
         $accountRelationshipID = array_search($optionalAccountRelationship, $accountRelationships);
-        if (empty($accounts[$financialTypeID][$accountRelationshipID])) {
-          $accounts[$financialTypeID][$accountRelationshipID] = $incomeAccountFinancialAccountID;
+        if (empty(Civi::$statics[__CLASS__]['entity_financial_account'][$financialTypeID][$accountRelationshipID])) {
+          Civi::$statics[__CLASS__]['entity_financial_account'][$financialTypeID][$accountRelationshipID] = $incomeAccountFinancialAccountID;
         }
       }
 
     }
-    return $accounts[$financialTypeID][$relationTypeId];
+    return Civi::$statics[__CLASS__]['entity_financial_account'][$financialTypeID][$relationTypeId];
   }
 
 }

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,14 +28,11 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Core_OptionGroup {
   static $_values = array();
   static $_cache = array();
-  static $_value_cache = array();
 
   /**
    * $_domainIDGroups array maintains the list of option groups for whom
@@ -90,7 +87,7 @@ class CRM_Core_OptionGroup {
    * This function retrieves all the values for the specific option group by name
    * this is primarily used to create various html based form elements
    * (radio, select, checkbox etc). OptionGroups for most cases have the
-   * 'label' in the label colum and the 'id' or 'name' in the value column
+   * 'label' in the label column and the 'id' or 'name' in the value column
    *
    * @param string $name
    *   name of the option group.
@@ -202,7 +199,7 @@ WHERE  v.option_group_id = g.id
    * This function retrieves all the values for the specific option group by id.
    * this is primarily used to create various html based form elements
    * (radio, select, checkbox etc). OptionGroups for most cases have the
-   * 'label' in the label colum and the 'id' or 'name' in the value column
+   * 'label' in the label column and the 'id' or 'name' in the value column
    *
    * @param int $id
    *   id of the option group.
@@ -273,9 +270,6 @@ WHERE  v.option_group_id = g.id
    *
    *
    * @param bool $flip
-   *
-   * @return void
-   *
    */
   public static function lookupValues(&$params, &$names, $flip = FALSE) {
     foreach ($names as $postName => $value) {
@@ -369,6 +363,10 @@ WHERE  v.option_group_id = g.id
   }
 
   /**
+   * @deprecated
+   *
+   * This function is not cached.
+   *
    * @param string $groupName
    * @param $label
    * @param string $labelField
@@ -388,11 +386,6 @@ WHERE  v.option_group_id = g.id
       return NULL;
     }
 
-    $cache_key = "$groupName-$label-$valueField";
-    if ( array_key_exists( $cache_key, self::$_value_cache ) ) {
-      return self::$_value_cache[ $cache_key ];
-    }
-
     $query = "
 SELECT  v.label as label ,v.{$valueField} as value
 FROM   civicrm_option_value v,
@@ -410,10 +403,8 @@ WHERE  v.option_group_id = g.id
     );
     $dao = CRM_Core_DAO::executeQuery($query, $p);
     if ($dao->fetch()) {
-      $value = $dao->value;
       $dao->free();
-      self::$_value_cache[ $cache_key ] = $value;
-      return $value;
+      return $dao->value;
     }
     $dao->free();
     return NULL;
@@ -572,27 +563,6 @@ DELETE g, v
     $params = array(1 => array($groupName, 'String'));
 
     $dao = CRM_Core_DAO::executeQuery($query, $params);
-  }
-
-  /**
-   * @param string $groupName
-   * @param $value
-   *
-   * @return null|string
-   */
-  public static function optionLabel($groupName, $value) {
-    $query = "
-SELECT v.label
-  FROM civicrm_option_group g,
-       civicrm_option_value v
- WHERE g.id = v.option_group_id
-   AND g.name  = %1
-   AND v.value = %2";
-    $params = array(
-      1 => array($groupName, 'String'),
-      2 => array($value, 'String'),
-    );
-    return CRM_Core_DAO::singleValueQuery($query, $params);
   }
 
   /**
