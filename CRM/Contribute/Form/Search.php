@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -57,8 +57,6 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
    */
   protected $_limit = NULL;
 
-  protected $_defaults;
-
   /**
    * Prefix for the controller.
    */
@@ -86,13 +84,6 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
     $this->_force = CRM_Utils_Request::retrieve('force', 'Boolean', $this, FALSE);
     $this->_limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this);
     $this->_context = CRM_Utils_Request::retrieve('context', 'String', $this, FALSE, 'search');
-
-    /*
-     * WMF HACK: "force" causes a search with null criteria.  Disable until this is fixed.
-     */
-    if ( $this->_context === "search" && CRM_Utils_Request::retrieve('qfKey', 'String') === NULL ) {
-      $this->_force = false;
-    }
 
     $this->assign("context", $this->_context);
 
@@ -224,7 +215,7 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
    * @return string
    */
   protected function getSortNameLabelWithEmail() {
-    return ts('Contributor Name or email');
+    return ts('Contributor Name or Email');
   }
 
   /**
@@ -284,10 +275,12 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
         'contribution_soft_credit_type_id',
         'contribution_status_id',
         'contribution_source',
-        //'contribution_trxn_id',
+        'contribution_trxn_id',
+        'contribution_page_id',
+        'contribution_product_id',
         'invoice_id',
+        'payment_instrument_id',
       );
-
       CRM_Contact_BAO_Query::processSpecialFormValue($this->_formValues, $specialParams);
 
       $tags = CRM_Utils_Array::value('contact_tags', $this->_formValues);
@@ -303,7 +296,7 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
         }
       }
 
-      if (!$config->groupTree) {
+      if (!defined('CIVICRM_GROUPTREE')) {
         $group = CRM_Utils_Array::value('group', $this->_formValues);
         if ($group && !is_array($group)) {
           unset($this->_formValues['group']);

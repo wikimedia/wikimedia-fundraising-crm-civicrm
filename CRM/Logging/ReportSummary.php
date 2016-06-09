@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  */
 class CRM_Logging_ReportSummary extends CRM_Report_Form {
@@ -146,7 +146,7 @@ class CRM_Logging_ReportSummary extends CRM_Report_Form {
         ),
         'bracket_info' => array(
           'entity_column' => 'case_type_id',
-          'options' => CRM_Case_PseudoConstant::caseType('title', FALSE),
+          'options' => CRM_Case_BAO_Case::buildOptions('case_type_id', 'search'),
         ),
       ),
     );
