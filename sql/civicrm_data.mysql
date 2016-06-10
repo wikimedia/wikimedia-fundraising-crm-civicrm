@@ -3726,7 +3726,7 @@ INSERT INTO civicrm_state_province (id, country_id, abbreviation, name) VALUES
 (4978, 1227, "71", "Midway Islands"),
 (4979, 1227, "76", "Navassa Island"),
 (4980, 1227, "95", "Palmyra Atoll"),
-(4981, 1227, "79", "Wake Ialand"),
+(4981, 1227, "79", "Wake Island"),
 (4982, 1229, "AR", "Artigsa"),
 (4983, 1229, "CA", "Canelones"),
 (4984, 1229, "CL", "Cerro Largo"),
@@ -4843,7 +4843,7 @@ VALUES
    (@option_group_id_act, 'Bulk Email',                         19, 'Bulk Email',         NULL, 1, NULL, 19, 'Bulk Email Sent.',                                                    0, 1, 1, NULL, NULL),
    (@option_group_id_act, 'Assign Case Role',                   20, 'Assign Case Role', NULL,0, 0, 20, '', 0, 1, 1, @caseCompId, NULL),
    (@option_group_id_act, 'Remove Case Role',                   21, 'Remove Case Role', NULL,0, 0, 21, '', 0, 1, 1, @caseCompId, NULL),
-   (@option_group_id_act, 'Print PDF Letter',                   22, 'Print PDF Letter',    NULL, 0, NULL, 22, 'Print PDF Letter.',                                                  0, 1, 1, NULL, NULL),
+   (@option_group_id_act, 'Print/Merge Document',               22, 'Print PDF Letter',    NULL, 0, NULL, 22, 'Export letters and other printable documents.',                                                  0, 1, 1, NULL, NULL),
    (@option_group_id_act, 'Merge Case',                         23, 'Merge Case', NULL, 0,  NULL, 23, '', 0, 1, 1, @caseCompId, NULL ),
    (@option_group_id_act, 'Reassigned Case',                    24, 'Reassigned Case', NULL, 0,  NULL, 24, '', 0, 1, 1, @caseCompId, NULL ),
    (@option_group_id_act, 'Link Cases',                         25, 'Link Cases', NULL, 0,  NULL, 25, '', 0, 1, 1, @caseCompId, NULL ),
@@ -23773,7 +23773,7 @@ VALUES
     ( @domainID, 'civicrm/admin/options/subtype?reset=1',   'Contact Types','Contact Types',                              'administer CiviCRM', '',   @CustomizelastID, '1', NULL, 6 ),
     ( @domainID, 'civicrm/admin/setting/preferences/display?reset=1',   'Display Preferences', 'Display Preferences',     'administer CiviCRM', '',   @CustomizelastID, '1', NULL, 9 ),
     ( @domainID, 'civicrm/admin/setting/search?reset=1',    'Search Preferences',    'Search Preferences',                'administer CiviCRM', '',   @CustomizelastID, '1', NULL, 10 ),
-    ( @domainID, 'civicrm/admin/setting/preferences/date?reset=1', 'Date Preferences', 'Date Preferences', 'administer CiviCRM', '', @CustomizelastID, '1', NULL, 11 ), 
+    ( @domainID, 'civicrm/admin/setting/preferences/date?reset=1', 'Date Preferences', 'Date Preferences', 'administer CiviCRM', '', @CustomizelastID, '1', NULL, 11 ),
     ( @domainID, 'civicrm/admin/menu?reset=1',              'Navigation Menu', 'Navigation Menu',                         'administer CiviCRM', '',   @CustomizelastID, '1', NULL, 12 ),
     ( @domainID, 'civicrm/admin/options/wordreplacements?reset=1','Word Replacements','Word Replacements',                'administer CiviCRM', '',   @CustomizelastID, '1', NULL, 13 ),
     ( @domainID, 'civicrm/admin/options/custom_search?reset=1', 'Manage Custom Searches', 'Manage Custom Searches', 'administer CiviCRM', '', @CustomizelastID, '1', NULL, 14 );
@@ -24005,8 +24005,8 @@ VALUES
     ( @domainID, 'civicrm/report/list?reset=1',                            'All Reports',  'All Reports', 'access CiviReport',    '', @adminReportlastID, '1', NULL, 1 ),
     ( @domainID, 'civicrm/admin/report/template/list?reset=1',             'Create New Report from Template', 'Create New Report from Template', 'administer Reports', '', @adminReportlastID, '1', NULL, 2 ),
     ( @domainID, 'civicrm/admin/report/options/report_template?reset=1',   'Manage Templates', 'Manage Templates', 'administer Reports',  '', @adminReportlastID, '1', NULL, 3 ),
-    ( @domainID, 'civicrm/admin/report/register?reset=1',                  'Register Report',  'Register Report',  'administer Reports',  '', @adminReportlastID, '1', NULL, 4 );
-
+    ( @domainID, 'civicrm/admin/report/register?reset=1',                  'Register Report',  'Register Report',  'administer Reports',  '', @adminReportlastID, '1', NULL, 4 ),
+    ( @domainID, 'civicrm/report/list?myreports=1&reset=1',                'My Reports', 'My Reports', 'access CiviReport', '', @reportLastID, '1', 1, 15 );
 INSERT INTO civicrm_navigation
     ( domain_id, url, label, name, permission, permission_operator, parent_id, is_active, has_separator, weight )
 VALUES
