@@ -2960,7 +2960,7 @@ class CRM_Contact_BAO_Query {
 
     if ($ssClause) {
       $and = ($op == 'IS NULL') ? 'AND' : 'OR';
-      if ($groupClause) {
+      if ($groupClause && $and != 'OR') {
         $groupClause = "( ( $groupClause ) $and ( $ssClause ) )";
       }
       else {

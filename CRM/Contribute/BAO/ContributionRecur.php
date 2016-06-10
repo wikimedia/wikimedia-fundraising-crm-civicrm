@@ -351,6 +351,8 @@ SELECT r.payment_processor_id
       $params[$recurDAO->id]['next_sched_contribution_date'] = $recurDAO->next_sched_contribution_date;
       $params[$recurDAO->id]['amount'] = $recurDAO->amount;
       $params[$recurDAO->id]['currency'] = $recurDAO->currency;
+      $params[$recurDAO->id]['failure_count'] = $recurDAO->failure_count;
+      $params[$recurDAO->id]['failure_retry_date'] = $recurDAO->failure_retry_date;
       $params[$recurDAO->id]['frequency_unit'] = $recurDAO->frequency_unit;
       $params[$recurDAO->id]['frequency_interval'] = $recurDAO->frequency_interval;
       $params[$recurDAO->id]['installments'] = $recurDAO->installments;
