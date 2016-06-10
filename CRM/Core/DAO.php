@@ -108,6 +108,10 @@ class CRM_Core_DAO extends DB_DataObject {
       self::DebugLevel(CIVICRM_DAO_DEBUG);
     }
     CRM_Core_DAO::setFactory(new CRM_Contact_DAO_Factory());
+    if (!$dsn) {
+      // Hack for running GenCode without a dsn.
+      return;
+    }
     if (CRM_Utils_Constant::value('CIVICRM_MYSQL_STRICT', CRM_Utils_System::isDevelopment())) {
       CRM_Core_DAO::executeQuery('SET SESSION sql_mode = STRICT_TRANS_TABLES');
     }

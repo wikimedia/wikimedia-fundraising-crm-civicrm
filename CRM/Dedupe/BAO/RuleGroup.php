@@ -231,6 +231,9 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
 
             preg_match($patternColumn, $query, $matches);
             $query = str_replace(' WHERE ', str_replace('column', $matches[1], $dupeCopyJoin), $query);
+            if (($u = strpos($query, 'UNION')) !== False) {
+              $query = substr($query, 0, $u);
+            }
           }
           $searchWithinDupes = 1;
 

@@ -95,7 +95,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
   /**
    * If modeException == true, errors are raised as exception instead of returning civicrm_errors
    */
-  public static $modeException = NULL;
+  public static $modeException = true;
 
   /**
    * Singleton function used to manage this object.
@@ -540,7 +540,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
   public static function debug_var(
     $variable_name,
     $variable,
-    $print = TRUE,
+    $print = FALSE,
     $log = TRUE,
     $comp = ''
   ) {
