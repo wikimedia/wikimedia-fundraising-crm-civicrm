@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -59,7 +59,7 @@
                             {if call_user_func(array('CRM_Core_Permission','check'), 'view my invoices') OR call_user_func(array('CRM_Core_Permission','check'), 'access CiviContribute')}
                                 <a class="button no-popup "
                                    href="{crmURL p='civicrm/contribute/invoice' q=$urlParams}">
-                                    <i class="crm-i fa-print"></i>
+                                    <span class="icon ui-icon-print"></span>
                                     {if $row.contribution_status != 'Refunded' && $row.contribution_status != 'Cancelled' }
                                         <span>{ts}Print Invoice{/ts}</span>
                                     {else}
@@ -87,7 +87,7 @@
     {if $honor}
         {if $honorRows}
             {strip}
-                <div class="help">
+                <div id="help">
                     {ts}Contributions made in your honor{/ts}:
                 </div>
                 <table class="selector">
@@ -148,3 +148,4 @@
         {/if}
     {/if}
 </div>
+

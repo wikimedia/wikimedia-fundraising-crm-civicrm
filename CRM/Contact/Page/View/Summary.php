@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,18 +28,22 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
  * Main page for viewing contact.
+ *
  */
 class CRM_Contact_Page_View_Summary extends CRM_Contact_Page_View {
 
   /**
-   * Heart of the viewing process.
+   * Heart of the viewing process. The runner gets all the meta data for
+   * the contact and calls the appropriate type of page to view.
    *
-   * The runner gets all the meta data for the contact and calls the appropriate type of page to view.
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -63,7 +67,9 @@ class CRM_Contact_Page_View_Summary extends CRM_Contact_Page_View {
       $entitySubType
     );
 
-    CRM_Core_BAO_CustomGroup::buildCustomDataView($this, $groupTree, FALSE, NULL, NULL, NULL, $this->_contactId);
+    CRM_Core_BAO_CustomGroup::buildCustomDataView($this,
+      $groupTree
+    );
 
     // also create the form element for the activity links box
     $controller = new CRM_Core_Controller_Simple(
@@ -79,9 +85,10 @@ class CRM_Contact_Page_View_Summary extends CRM_Contact_Page_View {
   }
 
   /**
-   * Heart of the viewing process.
+   * Heart of the viewing process. The runner gets all the meta data for
+   * the contact and calls the appropriate type of page to view.
    *
-   * The runner gets all the meta data for the contact and calls the appropriate type of page to view.
+   * @return void
    */
   public function run() {
     $this->preProcess();
@@ -98,6 +105,8 @@ class CRM_Contact_Page_View_Summary extends CRM_Contact_Page_View {
 
   /**
    * Edit name and address of a contact.
+   *
+   * @return void
    */
   public function edit() {
     // set the userContext stack
@@ -113,6 +122,8 @@ class CRM_Contact_Page_View_Summary extends CRM_Contact_Page_View {
 
   /**
    * View summary details of a contact.
+   *
+   * @return void
    */
   public function view() {
     // Add js for tabs, in-place editing, and jstree for tags
@@ -138,9 +149,6 @@ class CRM_Contact_Page_View_Summary extends CRM_Contact_Page_View {
     $params['id'] = $params['contact_id'] = $this->_contactId;
     $params['noRelationships'] = $params['noNotes'] = $params['noGroups'] = TRUE;
     $contact = CRM_Contact_BAO_Contact::retrieve($params, $defaults, TRUE);
-    // Let summary page know if outbound mail is disabled so email links can be built conditionally
-    $mailingBackend = Civi::settings()->get('mailing_backend');
-    $this->assign('mailingOutboundOption', $mailingBackend['outBound_option']);
 
     $communicationType = array(
       'phone' => array(
@@ -387,17 +395,8 @@ class CRM_Contact_Page_View_Summary extends CRM_Contact_Page_View {
       $weight += 10;
     }
 
-    $context = array('contact_id' => $this->_contactId);
     // see if any other modules want to add any tabs
     CRM_Utils_Hook::tabs($allTabs, $this->_contactId);
-    CRM_Utils_Hook::tabset('civicrm/contact/view', $allTabs, $context);
-
-    $allTabs[] = array(
-      'id' => 'summary',
-      'url' => '#contact-summary',
-      'title' => ts('Summary'),
-      'weight' => 0,
-    );
 
     // now sort the tabs based on weight
     usort($allTabs, array('CRM_Utils_Sort', 'cmpFunc'));

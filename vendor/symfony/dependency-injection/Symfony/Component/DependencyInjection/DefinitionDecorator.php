@@ -24,7 +24,7 @@ use Symfony\Component\DependencyInjection\Exception\OutOfBoundsException;
 class DefinitionDecorator extends Definition
 {
     private $parent;
-    private $changes = array();
+    private $changes;
 
     /**
      * Constructor.
@@ -38,6 +38,7 @@ class DefinitionDecorator extends Definition
         parent::__construct();
 
         $this->parent = $parent;
+        $this->changes = array();
     }
 
     /**
@@ -200,8 +201,7 @@ class DefinitionDecorator extends Definition
      * @param int   $index
      * @param mixed $value
      *
-     * @return DefinitionDecorator the current instance
-     *
+     * @return DefinitionDecorator      the current instance
      * @throws InvalidArgumentException when $index isn't an integer
      *
      * @api

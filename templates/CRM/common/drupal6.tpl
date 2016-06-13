@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,18 +31,21 @@
 
 {crmNavigationMenu is_default=1}
 
+{* include wysiwyg related files*}
+{include file="CRM/common/wysiwyg.tpl"}
+
 {if isset($browserPrint) and $browserPrint}
 {* Javascript window.print link. Used for public pages where we can't do printer-friendly view. *}
 <div id="printer-friendly">
 <a href="#" onclick="window.print(); return false;" title="{ts}Print this page.{/ts}">
-  <i class="crm-i fa-print"></i>
+  <div class="ui-icon ui-icon-print"></div>
 </a>
 </div>
 {else}
 {* Printer friendly link/icon. *}
 <div id="printer-friendly">
 <a href="{$printerFriendly}" target='_blank' title="{ts}Printer-friendly view of this page.{/ts}">
-  <i class="crm-i fa-print"></i>
+  <div class="ui-icon ui-icon-print"></div>
 </a>
 </div>
 {/if}

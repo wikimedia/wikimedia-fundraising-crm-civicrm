@@ -1,7 +1,7 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,24 +26,20 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Class CRM_Badge_Format_Badge.
+ * Class CRM_Badge_Format_Badge
  *
  * parent class for building name badges
  */
 class CRM_Badge_BAO_Badge {
 
-  /**
-   * @var bool
-   */
   public $debug = FALSE;
 
-  /**
-   * @var int
-   */
   public $border = 0;
 
   /**
@@ -53,6 +49,8 @@ class CRM_Badge_BAO_Badge {
    *   Associated array with participant info.
    * @param array $layoutInfo
    *   Associated array which contains meta data about format/layout.
+   *
+   * @return void
    */
   public function createLabels(&$participants, &$layoutInfo) {
     $this->pdf = new CRM_Utils_PDF_Label($layoutInfo['format'], 'mm');
@@ -77,7 +75,7 @@ class CRM_Badge_BAO_Badge {
   }
 
   /**
-   * Function to create structure and add meta data according to layout.
+   * Funtion to create structure and add meta data according to layout.
    *
    * @param array $row
    *   Row element that needs to be formatted.
@@ -367,6 +365,8 @@ class CRM_Badge_BAO_Badge {
    * @param string $y
    * @param null $w
    * @param null $h
+   *
+   * @return void
    */
   public function printImage($img, $x = '', $y = '', $w = NULL, $h = NULL) {
     if (!$x) {
@@ -409,6 +409,8 @@ class CRM_Badge_BAO_Badge {
    * @param array $params
    *   Associated array of submitted values.
    * @param CRM_Core_Form $form
+   *
+   * @return void
    */
   public static function buildBadges(&$params, &$form) {
     // get name badge layout info
@@ -487,7 +489,7 @@ class CRM_Badge_BAO_Badge {
         $value = isset($dao->$key) ? $dao->$key : NULL;
         // Format custom fields
         if (strstr($key, 'custom_') && isset($value)) {
-          $value = CRM_Core_BAO_CustomField::displayValue($value, substr($key, 7), $dao->contact_id);
+          $value = CRM_Core_BAO_CustomField::getDisplayValue($value, substr($key, 7), $query->_options, $dao->contact_id);
         }
         $rows[$dao->participant_id][$key] = $value;
       }

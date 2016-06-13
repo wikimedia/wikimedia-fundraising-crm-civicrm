@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -36,33 +36,19 @@
  * Settings metadata file
  */
 return array(
-  'enable_cart' => array(
+  'event_enable_cart' =>
+  array(
     'name' => 'enable_cart',
     'group_name' => 'Event Preferences',
     'group' => 'event',
-    'type' => 'Boolean',
+    'type' => 'String',
     'quick_form_type' => 'Element',
-    'default' => '0',
-    'add' => '4.1',
+    'default' => 0,
+    'add' => 4.1,
     'title' => 'Enable Event Cart',
     'is_domain' => 1,
-    'is_contact' => 0,
+    'is_contact' => 1,
     'description' => "WRITE ME",
     'help_text' => 'WRITE ME',
-  ),
-  'show_events' => array(
-    'name' => 'show_events',
-    'group_name' => 'Event Preferences',
-    'group' => 'event',
-    'type' => 'Integer',
-    'quick_form_type' => 'Element',
-    'default' => 10,
-    'add' => '4.5',
-    'title' => 'Dashboard entries',
-    'html_type' => 'select',
-    'is_domain' => 1,
-    'is_contact' => 0,
-    'description' => "Configure how many events should be shown on the dashboard. This overrides the default value of 10 entries.",
-    'help_text' => NULL,
   ),
 );

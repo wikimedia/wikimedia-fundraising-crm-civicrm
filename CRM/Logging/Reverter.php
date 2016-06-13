@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -152,7 +152,6 @@ class CRM_Logging_Reverter {
               if (!isset($ctypes[$table][$field])) {
                 continue;
               }
-              $fldVal = "%{$counter}";
               switch ($ctypes[$table][$field]) {
                 case 'Date':
                   $value = substr(CRM_Utils_Date::isoToMysql($value), 0, 8);
@@ -161,17 +160,10 @@ class CRM_Logging_Reverter {
                 case 'Timestamp':
                   $value = CRM_Utils_Date::isoToMysql($value);
                   break;
-
-                case 'Boolean':
-                  if ($value === '') {
-                    $fldVal = 'DEFAULT';
-                  }
               }
               $inserts[$field] = "%$counter";
-              $updates[] = "{$field} = {$fldVal}";
-              if ($fldVal != 'DEFAULT') {
-                $params[$counter] = array($value, $ctypes[$table][$field]);
-              }
+              $updates[] = "$field = %$counter";
+              $params[$counter] = array($value, $ctypes[$table][$field]);
               $counter++;
             }
             if ($changes['log_action'] == 'Delete') {

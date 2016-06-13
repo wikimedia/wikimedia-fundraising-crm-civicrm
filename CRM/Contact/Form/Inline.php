@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Parent class for inline contact forms.
+ * Parent class for inline contact forms
  */
 abstract class CRM_Contact_Form_Inline extends CRM_Core_Form {
 
@@ -50,20 +52,6 @@ abstract class CRM_Contact_Form_Inline extends CRM_Core_Form {
    * Sub type of contact being edited
    */
   public $_contactSubType;
-
-  /**
-   * Explicitly declare the form context.
-   */
-  public function getDefaultContext() {
-    return 'create';
-  }
-
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Contact';
-  }
 
   /**
    * Common preprocess: fetch contact ID and contact type
@@ -86,12 +74,12 @@ abstract class CRM_Contact_Form_Inline extends CRM_Core_Form {
     }
 
     $this->assign('contactType', $this->_contactType);
-
-    $this->setAction(CRM_Core_Action::UPDATE);
   }
 
   /**
    * Common form elements.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     CRM_Contact_Form_Inline_Lock::buildQuickForm($this, $this->_contactId);
@@ -112,6 +100,8 @@ abstract class CRM_Contact_Form_Inline extends CRM_Core_Form {
 
   /**
    * Override default cancel action.
+   *
+   * @return void
    */
   public function cancelAction() {
     $response = array('status' => 'cancel');
@@ -134,6 +124,8 @@ abstract class CRM_Contact_Form_Inline extends CRM_Core_Form {
 
   /**
    * Add entry to log table.
+   *
+   * @return void
    */
   protected function log() {
     CRM_Core_BAO_Log::register($this->_contactId,
@@ -144,8 +136,9 @@ abstract class CRM_Contact_Form_Inline extends CRM_Core_Form {
 
   /**
    * Common function for all inline contact edit forms.
-   *
    * Prepares ajaxResponse
+   *
+   * @return void
    */
   protected function response() {
     $this->ajaxResponse = array_merge(

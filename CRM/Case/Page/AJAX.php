@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,18 +28,43 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  *
  */
 
 /**
- * This class contains all case related functions that are called using AJAX
+ * This class contains all case related functions that are called using AJAX (jQuery)
  */
 class CRM_Case_Page_AJAX {
 
   /**
-   * @throws \CRM_Core_Exception
+   * Retrieve unclosed cases.
    */
+  public static function unclosedCases() {
+    $params = array(
+      'limit' => CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'search_autocomplete_count', NULL, 10),
+      'sort_name' => CRM_Utils_Type::escape(CRM_Utils_Array::value('term', $_GET, ''), 'String'),
+    );
+
+    $excludeCaseIds = array();
+    if (!empty($_GET['excludeCaseIds'])) {
+      $excludeCaseIds = explode(',', CRM_Utils_Type::escape($_GET['excludeCaseIds'], 'String'));
+      CRM_Utils_Type::escapeAll($excludeCaseIds, 'Integer');
+    }
+    $unclosedCases = CRM_Case_BAO_Case::getUnclosedCases($params, $excludeCaseIds, TRUE, TRUE);
+    $results = array();
+    foreach ($unclosedCases as $caseId => $details) {
+      $results[] = array(
+        'id' => $caseId,
+        'label' => $details['sort_name'] . ' - ' . $details['case_type'] . ($details['end_date'] ? ' (' . ts('closed') . ')' : ''),
+        'label_class' => $details['end_date'] ? 'strikethrough' : '',
+        'description' => array($details['case_subject'] . ' (' . $details['case_status'] . ')'),
+        'extra' => $details,
+      );
+    }
+    CRM_Utils_JSON::output($results);
+  }
+
   public function processCaseTags() {
 
     $caseId = CRM_Utils_Type::escape($_POST['case_id'], 'Positive');
@@ -99,37 +124,40 @@ class CRM_Case_Page_AJAX {
     CRM_Utils_System::civiExit();
   }
 
-  /**
-   * @throws \CiviCRM_API3_Exception
-   */
   public function caseDetails() {
     $caseId = CRM_Utils_Type::escape($_GET['caseId'], 'Positive');
 
-    $case = civicrm_api3('Case', 'getsingle', array(
-      'id' => $caseId,
-      'check_permissions' => TRUE,
-      'return' => array('subject', 'case_type_id', 'status_id', 'start_date', 'end_date'))
-    );
-
-    $caseStatuses = CRM_Case_PseudoConstant::caseStatus();
-    $caseTypes = CRM_Case_PseudoConstant::caseType('title', FALSE);
-    $caseDetails = "<table><tr><td>" . ts('Case Subject') . "</td><td>{$case['subject']}</td></tr>
-                                  <tr><td>" . ts('Case Type') . "</td><td>{$caseTypes[$case['case_type_id']]}</td></tr>
-                                  <tr><td>" . ts('Case Status') . "</td><td>{$caseStatuses[$case['status_id']]}</td></tr>
-                                  <tr><td>" . ts('Case Start Date') . "</td><td>" . CRM_Utils_Date::customFormat($case['start_date']) . "</td></tr>
-                                  <tr><td>" . ts('Case End Date') . "</td><td></td></tr>" . CRM_Utils_Date::customFormat($case['end_date']) . "</table>";
-
-    if (CRM_Utils_Array::value('snippet', $_GET) == 'json') {
-      CRM_Core_Page_AJAX::returnJsonResponse($caseDetails);
+    if (!CRM_Case_BAO_Case::accessCase($caseId, FALSE)) {
+      CRM_Utils_System::permissionDenied();
     }
 
-    echo $caseDetails;
+    $sql = "SELECT civicrm_case.*, civicrm_case_type.title as case_type
+        FROM civicrm_case
+        INNER JOIN civicrm_case_type ON civicrm_case.case_type_id = civicrm_case_type.id
+        WHERE civicrm_case.id = %1";
+    $dao = CRM_Core_DAO::executeQuery($sql, array(1 => array($caseId, 'Integer')));
+
+    if ($dao->fetch()) {
+      $caseStatuses = CRM_Case_PseudoConstant::caseStatus();
+      $cs = $caseStatuses[$dao->status_id];
+      $caseDetails = "<table><tr><td>" . ts('Case Subject') . "</td><td>{$dao->subject}</td></tr>
+                                    <tr><td>" . ts('Case Type') . "</td><td>{$dao->case_type}</td></tr>
+                                    <tr><td>" . ts('Case Status') . "</td><td>{$cs}</td></tr>
+                                    <tr><td>" . ts('Case Start Date') . "</td><td>" . CRM_Utils_Date::customFormat($dao->start_date) . "</td></tr>
+                                    <tr><td>" . ts('Case End Date') . "</td><td></td></tr>" . CRM_Utils_Date::customFormat($dao->end_date) . "</table>";
+      if (CRM_Utils_Array::value('snippet', $_GET) == 'json') {
+        CRM_Core_Page_AJAX::returnJsonResponse($caseDetails);
+      }
+      else {
+        echo $caseDetails;
+      }
+    }
+    else {
+      CRM_Core_Error::fatal('Could not find valid Case.');
+    }
     CRM_Utils_System::civiExit();
   }
 
-  /**
-   * @throws \CRM_Core_Exception
-   */
   public function addClient() {
     $caseId = CRM_Utils_Type::escape($_POST['caseID'], 'Positive');
     $contactId = CRM_Utils_Type::escape($_POST['contactID'], 'Positive');
@@ -143,7 +171,7 @@ class CRM_Case_Page_AJAX {
       'contact_id' => $contactId,
     );
 
-    CRM_Case_BAO_CaseContact::create($params);
+    CRM_Case_BAO_Case::addCaseToContact($params);
 
     // add case relationships
     CRM_Case_BAO_Case::addCaseRelationships($caseId, $contactId);
@@ -175,16 +203,15 @@ class CRM_Case_Page_AJAX {
    */
   public static function deleteCaseRoles() {
     $caseId = CRM_Utils_Type::escape($_POST['case_id'], 'Positive');
-    $cid = CRM_Utils_Type::escape($_POST['cid'], 'Positive');
-    $relType = CRM_Utils_Request::retrieve('rel_type', 'String', CRM_Core_DAO::$_nullObject, TRUE);
+    $relType = CRM_Utils_Type::escape($_POST['rel_type'], 'Positive');
 
-    if (!$cid || !CRM_Case_BAO_Case::accessCase($caseId)) {
+    if (!$relType || !CRM_Case_BAO_Case::accessCase($caseId)) {
       CRM_Utils_System::permissionDenied();
     }
 
-    list($relTypeId, $a, $b) = explode('_', $relType);
+    $sql = "DELETE FROM civicrm_relationship WHERE case_id={$caseId} AND relationship_type_id={$relType}";
+    CRM_Core_DAO::executeQuery($sql);
 
-    CRM_Case_BAO_Case::endCaseRole($caseId, $b, $cid, $relTypeId);
     CRM_Utils_System::civiExit();
   }
 

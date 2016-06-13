@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -42,20 +42,7 @@
  *   API result Array.
  */
 function civicrm_api3_event_create($params) {
-  // Required fields for creating an event
-  if (empty($params['id']) && empty($params['is_template'])) {
-    civicrm_api3_verify_mandatory($params, NULL, array(
-      'start_date',
-      'title',
-      array('event_type_id', 'template_id'),
-    ));
-  }
-  // Required fields for creating an event template
-  elseif (empty($params['id']) && !empty($params['is_template'])) {
-    civicrm_api3_verify_mandatory($params, NULL, array(
-      'template_title',
-    ));
-  }
+  civicrm_api3_verify_one_mandatory($params, NULL, array('event_type_id', 'template_id'));
 
   // Clone event from template
   if (!empty($params['template_id']) && empty($params['id'])) {
@@ -77,6 +64,8 @@ function civicrm_api3_event_create($params) {
  *   Array of parameters determined by getfields.
  */
 function _civicrm_api3_event_create_spec(&$params) {
+  $params['start_date']['api.required'] = 1;
+  $params['title']['api.required'] = 1;
   $params['is_active']['api.default'] = 1;
   $params['financial_type_id']['api.aliases'] = array('contribution_type_id');
   $params['is_template']['api.default'] = 0;
@@ -125,27 +114,34 @@ function civicrm_api3_event_get($params) {
     unset($params['return.max_results']);
   }
 
-  $sql = CRM_Utils_SQL_Select::fragment();
+  $eventDAO = new CRM_Event_BAO_Event();
+  _civicrm_api3_dao_set_filter($eventDAO, $params, TRUE);
+
   if (!empty($params['isCurrent'])) {
-    $sql->where('(start_date >= CURDATE() || end_date >= CURDATE())');
+    $eventDAO->whereAdd('(start_date >= CURDATE() || end_date >= CURDATE())');
   }
 
-  $events = _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params, FALSE, 'Event', $sql, TRUE);
+  // @todo should replace all this with _civicrm_api3_dao_to_array($bao, $params, FALSE, $entity) - but we still have
+  // the return.is_full to deal with.
+  // NB the std dao_to_array function should only return custom if required.
+  $event = array();
   $options = _civicrm_api3_get_options_from_params($params);
-  if ($options['is_count']) {
-    return civicrm_api3_create_success($events, $params, 'Event', 'get');
-  }
-  foreach ($events as $id => $event) {
+
+  $eventDAO->find();
+  while ($eventDAO->fetch()) {
+    $event[$eventDAO->id] = array();
+    CRM_Core_DAO::storeValues($eventDAO, $event[$eventDAO->id]);
     if (!empty($params['return.is_full'])) {
-      _civicrm_api3_event_getisfull($events, $id);
+      _civicrm_api3_event_getisfull($event, $eventDAO->id);
     }
-    _civicrm_api3_event_get_legacy_support_42($events, $id);
+    _civicrm_api3_event_get_legacy_support_42($event, $eventDAO->id);
+    _civicrm_api3_custom_data_get($event[$eventDAO->id], 'Event', $eventDAO->id, NULL, $eventDAO->event_type_id);
     if (!empty($options['return'])) {
-      $events[$id]['price_set_id'] = CRM_Price_BAO_PriceSet::getFor('civicrm_event', $id);
+      $event[$eventDAO->id]['price_set_id'] = CRM_Price_BAO_PriceSet::getFor('civicrm_event', $eventDAO->id);
     }
   }
 
-  return civicrm_api3_create_success($events, $params, 'Event', 'get');
+  return civicrm_api3_create_success($event, $params, 'Event', 'get', $eventDAO);
 }
 
 /**

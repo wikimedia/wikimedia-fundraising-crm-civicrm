@@ -1148,6 +1148,28 @@ class DB_common extends PEAR
      */
     function modifyQuery($query)
     {
+        /**
+         * WMF hack:
+         * Insert diagnostic info such as requesting user.
+         *
+         * Have not found a function to efficiently get uf username.
+         * Not sure if query begin time is already reported by mysql, or would be useful.
+         */
+        global $installType;
+        if ( isset( $installType ) ) {
+            $prefix = "/* Civi utils not available during installation */";
+        }
+        else {
+            global $user;
+            if (empty($user)) {
+                $prefix = 'phpunit-test';
+            }
+            else {
+                $prefix = "/* https://civicrm.wikimedia.org/user/{$user->uid} */ ";
+            }
+        }
+        $query = $prefix . $query;
+
         return $query;
     }
 

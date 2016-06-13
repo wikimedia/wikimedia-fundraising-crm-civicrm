@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,17 +28,21 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for Component.
+ * This class generates form components for Component
  */
 class CRM_Admin_Form_Setting_Component extends CRM_Admin_Form_Setting {
   protected $_components;
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     CRM_Utils_System::setTitle(ts('Settings - Enable Components'));
@@ -119,9 +123,11 @@ class CRM_Admin_Form_Setting_Component extends CRM_Admin_Form_Setting {
    * @param string $fileName
    * @param bool $lineMode
    */
-  public static function loadCaseSampleData($fileName, $lineMode = FALSE) {
-    $dao = new CRM_Core_DAO();
-    $db = $dao->getDatabaseConnection();
+  public static function loadCaseSampleData($dsn, $fileName, $lineMode = FALSE) {
+    $db = &DB::connect($dsn);
+    if (PEAR::isError($db)) {
+      die("Cannot open $dsn: " . $db->getMessage());
+    }
 
     $domain = new CRM_Core_DAO_Domain();
     $domain->find(TRUE);

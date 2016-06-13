@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -48,17 +48,20 @@
  * @throws Exception
  */
 function smarty_function_crmScript($params, &$smarty) {
-  $params += array(
-    'weight' => CRM_Core_Resources::DEFAULT_WEIGHT,
-    'region' => CRM_Core_Resources::DEFAULT_REGION,
-    'ext' => 'civicrm',
-  );
+  $res = CRM_Core_Resources::singleton();
+
+  if (empty($params['weight'])) {
+    $params['weight'] = CRM_Core_Resources::DEFAULT_WEIGHT;
+  }
+  if (empty($params['region'])) {
+    $params['region'] = CRM_Core_Resources::DEFAULT_REGION;
+  }
 
   if (array_key_exists('file', $params)) {
-    Civi::resources()->addScriptFile($params['ext'], $params['file'], $params['weight'], $params['region']);
+    $res->addScriptFile($params['ext'], $params['file'], $params['weight'], $params['region']);
   }
   elseif (array_key_exists('url', $params)) {
-    Civi::resources()->addScriptUrl($params['url'], $params['weight'], $params['region']);
+    $res->addScriptUrl($params['url'], $params['weight'], $params['region']);
   }
   else {
     CRM_Core_Error::debug_var('crmScript_params', $params);

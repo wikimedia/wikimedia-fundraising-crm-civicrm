@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class create activities for a case.
+ * This class create activities for a case
+ *
  */
 class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
 
@@ -51,6 +54,13 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
   public $_caseType;
 
   /**
+   * The default values of an activity.
+   *
+   * @var array
+   */
+  public $_defaults = array();
+
+  /**
    * The array of releted contact info.
    *
    * @var array
@@ -59,6 +69,8 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function preProcess() {
     $caseIds = CRM_Utils_Request::retrieve('caseid', 'String', $this);
@@ -74,6 +86,10 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
 
     $scheduleStatusId = CRM_Core_OptionGroup::getValue('activity_status', 'Scheduled', 'name');
     $this->assign('scheduleStatusId', $scheduleStatusId);
+
+    if ($this->_cdType) {
+      return $result;
+    }
 
     if (!$this->_caseId && $this->_activityId) {
       $this->_caseId = CRM_Core_DAO::getFieldValue('CRM_Case_DAO_CaseActivity', $this->_activityId,
@@ -202,7 +218,11 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. For edit/view mode
+   * the default values are retrieved from the database
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $this->_defaults = parent::setDefaultValues();
@@ -224,6 +244,11 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
         }
       }
       $this->assign('targetContactValues', empty($targetContactValues) ? FALSE : $targetContactValues);
+
+      //return form for ajax
+      if ($this->_cdType) {
+        return $this->_defaults;
+      }
 
       if (isset($this->_encounterMedium)) {
         $this->_defaults['medium_id'] = $this->_encounterMedium;
@@ -259,10 +284,14 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
       $this->_fields['followup_activity_type_id']['attributes'] = array('' => '- select activity type -') + $aTypes;
     }
 
-    parent::buildQuickForm();
+    $result = parent::buildQuickForm();
 
     if ($this->_action & (CRM_Core_Action::DELETE | CRM_Core_Action::DETACH | CRM_Core_Action::RENEW)) {
       return;
+    }
+
+    if ($this->_cdType) {
+      return $result;
     }
 
     $this->assign('urlPath', 'civicrm/case/activity');
@@ -307,9 +336,7 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
     if (!empty($this->_relatedContacts)) {
       $checkBoxes = array();
       foreach ($this->_relatedContacts as $id => $row) {
-        foreach ($row as $key => $value) {
-          $checkBoxes[$key] = $this->addElement('checkbox', $key, NULL, NULL, array('class' => 'select-row'));
-        }
+        $checkBoxes[$id] = $this->addElement('checkbox', $id, NULL, NULL, array('class' => 'select-row'));
       }
 
       $this->addGroup($checkBoxes, 'contact_check');
@@ -347,7 +374,10 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
   /**
    * Process the form submission.
    *
+   *
    * @param array $params
+   *
+   * @return void
    */
   public function postProcess($params = NULL) {
     $transaction = new CRM_Core_Transaction();
@@ -415,10 +445,6 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
     // format activity custom data
     if (!empty($params['hidden_custom'])) {
       if ($this->_activityId) {
-        // retrieve and include the custom data of old Activity
-        $oldActivity = civicrm_api3('Activity', 'getsingle', array('id' => $this->_activityId));
-        $params = array_merge($oldActivity, $params);
-
         // unset custom fields-id from params since we want custom
         // fields to be saved for new activity.
         foreach ($params as $key => $value) {
@@ -444,6 +470,7 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
         )
       );
       $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+        $customFields,
         $this->_activityId,
         'Activity'
       );
@@ -510,8 +537,8 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
       else {
         $newActParams['original_id'] = $activity->id;
       }
-
       //is_current_revision will be set to 1 by default.
+
       // add attachments if any
       CRM_Core_BAO_File::formatAttachment($newActParams,
         $newActParams,
@@ -591,7 +618,10 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
     $selectedContacts = array('contact_check');
     $activityContacts = CRM_Core_OptionGroup::values('activity_contacts', FALSE, FALSE, FALSE, NULL, 'name');
     $assigneeID = CRM_Utils_Array::key('Activity Assignees', $activityContacts);
-    if (Civi::settings()->get('activity_assignee_notification')) {
+    if (CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+      'activity_assignee_notification'
+    )
+    ) {
       $selectedContacts[] = 'assignee_contact_id';
     }
 
@@ -628,9 +658,23 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
         }
       }
 
-      $extraParams = array('case_id' => $vval['case_id'], 'client_id' => $this->_currentlyViewedContactId);
-      $result = CRM_Activity_BAO_Activity::sendToAssignee($activity, $mailToContacts, $extraParams);
-      if (empty($result)) {
+      if (!CRM_Utils_array::crmIsEmptyArray($mailToContacts)) {
+        //include attachments while sending a copy of activity.
+        $attachments = CRM_Core_BAO_File::getEntityFile('civicrm_activity',
+          $vval['actId']
+        );
+
+        $ics = new CRM_Activity_BAO_ICalendar($activity);
+        $ics->addAttachment($attachments, $mailToContacts);
+        $result = CRM_Case_BAO_Case::sendActivityCopy($this->_currentlyViewedContactId,
+          $vval['actId'], $mailToContacts, $attachments, $vval['case_id']
+        );
+        $ics->cleanup();
+        if (empty($result)) {
+          $mailStatus = '';
+        }
+      }
+      else {
         $mailStatus = '';
       }
 

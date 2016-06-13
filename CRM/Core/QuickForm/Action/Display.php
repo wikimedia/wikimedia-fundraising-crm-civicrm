@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,9 @@
  * Redefine the display action.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Core_QuickForm_Action_Display extends CRM_Core_QuickForm_Action {
 
@@ -65,7 +67,7 @@ class CRM_Core_QuickForm_Action_Display extends CRM_Core_QuickForm_Action {
    * @param string $actionName
    *   Current action name, as one Action object can serve multiple actions.
    *
-   * @return object|void
+   * @return void
    */
   public function perform(&$page, $actionName) {
     $pageName = $page->getAttribute('id');
@@ -104,6 +106,9 @@ class CRM_Core_QuickForm_Action_Display extends CRM_Core_QuickForm_Action {
    *
    * @param CRM_Core_Form $page
    *   The CRM_Core_Form page.
+   *
+   *
+   * @return void
    */
   public function renderForm(&$page) {
     $this->_setRenderTemplates($page);
@@ -186,6 +191,8 @@ class CRM_Core_QuickForm_Action_Display extends CRM_Core_QuickForm_Action {
    *
    * @param CRM_Core_Form $page
    *   The CRM_Core_Form page.
+   *
+   * @return void
    */
   public function _setRenderTemplates(&$page) {
     if (self::$_requiredTemplate === NULL) {
@@ -200,6 +207,8 @@ class CRM_Core_QuickForm_Action_Display extends CRM_Core_QuickForm_Action {
 
   /**
    * Initialize the various templates.
+   *
+   * @return void
    */
   public function initializeTemplates() {
     if (self::$_requiredTemplate !== NULL) {

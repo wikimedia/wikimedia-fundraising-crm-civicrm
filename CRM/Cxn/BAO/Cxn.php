@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,9 @@ use Civi\Cxn\Rpc\DefaultCertificateValidator;
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2014
+ * $Id$
+ *
  */
 
 /**
@@ -56,7 +58,7 @@ class CRM_Cxn_BAO_Cxn extends CRM_Cxn_DAO_Cxn {
 
     // In practice, this may not be necessary, but we want to prevent
     // edge-cases that downgrade security-level below system policy.
-    if (Civi::settings()->get('enableSSL')) {
+    if (CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'enableSSL')) {
       $civiUrl = preg_replace('/^http:/', 'https:', $civiUrl);
     }
 
@@ -140,9 +142,7 @@ class CRM_Cxn_BAO_Cxn extends CRM_Cxn_DAO_Cxn {
    */
   public static function createRegistrationClient() {
     $cxnStore = new \CRM_Cxn_CiviCxnStore();
-    $viaPort = defined('CIVICRM_CXN_VIA') ? CIVICRM_CXN_VIA : NULL;
-    $client = new \Civi\Cxn\Rpc\RegistrationClient(
-      $cxnStore, \CRM_Cxn_BAO_Cxn::getSiteCallbackUrl(), $viaPort);
+    $client = new \Civi\Cxn\Rpc\RegistrationClient($cxnStore, \CRM_Cxn_BAO_Cxn::getSiteCallbackUrl());
     $client->setLog(new \CRM_Utils_SystemLogger());
     $client->setCertValidator(self::createCertificateValidator());
     $client->setHttp(CRM_Cxn_CiviCxnHttp::singleton());

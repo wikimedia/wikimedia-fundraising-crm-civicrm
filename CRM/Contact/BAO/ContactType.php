@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contact_BAO_ContactType extends CRM_Contact_DAO_ContactType {
 
@@ -54,9 +56,7 @@ class CRM_Contact_BAO_ContactType extends CRM_Contact_DAO_ContactType {
   }
 
   /**
-   * Is this contact type active.
-   *
-   * @param string $contactType
+   * @param $contactType
    *
    * @return bool
    */
@@ -74,7 +74,7 @@ class CRM_Contact_BAO_ContactType extends CRM_Contact_DAO_ContactType {
    * @return array
    *   Array of basic contact types information.
    */
-  public static function basicTypeInfo($all = FALSE) {
+  public static function &basicTypeInfo($all = FALSE) {
     static $_cache = NULL;
 
     if ($_cache === NULL) {
@@ -153,7 +153,7 @@ WHERE  parent_id IS NULL
    * @return array
    *   Array of sub type information
    */
-  public static function subTypeInfo($contactType = NULL, $all = FALSE, $ignoreCache = FALSE, $reset = FALSE) {
+  public static function &subTypeInfo($contactType = NULL, $all = FALSE, $ignoreCache = FALSE, $reset = FALSE) {
     static $_cache = NULL;
 
     if ($reset === TRUE) {
@@ -268,7 +268,8 @@ WHERE  subtype.name IS NOT NULL AND subtype.parent_id IS NOT NULL {$ctWHERE}
   }
 
   /**
-   * Retrieve info array about all types i.e basic + subtypes.
+   *
+   * retrieve info array about all types i.e basic + subtypes.
    *
    * @param bool $all
    * @param bool $reset
@@ -327,7 +328,7 @@ WHERE  type.name IS NOT NULL
   }
 
   /**
-   * Retrieve basic type pairs with name as 'built-in name' and 'label' as value.
+   * Retrieve basic type pairs with name as 'built-in name' and 'label' as value
    *
    * @param bool $all
    * @param null $typeName
@@ -525,7 +526,9 @@ WHERE  subtype.name IN ('" . implode("','", $subType) . "' )";
    *   true if contact extends, false otherwise.
    */
   public static function isExtendsContactType($subType, $contactType, $ignoreCache = FALSE, $columnName = 'name') {
-    $subType = (array) CRM_Utils_Array::explodePadded($subType);
+    if (!is_array($subType)) {
+      $subType = explode(CRM_Core_DAO::VALUE_SEPARATOR, trim($subType, CRM_Core_DAO::VALUE_SEPARATOR));
+    }
     $subtypeList = self::subTypes($contactType, TRUE, $columnName, $ignoreCache);
     $intersection = array_intersect($subType, $subtypeList);
     return $subType == $intersection;
@@ -891,7 +894,7 @@ WHERE extends = %1 AND " . implode(" OR ", $subTypeClause);
    * @param array $subtypes
    *   List of subtypes related to which entry is to be removed.
    *
-   * @return bool
+   * @return void
    */
   public static function deleteCustomRowsOfSubtype($gID, $subtypes = array()) {
     if (!$gID or empty($subtypes)) {
@@ -929,7 +932,7 @@ WHERE ($subtypeClause)";
    * @param int $entityID
    *   Entity id.
    *
-   * @return null|string
+   * @return void
    */
   public static function deleteCustomRowsForEntityID($customTable, $entityID) {
     $customTable = CRM_Utils_Type::escape($customTable, 'String');

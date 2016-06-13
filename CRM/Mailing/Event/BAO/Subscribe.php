@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 
@@ -83,7 +85,7 @@ class CRM_Mailing_Event_BAO_Subscribe extends CRM_Mailing_Event_DAO_Subscribe {
       $contact_id = $contactId;
     }
     else {
-      // First, find out if the contact already exists.
+      /* First, find out if the contact already exists */
 
       $query = "
    SELECT DISTINCT contact_a.id as contact_id
@@ -106,7 +108,7 @@ LEFT JOIN civicrm_email      ON contact_a.id = civicrm_email.contact_id
     if (!$contact_id) {
       require_once 'CRM/Utils/DeprecatedUtils.php';
 
-      // If the contact does not exist, create one.
+      /* If the contact does not exist, create one. */
 
       $formatted = array(
         'contact_type' => 'Individual',
@@ -135,7 +137,7 @@ LEFT JOIN civicrm_email      ON contact_a.id = civicrm_email.contact_id
       return $success;
     }
 
-    // Get the primary email id from the contact to use as a hash input.
+    /* Get the primary email id from the contact to use as a hash input */
 
     $dao = new CRM_Core_DAO();
 
@@ -203,6 +205,8 @@ SELECT     civicrm_email.id as email_id
    *
    * @param string $email
    *   The email address.
+   *
+   * @return void
    */
   public function send_confirm_request($email) {
     $config = CRM_Core_Config::singleton();
@@ -287,7 +291,7 @@ SELECT     civicrm_email.id as email_id
       $this->id,
       $this->hash
     );
-    $mailer = \Civi::service('pear_mail');
+    $mailer = $config->getMailer();
 
     if (is_object($mailer)) {
       $errorScope = CRM_Core_TemporaryErrorScope::ignoreException();
@@ -372,6 +376,8 @@ SELECT     civicrm_email.id as email_id
    *   Specifically to avoid linking group to wrong duplicate contact
    *   during event registration.
    * @param string $context
+   *
+   * @return void
    */
   public static function commonSubscribe(&$groups, &$params, $contactId = NULL, $context = NULL) {
     $contactGroups = CRM_Mailing_Event_BAO_Subscribe::getContactGroups($params['email'], $contactId);

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  */
 class CRM_Member_BAO_Query {
 
@@ -192,7 +192,6 @@ class CRM_Member_BAO_Query {
         return;
 
       case 'member_source':
-      case 'membership_source':
         $strtolower = function_exists('mb_strtolower') ? 'mb_strtolower' : 'strtolower';
         $value = $strtolower(CRM_Core_DAO::escapeString(trim($value)));
 
@@ -222,23 +221,17 @@ class CRM_Member_BAO_Query {
           $value = array('IN' => explode(',', $value));
         }
       case 'member_id':
-      case 'member_campaign_id':
-
         if (strpos($name, 'status') !== FALSE) {
           $name = 'status_id';
-          $qillName = ts('Membership Status');
+          $qillName = 'Membership Status(s)';
         }
         elseif ($name == 'member_id') {
           $name = 'id';
-          $qillName = ts('Membership ID');
-        }
-        elseif ($name == 'member_campaign_id') {
-          $name = 'campaign_id';
-          $qillName = ts('Campaign');
+          $qillName = 'Membership ID';
         }
         else {
           $name = 'membership_type_id';
-          $qillName = ts('Membership Type');
+          $qillName = 'Membership Type(s)';
         }
         $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_membership.$name",
           $op,
@@ -246,7 +239,11 @@ class CRM_Member_BAO_Query {
           "Integer"
         );
         list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Member_DAO_Membership', $name, $value, $op);
-        $query->_qill[$grouping][] = $qillName . ' ' . $op . ' ' . $value;
+        $query->_qill[$grouping][] = ts('%1 %2 %3', array(
+          1 => $qillName,
+          2 => $op,
+          3 => $value,
+        ));
         $query->_tables['civicrm_membership'] = $query->_whereTables['civicrm_membership'] = 1;
         return;
 
@@ -310,10 +307,17 @@ class CRM_Member_BAO_Query {
         $query->_tables['civicrm_membership'] = $query->_whereTables['civicrm_membership'] = 1;
         return;
 
-      case 'member_is_override':
-        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_membership.is_override", $op, $value, "Boolean");
-        $query->_qill[$grouping][] = $value ? ts("Membership Status Is Overriden") : ts("Membership Status Is NOT Overriden");
-        $query->_tables['civicrm_membership'] = $query->_whereTables['civicrm_membership'] = 1;
+      case 'member_campaign_id':
+        if (CRM_Utils_Array::value($op, $value)) {
+          $value = $value[$op];
+        }
+        $campParams = array(
+          'op' => $op,
+          'campaign' => $value,
+          'grouping' => $grouping,
+          'tableName' => 'civicrm_membership',
+        );
+        CRM_Campaign_BAO_Query::componentSearchClause($campParams, $query);
         return;
     }
   }
@@ -392,7 +396,6 @@ class CRM_Member_BAO_Query {
         'max_related' => 1,
         'membership_recur_id' => 1,
         'member_campaign_id' => 1,
-        'member_is_override' => 1,
       );
 
       if ($includeCustomFields) {
@@ -415,14 +418,14 @@ class CRM_Member_BAO_Query {
    * @param CRM_Core_Form $form
    */
   public static function buildSearchForm(&$form) {
-    $membershipStatus = CRM_Member_PseudoConstant::membershipStatus(NULL, NULL, 'label', FALSE, FALSE);
-    $form->add('select', 'membership_status_id', ts('Membership Status'), $membershipStatus, FALSE, array(
+    $membershipStatus = CRM_Member_PseudoConstant::membershipStatus();
+    $form->add('select', 'membership_status_id', ts('Membership Status(s)'), $membershipStatus, FALSE, array(
       'id' => 'membership_status_id',
       'multiple' => 'multiple',
       'class' => 'crm-select2',
     ));
 
-    $form->addEntityRef('membership_type_id', ts('Membership Type'), array(
+    $form->addEntityRef('membership_type_id', ts('Membership Type(s)'), array(
       'entity' => 'MembershipType',
       'multiple' => TRUE,
       'placeholder' => ts('- any -'),
@@ -432,21 +435,15 @@ class CRM_Member_BAO_Query {
     $form->addElement('text', 'member_source', ts('Source'));
 
     CRM_Core_Form_Date::buildDateRange($form, 'member_join_date', 1, '_low', '_high', ts('From'), FALSE);
-    $form->addElement('hidden', 'member_join_date_range_error');
 
     CRM_Core_Form_Date::buildDateRange($form, 'member_start_date', 1, '_low', '_high', ts('From'), FALSE);
-    $form->addElement('hidden', 'member_start_date_range_error');
 
     CRM_Core_Form_Date::buildDateRange($form, 'member_end_date', 1, '_low', '_high', ts('From'), FALSE);
-    $form->addElement('hidden', 'member_end_date_range_error');
-
-    $form->addFormRule(array('CRM_Member_BAO_Query', 'formRule'), $form);
 
     $form->addYesNo('member_is_primary', ts('Primary Member?'), TRUE);
     $form->addYesNo('member_pay_later', ts('Pay Later?'), TRUE);
     $form->addYesNo('member_auto_renew', ts('Auto-Renew?'), TRUE);
     $form->addYesNo('member_test', ts('Membership is a Test?'), TRUE);
-    $form->addYesNo('member_is_override', ts('Membership Status Is Overriden?'), TRUE);
 
     // add all the custom  searchable fields
     $extends = array('Membership');
@@ -457,7 +454,11 @@ class CRM_Member_BAO_Query {
         foreach ($group['fields'] as $field) {
           $fieldId = $field['id'];
           $elementName = 'custom_' . $fieldId;
-          CRM_Core_BAO_CustomField::addQuickFormElement($form, $elementName, $fieldId, FALSE, TRUE);
+          CRM_Core_BAO_CustomField::addQuickFormElement($form,
+            $elementName,
+            $fieldId,
+            FALSE, FALSE, TRUE
+          );
         }
       }
     }
@@ -486,29 +487,6 @@ class CRM_Member_BAO_Query {
     if (!empty($tables['civicrm_membership_log']) || !empty($tables['civicrm_membership_status']) || CRM_Utils_Array::value('civicrm_membership_type', $tables)) {
       $tables = array_merge(array('civicrm_membership' => 1), $tables);
     }
-  }
-
-  /**
-   * Custom form rules.
-   *
-   * @param array $fields
-   * @param array $files
-   * @param CRM_Core_Form $form
-   *
-   * @return bool|array
-   */
-  public static function formRule($fields, $files, $form) {
-    $errors = array();
-
-    if ((empty($fields['member_join_date_low']) || empty($fields['member_join_date_high'])) && (empty($fields['member_start_date_low']) || empty($fields['member_start_date_high'])) && (empty($fields['member_end_date_low']) || empty($fields['member_end_date_high']))) {
-      return TRUE;
-    }
-
-    CRM_Utils_Rule::validDateRange($fields, 'member_join_date', $errors, ts('Member Since'));
-    CRM_Utils_Rule::validDateRange($fields, 'member_start_date', $errors, ts('Start Date'));
-    CRM_Utils_Rule::validDateRange($fields, 'member_end_date', $errors, ts('End Date'));
-
-    return empty($errors) ? TRUE : $errors;
   }
 
 }

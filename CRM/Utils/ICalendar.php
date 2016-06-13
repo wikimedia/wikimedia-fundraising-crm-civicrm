@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -36,6 +38,7 @@
  * API for event export in iCalendar format
  * as outlined in Internet Calendaring and
  * Scheduling Core Object Specification
+ *
  */
 class CRM_Utils_ICalendar {
 
@@ -100,19 +103,22 @@ class CRM_Utils_ICalendar {
    *   The file name (for downloads).
    * @param string $disposition
    *   How the file should be sent ('attachment' for downloads).
+   *
+   * @return void
    */
   public static function send($calendar, $content_type = 'text/calendar', $charset = 'us-ascii', $fileName = NULL, $disposition = NULL) {
     $config = CRM_Core_Config::singleton();
     $lang = $config->lcMessages;
-    CRM_Utils_System::setHttpHeader("Content-Language", $lang);
-    CRM_Utils_System::setHttpHeader("Content-Type", "$content_type; charset=$charset");
+    header("Content-Language: $lang");
+    // header( "Content-Type: $content_type; charset=$charset; profile=\"ICalendar\"" );
+    header("Content-Type: $content_type; charset=$charset");
 
     if ($content_type == 'text/calendar') {
-      CRM_Utils_System::setHttpHeader('Content-Length', strlen($calendar));
-      CRM_Utils_System::setHttpHeader("Content-Disposition", "$disposition; filename=\"$fileName\"");
-      CRM_Utils_System::setHttpHeader("Pragma", "no-cache");
-      CRM_Utils_System::setHttpHeader("Expires", "0");
-      CRM_Utils_System::setHttpHeader("Cache-Control", "no-cache, must-revalidate");
+      header('Content-Length: ' . strlen($calendar));
+      header("Content-Disposition: $disposition; filename=\"$fileName\"");
+      header("Pragma: no-cache");
+      header("Expires: 0");
+      header("Cache-Control: no-cache, must-revalidate");
     }
 
     echo $calendar;

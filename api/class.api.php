@@ -97,6 +97,7 @@ class civicrm_api3 {
       else {
         $this->uri .= '/sites/all/modules/civicrm/extern/rest.php';
       }
+      $this->uri .= '?json=1';
       if (isset($config['key'])) {
         $this->key = $config['key'];
       }
@@ -156,6 +157,17 @@ class civicrm_api3 {
   }
 
   /**
+   * As of PHP 5.3.0.
+   *
+   * @param $name
+   * @param $arguments
+   */
+  public static function __callStatic($name, $arguments) {
+    // Should we implement it ?
+    echo "Calling static method '$name' " . implode(', ', $arguments) . "\n";
+  }
+
+  /**
    * Call via rest.
    *
    * @param $entity
@@ -164,20 +176,18 @@ class civicrm_api3 {
    *
    * @return \stdClass
    */
-  private function remoteCall($entity, $action, $params = array()) {
-    $query = $this->uri . "?entity=$entity&action=$action";
-    $fields = http_build_query(array(
-      'key' => $this->key,
-      'api_key' => $this->api_key,
-      'json' => json_encode($params),
-    ));
-
+  public function remoteCall($entity, $action, $params = array()) {
+    $fields = "key={$this->key}&api_key={$this->api_key}";
+    $query = $this->uri . "&entity=$entity&action=$action";
+    foreach ($params as $k => $v) {
+      $fields .= "&$k=" . urlencode($v);
+    }
     if (function_exists('curl_init')) {
       // To facilitate debugging without leaking info, entity & action
       // are GET, other data is POST.
       $ch = curl_init();
       curl_setopt($ch, CURLOPT_URL, $query);
-      curl_setopt($ch, CURLOPT_POST, TRUE);
+      curl_setopt($ch, CURLOPT_POST, count($params) + 2);
       curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
       $result = curl_exec($ch);
@@ -217,7 +227,7 @@ class civicrm_api3 {
    *
    * @return bool
    */
-  private function call($entity, $action = 'Get', $params = array()) {
+  public function call($entity, $action = 'Get', $params = array()) {
     if (is_int($params)) {
       $params = array('id' => $params);
     }

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,21 +28,22 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 interface CRM_Report_Interface {
 
   /**
    * The constructor gets the submitted form values.
    *
-   * @param array $formValues
+   * @param $formValues
    */
   public function __construct(&$formValues);
 
   /**
    * Builds the quickform for this search.
-   *
-   * @param CRM_Core_Form $form
+   * @param $form
    */
   public function buildForm(&$form);
 
@@ -54,37 +55,27 @@ interface CRM_Report_Interface {
    */
 
   /**
-   * Count of records that match the current input parameters Used by pager.
+   * Count of records that match the current input parameters
+   * Used by pager
    */
   public function count();
 
   /**
-   * Summary information for the query that can be displayed in the template.
-   *
+   * Summary information for the query that can be displayed in the template
    * This is useful to pass total / sub total information if needed
    */
   public function summary();
 
   /**
-   * Get contact IDs.
-   *
    * List of contact ids that match the current input parameters
    * Used by different tasks. Will be also used to optimize the
    * 'all' query below to avoid excessive LEFT JOIN blowup
-   *
-   * @param int $offset
-   * @param int $rowcount
-   * @param string $sort
    */
   public function contactIDs($offset = 0, $rowcount = 0, $sort = NULL);
 
   /**
-   * Retrieve all the values that match the current input parameters used by the selector.
-   *
-   * @param int $offset
-   * @param int $rowcount
-   * @param string $sort
-   * @param bool $includeContactIDs
+   * Retrieve all the values that match the current input parameters
+   * Used by the selector
    */
   public function all(
     $offset = 0, $rowcount = 0, $sort = NULL,
@@ -107,8 +98,6 @@ interface CRM_Report_Interface {
 
   /**
    * The where clause for the query.
-   *
-   * @param bool $includeContactIDs
    */
   public function where($includeContactIDs = FALSE);
 

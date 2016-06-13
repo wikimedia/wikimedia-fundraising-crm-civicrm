@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form element for free tag widget.
+ * This class generates form element for free tag widget
+ *
  */
 class CRM_Core_Form_Tag {
   public $_entityTagValues;
@@ -54,6 +57,8 @@ class CRM_Core_Form_Tag {
    *   True if need to add entry in entry table via ajax.
    * @param string $tagsetElementName
    *   If you need to create tagsetlist with specific name.
+   *
+   * @return void
    */
   public static function buildQuickForm(
     &$form, $parentNames, $entityTable, $entityId = NULL, $skipTagCreate = FALSE,
@@ -126,6 +131,8 @@ class CRM_Core_Form_Tag {
    *   Entity table.
    * @param CRM_Core_Form $form
    *   Form object.
+   *
+   * @return void
    */
   public static function postProcess(&$params, $entityId, $entityTable = 'civicrm_contact', &$form) {
     if ($form && !empty($form->_entityTagValues)) {

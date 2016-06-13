@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -37,8 +39,7 @@
 class CRM_Utils_Time {
 
   /**
-   * @var int
-   *   the seconds offset from the real world time
+   * @var int, the seconds offset from the real world time
    */
   static private $_delta = 0;
 
@@ -49,6 +50,7 @@ class CRM_Utils_Time {
    *   Format in which date is to be retrieved.
    *
    * @return date
+   *
    */
   public static function getTime($returnFormat = 'YmdHis') {
     return date($returnFormat, self::getTimeRaw());
@@ -57,8 +59,7 @@ class CRM_Utils_Time {
   /**
    * Get the time.
    *
-   * @return int
-   *   seconds since epoch
+   * @return int, seconds since epoch
    */
   public static function getTimeRaw() {
     return time() + self::$_delta;
@@ -73,6 +74,7 @@ class CRM_Utils_Time {
    *   Format in which date is to be retrieved.
    *
    * @return date
+   *
    */
   public static function setTime($newDateTime, $returnFormat = 'YmdHis') {
     self::$_delta = strtotime($newDateTime) - time();

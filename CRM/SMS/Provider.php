@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 abstract class CRM_SMS_Provider {
 
@@ -86,24 +88,11 @@ abstract class CRM_SMS_Provider {
 
   /**
    * Send an SMS Message via the API Server.
-   *
-   * @param array $recipients
-   * @param string $header
-   * @param string $message
-   * @param int $dncID
    */
   abstract public function send($recipients, $header, $message, $dncID = NULL);
 
   /**
-   * Return message text.
-   *
-   * Child class could override this function to have better control over the message being sent.
-   *
-   * @param string $message
-   * @param int $contactID
-   * @param array $contactDetails
-   *
-   * @return string
+   * Return message text. Child class could override this function to have better control over the message being sent.
    */
   public function getMessage($message, $contactID, $contactDetails) {
     $html = $message->getHTMLBody();
@@ -113,10 +102,8 @@ abstract class CRM_SMS_Provider {
   }
 
   /**
-   * Get recipient details.
-   *
-   * @param array $fields
-   * @param array $additionalDetails
+   * @param $fields
+   * @param $additionalDetails
    *
    * @return mixed
    */

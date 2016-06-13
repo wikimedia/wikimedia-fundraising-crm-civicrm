@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -24,13 +24,13 @@
  +--------------------------------------------------------------------+
 *}
 {* Links for scheduling/logging meetings and calls and Sending Email *}
-
+{if $cdType eq false }
 {if $contact_id }
 {assign var = "contactId" value= $contact_id }
 {/if}
 
 {if $as_select} {* on 3.2, the activities can be either a drop down select (on the activity tab) or a list (on the action menu) *}
-<select name="other_activity" class="crm-form-select crm-select2 crm-action-menu fa-plus">
+<select name="other_activity" class="crm-form-select crm-select2 crm-action-menu action-icon-plus">
   <option value="">{ts}New Activity{/ts}</option>
 {foreach from=$activityTypes key=k item=link}
   <option value="{$urls.$k}">{$link}</option>
@@ -75,5 +75,7 @@
 {/if}
 
 </ul>
+
+{/if}
 
 {/if}

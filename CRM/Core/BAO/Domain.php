@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -253,8 +253,12 @@ class CRM_Core_BAO_Domain extends CRM_Core_DAO_Domain {
       return $groupID;
     }
 
-    $domainGroupID = Civi::settings()->get('domain_group_id');
-    $multisite = Civi::settings()->get('is_enabled');
+    $domainGroupID = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MULTISITE_PREFERENCES_NAME,
+      'domain_group_id'
+    );
+    $multisite = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MULTISITE_PREFERENCES_NAME,
+      'is_enabled'
+    );
 
     if ($domainGroupID) {
       $groupID = $domainGroupID;

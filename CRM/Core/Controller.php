@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -38,7 +38,9 @@
  * for other useful tips and suggestions
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 require_once 'HTML/QuickForm/Controller.php';
@@ -374,12 +376,14 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
   }
 
   /**
-   * Helper function to add all the needed default actions.
-   *
-   * Note that the framework redefines all of the default QFC actions.
+   * Helper function to add all the needed default actions. Note that the framework
+   * redefines all of the default QFC actions
    *
    * @param string $uploadDirectory to store all the uploaded files
    * @param array $uploadNames for the various upload buttons (note u can have more than 1 upload)
+   *
+   *
+   * @return void
    */
   public function addActions($uploadDirectory = NULL, $uploadNames = NULL) {
     $names = array(
@@ -427,7 +431,9 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    *
    * @param CRM_Core_StateMachine $stateMachine
    * @param \const|int $action the mode in which the state machine is operating
-   *                              typically this will be add/view/edit
+   *                              typicaly this will be add/view/edit
+   *
+   * @return void
    */
   public function addPages(&$stateMachine, $action = CRM_Core_Action::NONE) {
     $pages = $stateMachine->getPages();
@@ -485,6 +491,9 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
 
   /**
    * Destroy all the session state of the controller.
+   *
+   *
+   * @return void
    */
   public function reset() {
     $this->container(TRUE);
@@ -493,11 +502,12 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
 
   /**
    * Virtual function to do any processing of data.
-   *
    * Sometimes it is useful for the controller to actually process data.
    * This is typically used when we need the controller to figure out
    * what pages are potentially involved in this wizard. (this is dynamic
    * and can change based on the arguments
+   *
+   * @return void
    */
   public function process() {
   }
@@ -508,6 +518,9 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    * @param string|array $name name of the variable or an assoc array of name/value pairs
    * @param mixed $value
    *   Value of the variable if string.
+   *
+   *
+   * @return void
    */
   public function set($name, $value = NULL) {
     self::$_session->set($name, $value, $this->_scope);
@@ -518,6 +531,7 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    *
    * @param string $name
    *   name of the variable.
+   *
    *
    * @return mixed
    */
@@ -587,7 +601,9 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    *
    * @param string $var
    * @param mixed $value
-   *   Value of variable.
+   *   Value of varaible.
+   *
+   * @return void
    */
   public function assign($var, $value = NULL) {
     self::$_template->assign($var, $value);
@@ -598,7 +614,9 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    *
    * @param string $var
    * @param mixed $value
-   *   (reference) value of variable.
+   *   (reference) value of varaible.
+   *
+   * @return void
    */
   public function assign_by_ref($var, &$value) {
     self::$_template->assign_by_ref($var, $value);
@@ -631,6 +649,8 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    * Setter for embedded.
    *
    * @param bool $embedded
+   *
+   * @return void
    */
   public function setEmbedded($embedded) {
     $this->_embedded = $embedded;
@@ -650,6 +670,8 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    * Setter for skipRedirection.
    *
    * @param bool $skipRedirection
+   *
+   * @return void
    */
   public function setSkipRedirection($skipRedirection) {
     $this->_skipRedirection = $skipRedirection;
@@ -670,13 +692,13 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    */
   public function setWord($fileName = NULL) {
     //Mark as a CSV file.
-    CRM_Utils_System::setHttpHeader('Content-Type', 'application/vnd.ms-word');
+    header('Content-Type: application/vnd.ms-word');
 
     //Force a download and name the file using the current timestamp.
     if (!$fileName) {
       $fileName = 'Contacts_' . $_SERVER['REQUEST_TIME'] . '.doc';
     }
-    CRM_Utils_System::setHttpHeader("Content-Disposition", "attachment; filename=Contacts_$fileName");
+    header("Content-Disposition: attachment; filename=Contacts_$fileName");
   }
 
   /**
@@ -684,20 +706,22 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    */
   public function setExcel($fileName = NULL) {
     //Mark as an excel file.
-    CRM_Utils_System::setHttpHeader('Content-Type', 'application/vnd.ms-excel');
+    header('Content-Type: application/vnd.ms-excel');
 
     //Force a download and name the file using the current timestamp.
     if (!$fileName) {
       $fileName = 'Contacts_' . $_SERVER['REQUEST_TIME'] . '.xls';
     }
 
-    CRM_Utils_System::setHttpHeader("Content-Disposition", "attachment; filename=Contacts_$fileName");
+    header("Content-Disposition: attachment; filename=Contacts_$fileName");
   }
 
   /**
    * Setter for print.
    *
    * @param bool $print
+   *
+   * @return void
    */
   public function setPrint($print) {
     if ($print == "xls") {
@@ -819,23 +843,25 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
   }
 
   /**
-   * Write a simple fatal error message.
+   * Write a simple fatal error message. Other controllers can decide to do something else
+   * and present the user a better message and/or redirect to the same page with a reset url
    *
-   * Other controllers can decide to do something else and present the user a better message
-   * and/or redirect to the same page with a reset url
+   * @return void
    */
   public function invalidKey() {
     self::invalidKeyCommon();
   }
 
   public function invalidKeyCommon() {
-    $msg = ts("We can't load the requested web page. This page requires cookies to be enabled in your browser settings. Please check this setting and enable cookies (if they are not enabled). Then try again. If this error persists, contact the site administrator for assistance.") . '<br /><br />' . ts('Site Administrators: This error may indicate that users are accessing this page using a domain or URL other than the configured Base URL. EXAMPLE: Base URL is http://example.org, but some users are accessing the page via http://www.example.org or a domain alias like http://myotherexample.org.') . '<br /><br />' . ts('Error type: Could not find a valid session key.');
+    $msg = ts('We can\'t load the requested web page. This page requires cookies to be enabled in your browser settings. Please check this setting and enable cookies (if they are not enabled). Then try again. If this error persists, contact the site adminstrator for assistance.') . '<br /><br />' . ts('Site Administrators: This error may indicate that users are accessing this page using a domain or URL other than the configured Base URL. EXAMPLE: Base URL is http://example.org, but some users are accessing the page via http://www.example.org or a domain alias like http://myotherexample.org.') . '<br /><br />' . ts('Error type: Could not find a valid session key.');
     CRM_Core_Error::fatal($msg);
   }
 
   /**
    * Instead of outputting a fatal error message, we'll just redirect
    * to the entryURL if present
+   *
+   * @return void
    */
   public function invalidKeyRedirect() {
     if ($this->_entryURL && $url_parts = parse_url($this->_entryURL)) {

@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.7                                                |
+  | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2016                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,12 +28,20 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
+ */
+
+/**
+ *
  */
 class CRM_SMS_Form_Schedule extends CRM_Core_Form {
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
 
@@ -46,6 +54,9 @@ class CRM_SMS_Form_Schedule extends CRM_Core_Form {
 
   /**
    * Set default values for the form.
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -59,6 +70,10 @@ class CRM_SMS_Form_Schedule extends CRM_Core_Form {
 
   /**
    * Build the form object for the last step of the sms wizard.
+   *
+   * @param
+   *
+   * @return void
    */
   public function buildQuickform() {
     $this->addDateTime('start_date', ts('Schedule SMS'), FALSE, array('formatType' => 'mailing'));
@@ -134,6 +149,10 @@ class CRM_SMS_Form_Schedule extends CRM_Core_Form {
 
   /**
    * Process the posted form values.  Create and schedule a Mass SMS.
+   *
+   * @param
+   *
+   * @return void
    */
   public function postProcess() {
     $params = array();
@@ -174,7 +193,7 @@ class CRM_SMS_Form_Schedule extends CRM_Core_Form {
       $params['scheduled_date'] = CRM_Utils_Date::processDate($params['start_date'] . ' ' . $params['start_date_time']);
     }
 
-    // Build the mailing object.
+    /* Build the mailing object */
     CRM_Mailing_BAO_Mailing::create($params, $ids);
 
     $session = CRM_Core_Session::singleton();

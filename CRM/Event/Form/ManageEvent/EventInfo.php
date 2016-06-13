@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,12 +26,17 @@
  */
 
 /**
+ *
+ *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for processing Event.
+ * This class generates form components for processing Event
+ *
  */
 class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
 
@@ -42,8 +47,17 @@ class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
+    //custom data related code
+    $this->_cdType = CRM_Utils_Array::value('type', $_GET);
+    $this->assign('cdType', FALSE);
+    if ($this->_cdType) {
+      $this->assign('cdType', TRUE);
+      return CRM_Custom_Form_CustomData::preProcess($this);
+    }
     parent::preProcess();
 
     if ($this->_id) {
@@ -64,18 +78,32 @@ class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
       $this->set('subType', CRM_Utils_Array::value('event_type_id', $_POST));
       $this->set('entityId', $this->_id);
 
-      CRM_Custom_Form_CustomData::preProcess($this, NULL, $this->_eventType, 1, 'Event', $this->_id);
+      CRM_Custom_Form_CustomData::preProcess($this);
       CRM_Custom_Form_CustomData::buildQuickForm($this);
       CRM_Custom_Form_CustomData::setDefaultValues($this);
     }
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. For edit/view mode
+   * the default values are retrieved from the database
    *
-   * For edit/view mode he default values are retrieved from the database.
+   *
+   * @return void
    */
   public function setDefaultValues() {
+    if ($this->_cdType) {
+      $tempId = (int) CRM_Utils_Request::retrieve('template_id', 'Integer', $this);
+      // set template custom data as a default for event, CRM-5596
+      if ($tempId && !$this->_id) {
+        $defaults = $this->templateCustomDataValues($tempId);
+      }
+      else {
+        $defaults = CRM_Custom_Form_CustomData::setDefaultValues($this);
+      }
+
+      return $defaults;
+    }
     $defaults = parent::setDefaultValues();
 
     // in update mode, we need to set custom data subtype to tpl
@@ -121,8 +149,13 @@ class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
+    if ($this->_cdType) {
+      return CRM_Custom_Form_CustomData::buildQuickForm($this);
+    }
     //need to assign custom data type and subtype to the template
     $this->assign('customDataType', 'Event');
     if ($this->_eventType) {
@@ -171,7 +204,7 @@ class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
     $this->addSelect('participant_listing_id', array('placeholder' => ts('Disabled'), 'option_url' => NULL));
 
     $this->add('textarea', 'summary', ts('Event Summary'), $attributes['summary']);
-    $this->add('wysiwyg', 'description', ts('Complete Description'), $attributes['event_description']);
+    $this->addWysiwyg('description', ts('Complete Description'), $attributes['event_description']);
     $this->addElement('checkbox', 'is_public', ts('Public Event'));
     $this->addElement('checkbox', 'is_share', ts('Allow sharing through social media?'));
     $this->addElement('checkbox', 'is_map', ts('Include Map to Event Location'));
@@ -236,6 +269,9 @@ class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
 
   /**
    * Process the form submission.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     $params = $this->controller->exportValues($this->_name);
@@ -258,6 +294,7 @@ class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
       CRM_Utils_Array::value('event_type_id', $params)
     );
     $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+      $customFields,
       $this->_id,
       'Event'
     );
@@ -297,12 +334,42 @@ class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
   }
 
   /**
-   * Return a descriptive name for the page, used in wizard header.
+   * Return a descriptive name for the page, used in wizard header
    *
    * @return string
    */
   public function getTitle() {
     return ts('Event Information and Settings');
+  }
+
+  /**
+   * Retrieve event template custom data values.
+   * and set as default values for current new event.
+   *
+   * @param int $templateId
+   *   Event template id.
+   *
+   * @return array
+   *   Array of custom data defaults.
+   */
+  public function templateCustomDataValues($templateId) {
+    $defaults = array();
+    if (!$templateId) {
+      return $defaults;
+    }
+
+    // pull template custom data as a default for event, CRM-5596
+    $groupTree = CRM_Core_BAO_CustomGroup::getTree($this->_type, $this, $templateId, NULL, $this->_subType);
+    $groupTree = CRM_Core_BAO_CustomGroup::formatGroupTree($groupTree, $this->_groupCount, $this);
+    $customValues = array();
+    CRM_Core_BAO_CustomGroup::setDefaults($groupTree, $customValues);
+    foreach ($customValues as $key => $val) {
+      if ($fieldKey = CRM_Core_BAO_CustomField::getKeyID($key)) {
+        $defaults["custom_{$fieldKey}_-1"] = $val;
+      }
+    }
+
+    return $defaults;
   }
 
 }

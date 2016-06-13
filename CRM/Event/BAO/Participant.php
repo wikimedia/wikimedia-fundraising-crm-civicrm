@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,8 +27,12 @@
  */
 
 /**
+ *
+ *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Event_BAO_Participant extends CRM_Event_DAO_Participant {
 
@@ -138,7 +142,8 @@ class CRM_Event_BAO_Participant extends CRM_Event_DAO_Participant {
 
     $session = CRM_Core_Session::singleton();
 
-    CRM_Contact_BAO_GroupContactCache::opportunisticCacheFlush();
+    // reset the group contact cache for this group
+    CRM_Contact_BAO_GroupContactCache::remove();
 
     if (!empty($params['id'])) {
       CRM_Utils_Hook::post('edit', 'Participant', $participantBAO->id, $participantBAO);
@@ -382,12 +387,7 @@ class CRM_Event_BAO_Participant extends CRM_Event_DAO_Participant {
       $where[] = ' ( participant.is_test = 0 OR participant.is_test IS NULL ) ';
     }
     if (!empty($participantRoles)) {
-      $escapedRoles = array();
-      foreach (array_keys($participantRoles) as $participantRole) {
-        $escapedRoles[] = CRM_Utils_Type::escape($participantRole, 'String');
-      }
-
-      $where[] = " participant.role_id IN ( '" . implode("', '", $escapedRoles) . "' ) ";
+      $where[] = ' participant.role_id IN ( ' . implode(', ', array_keys($participantRoles)) . ' ) ';
     }
 
     $eventParams = array(1 => array($eventId, 'Positive'));
@@ -621,13 +621,11 @@ GROUP BY  participant.event_id
    * @param string $contactType
    * @param bool $status
    * @param bool $onlyParticipant
-   * @param bool $checkPermission
-   *   Is this a permissioned retrieval?
    *
    * @return array
    *   array of importable Fields
    */
-  public static function &importableFields($contactType = 'Individual', $status = TRUE, $onlyParticipant = FALSE, $checkPermission = TRUE) {
+  public static function &importableFields($contactType = 'Individual', $status = TRUE, $onlyParticipant = FALSE) {
     if (!self::$_importableFields) {
       if (!$onlyParticipant) {
         if (!$status) {
@@ -723,7 +721,7 @@ GROUP BY  participant.event_id
       $fields = array_merge($fields, $tmpContactField);
       $fields = array_merge($fields, $tmpFields);
       $fields = array_merge($fields, $note, $participantStatus, $participantRole, $eventType);
-      $fields = array_merge($fields, CRM_Core_BAO_CustomField::getFieldsForImport('Participant', FALSE, FALSE, FALSE, $checkPermission));
+      $fields = array_merge($fields, CRM_Core_BAO_CustomField::getFieldsForImport('Participant'));
 
       self::$_importableFields = $fields;
     }
@@ -732,18 +730,18 @@ GROUP BY  participant.event_id
   }
 
   /**
-   * Combine all the exportable fields from the lower level objects.
-   *
-   * @param bool $checkPermission
+   * Combine all the exportable fields from the lower levels object.
    *
    * @return array
    *   array of exportable Fields
    */
-  public static function &exportableFields($checkPermission = TRUE) {
+  public static function &exportableFields() {
     if (!self::$_exportableFields) {
       if (!self::$_exportableFields) {
         self::$_exportableFields = array();
       }
+
+      $fields = array();
 
       $participantFields = CRM_Event_DAO_Participant::export();
       $eventFields = CRM_Event_DAO_Event::export();
@@ -776,7 +774,7 @@ GROUP BY  participant.event_id
       $fields = array_merge($participantFields, $participantStatus, $participantRole, $eventFields, $noteField, $discountFields);
 
       // add custom data
-      $fields = array_merge($fields, CRM_Core_BAO_CustomField::getFieldsForImport('Participant', FALSE, FALSE, FALSE, $checkPermission));
+      $fields = array_merge($fields, CRM_Core_BAO_CustomField::getFieldsForImport('Participant'));
       self::$_exportableFields = $fields;
     }
 
@@ -819,6 +817,8 @@ WHERE  civicrm_participant.id = {$participantId}
    *   (reference) the default values, some of which need to be resolved.
    * @param bool $reverse
    *   True if we want to resolve the values in the reverse direction (value -> name).
+   *
+   * @return void
    */
   public static function resolveDefaults(&$defaults, $reverse = FALSE) {
     self::lookupValue($defaults, 'event', CRM_Event_PseudoConstant::event(), $reverse);
@@ -827,18 +827,12 @@ WHERE  civicrm_participant.id = {$participantId}
   }
 
   /**
-   * Convert associative array names to values and vice-versa.
+   * convert associative array names to values
+   * and vice-versa.
    *
    * This function is used by both the web form layer and the api. Note that
    * the api needs the name => value conversion, also the view layer typically
    * requires value => name conversion
-   *
-   * @param array $defaults
-   * @param string $property
-   * @param string $lookup
-   * @param bool $reverse
-   *
-   * @return bool
    */
   public static function lookupValue(&$defaults, $property, $lookup, $reverse) {
     $id = $property . '_id';
@@ -862,12 +856,12 @@ WHERE  civicrm_participant.id = {$participantId}
   }
 
   /**
-   * Delete the records that are associated with this participation.
+   * Delete the record that are associated with this participation.
    *
    * @param int $id
    *   Id of the participation to delete.
    *
-   * @return \CRM_Event_DAO_Participant
+   * @return void
    */
   public static function deleteParticipant($id) {
     CRM_Utils_Hook::pre('delete', 'Participant', $id, CRM_Core_DAO::$_nullArray);
@@ -973,7 +967,10 @@ WHERE  civicrm_participant.id = {$participantId}
    * separated string before using fee_level in view mode.
    *
    * @param string $eventLevel
-   *   Event_level string from db.
+   *   Event_leval string from db.
+   *
+   *
+   * @return void
    */
   public static function fixEventLevel(&$eventLevel) {
     if ((substr($eventLevel, 0, 1) == CRM_Core_DAO::VALUE_SEPARATOR) &&
@@ -1188,6 +1185,9 @@ INNER JOIN civicrm_price_field_value value ON ( value.id = lineItem.price_field_
    * @param int $statusId
    *   Status id for participant.
    * @param bool $updateRegisterDate
+   *
+   * @return void
+   *
    */
   public static function updateStatus($participantIds, $statusId, $updateRegisterDate = FALSE) {
     if (!is_array($participantIds) || empty($participantIds) || !$statusId) {
@@ -1877,8 +1877,7 @@ WHERE cpf.price_set_id = %1 AND cpfv.label LIKE %2";
           unset($insertLines[$previousLineItem['price_field_value_id']]);
           // for updating the line items i.e. use-case - once deselect-option selecting again
           if (($previousLineItem['line_total'] != $submittedLineItems[$previousLineItem['price_field_value_id']]['line_total']) ||
-            ($submittedLineItems[$previousLineItem['price_field_value_id']]['line_total'] == 0 && $submittedLineItems[$previousLineItem['price_field_value_id']]['qty'] == 1) ||
-            ($previousLineItem['qty'] != $submittedLineItems[$previousLineItem['price_field_value_id']]['qty'])
+            ($submittedLineItems[$previousLineItem['price_field_value_id']]['line_total'] == 0 && $submittedLineItems[$previousLineItem['price_field_value_id']]['qty'] == 1)
           ) {
             $updateLines[$previousLineItem['price_field_value_id']] = $submittedLineItems[$previousLineItem['price_field_value_id']];
             $updateLines[$previousLineItem['price_field_value_id']]['id'] = $id;
@@ -1911,7 +1910,7 @@ GROUP BY li.entity_table, li.entity_id, price_field_value_id
       $updateFinancialItemInfoDAO = CRM_Core_DAO::executeQuery($updateFinancialItem);
       $trxn = CRM_Core_BAO_FinancialTrxn::getFinancialTrxnId($contributionId, 'DESC', TRUE);
       $trxnId['id'] = $trxn['financialTrxnId'];
-      $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
+      $invoiceSettings = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME, 'contribution_invoice_settings');
       $taxTerm = CRM_Utils_Array::value('tax_term', $invoiceSettings);
       $updateFinancialItemInfoValues = array();
       $financialItemsArray = array();
@@ -2079,16 +2078,9 @@ WHERE (entity_table = 'civicrm_participant' AND entity_id = {$participantId} AND
   }
 
   /**
-   * Record adjusted amount.
-   *
-   * @param int $updatedAmount
-   * @param int $paidAmount
+   * @param $updatedAmount
+   * @param $paidAmount
    * @param int $contributionId
-   *
-   * @param int $taxAmount
-   * @param bool $updateAmountLevel
-   *
-   * @return bool|\CRM_Core_BAO_FinancialTrxn
    */
   public static function recordAdjustedAmt($updatedAmount, $paidAmount, $contributionId, $taxAmount = NULL, $updateAmountLevel = NULL) {
     $pendingAmount = CRM_Core_BAO_FinancialTrxn::getBalanceTrxnAmt($contributionId);
@@ -2216,40 +2208,12 @@ WHERE (entity_table = 'civicrm_participant' AND entity_id = {$participantId} AND
     if ($fieldName == 'status_id' && $context != 'validate') {
       // Get rid of cart-related option if disabled
       // FIXME: Why does this option even exist if cart is disabled?
-      if (!Civi::settings()->get('enable_cart')) {
+      if (!CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::EVENT_PREFERENCES_NAME, 'enable_cart')) {
         $params['condition'][] = "name <> 'Pending in cart'";
       }
     }
 
     return CRM_Core_PseudoConstant::get(__CLASS__, $fieldName, $params, $context);
-  }
-
-  /**
-   * CRM-17797 -- Format fields and setDefaults for primary and additional participants profile
-   * @param int $contactId
-   * @param CRM_Core_Form $form
-   */
-  public static function formatFieldsAndSetProfileDefaults($contactId, &$form) {
-    if (!$contactId) {
-      return;
-    }
-    $fields = array();
-    if (!empty($form->_fields)) {
-      $removeCustomFieldTypes = array('Participant');
-
-      foreach ($form->_fields as $name => $dontCare) {
-        if ((substr($name, 0, 7) == 'custom_' && !$form->_allowConfirmation
-          && !CRM_Core_BAO_CustomGroup::checkCustomField(substr($name, 7), $removeCustomFieldTypes))
-          || substr($name, 0, 12) == 'participant_') {
-          continue;
-        }
-        $fields[$name] = 1;
-      }
-
-      if (!empty($fields)) {
-        CRM_Core_BAO_UFGroup::setProfileDefaults($contactId, $fields, $form->_defaults);
-      }
-    }
   }
 
 }

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -486,7 +486,7 @@ class CRM_Custom_Form_Field extends CRM_Core_Form {
     $this->addRule('weight', ts('is a numeric field'), 'numeric');
 
     // is required ?
-    $this->add('advcheckbox', 'is_required', ts('Required?'));
+    $this->add('checkbox', 'is_required', ts('Required?'));
 
     // checkbox / radio options per line
     $this->add('text', 'options_per_line', ts('Options Per Line'));
@@ -507,13 +507,13 @@ class CRM_Custom_Form_Field extends CRM_Core_Form {
     );
 
     // is active ?
-    $this->add('advcheckbox', 'is_active', ts('Active?'));
+    $this->add('checkbox', 'is_active', ts('Active?'));
 
     // is active ?
-    $this->add('advcheckbox', 'is_view', ts('View Only?'));
+    $this->add('checkbox', 'is_view', ts('View Only?'));
 
     // is searchable ?
-    $this->addElement('advcheckbox',
+    $this->addElement('checkbox',
       'is_searchable',
       ts('Is this Field Searchable?'),
       NULL, array('onclick' => "showSearchRange(this)")

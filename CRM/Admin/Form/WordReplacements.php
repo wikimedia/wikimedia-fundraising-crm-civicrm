@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,12 +28,15 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
  */
 class CRM_Admin_Form_WordReplacements extends CRM_Core_Form {
   protected $_numStrings = 10;
 
   protected $_stringName = NULL;
+
+  protected $_defaults = NULL;
 
   public $unsavedChangesWarn = TRUE;
 
@@ -57,7 +60,7 @@ class CRM_Admin_Form_WordReplacements extends CRM_Core_Form {
    * @return array
    */
   public function setDefaultValues() {
-    if (!empty($this->_defaults)) {
+    if ($this->_defaults !== NULL) {
       return $this->_defaults;
     }
 
@@ -65,7 +68,7 @@ class CRM_Admin_Form_WordReplacements extends CRM_Core_Form {
 
     $config = CRM_Core_Config::singleton();
 
-    $values = CRM_Core_BAO_WordReplacement::getLocaleCustomStrings($config->lcMessages);
+    $values = $config->localeCustomStrings[$config->lcMessages];
     $i = 1;
 
     $enableDisable = array(
@@ -89,6 +92,20 @@ class CRM_Admin_Form_WordReplacements extends CRM_Core_Form {
       }
     }
 
+    $name = $this->_stringName = "custom_string_override_{$config->lcMessages}";
+    if (isset($config->$name) &&
+      is_array($config->$name)
+    ) {
+      $this->_numStrings = 1;
+      foreach ($config->$name as $old => $newValues) {
+        $this->_numStrings++;
+        $this->_numStrings += 9;
+      }
+    }
+    else {
+      $this->_numStrings = 10;
+    }
+
     return $this->_defaults;
   }
 
@@ -97,7 +114,7 @@ class CRM_Admin_Form_WordReplacements extends CRM_Core_Form {
    */
   public function buildQuickForm() {
     $config = CRM_Core_Config::singleton();
-    $values = CRM_Core_BAO_WordReplacement::getLocaleCustomStrings($config->lcMessages);
+    $values = $config->localeCustomStrings[$config->lcMessages];
 
     //CRM-14179
     $instances = 0;
@@ -223,17 +240,37 @@ class CRM_Admin_Form_WordReplacements extends CRM_Core_Form {
     );
 
     $config = CRM_Core_Config::singleton();
-    CRM_Core_BAO_WordReplacement::setLocaleCustomStrings($config->lcMessages, $overrides);
 
-    // This controller was originally written to CRUD $config->locale_custom_strings,
-    // but that's no longer the canonical store. Sync changes to canonical store.
-    // This is inefficient - at some point, we should rewrite this UI.
-    CRM_Core_BAO_WordReplacement::rebuildWordReplacementTable();
+    $domain = new CRM_Core_DAO_Domain();
+    $domain->find(TRUE);
 
-    CRM_Core_Session::setStatus("", ts("Settings Saved"), "success");
-    CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/admin/options/wordreplacements',
-      "reset=1"
-    ));
+    if ($domain->locales && $config->localeCustomStrings) {
+      // for multilingual
+      $addReplacements = $config->localeCustomStrings;
+      $addReplacements[$config->lcMessages] = $overrides;
+      $stringOverride = serialize($addReplacements);
+    }
+    else {
+      // for single language
+      $stringOverride = serialize(array($config->lcMessages => $overrides));
+    }
+
+    $params = array('locale_custom_strings' => $stringOverride);
+    $id = CRM_Core_Config::domainID();
+
+    $wordReplacementSettings = CRM_Core_BAO_Domain::edit($params, $id);
+
+    if ($wordReplacementSettings) {
+      // This controller was originally written to CRUD $config->locale_custom_strings,
+      // but that's no longer the canonical store. Sync changes to canonical store.
+      // This is inefficient - at some point, we should rewrite this UI.
+      CRM_Core_BAO_WordReplacement::rebuildWordReplacementTable();
+
+      CRM_Core_Session::setStatus("", ts("Settings Saved"), "success");
+      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/admin/options/wordreplacements',
+        "reset=1"
+      ));
+    }
   }
 
 }

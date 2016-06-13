@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -64,7 +64,7 @@ class CRM_UF_Page_Field extends CRM_Core_Page {
    *
    * @return array
    */
-  public static function &actionLinks() {
+  public function &actionLinks() {
     if (!isset(self::$_actionLinks)) {
       self::$_actionLinks = array(
         CRM_Core_Action::UPDATE => array(
@@ -125,8 +125,8 @@ class CRM_UF_Page_Field extends CRM_Core_Page {
     $isGroupReserved = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_UFGroup', $this->_gid, 'is_reserved');
     $this->assign('isGroupReserved', $isGroupReserved);
 
-    $isMixedProfile = CRM_Core_BAO_UFField::checkProfileType($this->_gid);
-    if ($isMixedProfile) {
+    $profileType = CRM_Core_BAO_UFField::getProfileType($this->_gid);
+    if ($profileType == 'Contribution' || $profileType == 'Membership' || $profileType == 'Activity' || $profileType == 'Participant') {
       $this->assign('skipCreate', TRUE);
     }
 
@@ -154,7 +154,7 @@ class CRM_UF_Page_Field extends CRM_Core_Page {
 
       $ufField[$ufFieldBAO->id]['label'] = $ufFieldBAO->label;
 
-      $action = array_sum(array_keys(self::actionLinks()));
+      $action = array_sum(array_keys($this->actionLinks()));
       if ($ufFieldBAO->is_active) {
         $action -= CRM_Core_Action::ENABLE;
       }

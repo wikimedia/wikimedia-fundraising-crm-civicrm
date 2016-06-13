@@ -20,17 +20,17 @@ namespace Symfony\Component\EventDispatcher;
  * You can call the method stopPropagation() to abort the execution of
  * further listeners in your event listener.
  *
- * @author Guilherme Blanco <guilhermeblanco@hotmail.com>
- * @author Jonathan Wage <jonwage@gmail.com>
- * @author Roman Borschel <roman@code-factory.org>
- * @author Bernhard Schussek <bschussek@gmail.com>
+ * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
+ * @author  Jonathan Wage <jonwage@gmail.com>
+ * @author  Roman Borschel <roman@code-factory.org>
+ * @author  Bernhard Schussek <bschussek@gmail.com>
  *
  * @api
  */
 class Event
 {
     /**
-     * @var bool Whether no further event listeners should be triggered
+     * @var bool    Whether no further event listeners should be triggered
      */
     private $propagationStopped = false;
 
@@ -47,8 +47,7 @@ class Event
     /**
      * Returns whether further event listeners should be triggered.
      *
-     * @see Event::stopPropagation()
-     *
+     * @see Event::stopPropagation
      * @return bool Whether propagation was already stopped for this event.
      *
      * @api
@@ -73,11 +72,9 @@ class Event
     }
 
     /**
-     * Stores the EventDispatcher that dispatches this Event.
+     * Stores the EventDispatcher that dispatches this Event
      *
      * @param EventDispatcherInterface $dispatcher
-     *
-     * @deprecated Deprecated in 2.4, to be removed in 3.0. The event dispatcher is passed to the listener call.
      *
      * @api
      */
@@ -87,11 +84,9 @@ class Event
     }
 
     /**
-     * Returns the EventDispatcher that dispatches this Event.
+     * Returns the EventDispatcher that dispatches this Event
      *
      * @return EventDispatcherInterface
-     *
-     * @deprecated Deprecated in 2.4, to be removed in 3.0. The event dispatcher is passed to the listener call.
      *
      * @api
      */
@@ -105,8 +100,6 @@ class Event
      *
      * @return string
      *
-     * @deprecated Deprecated in 2.4, to be removed in 3.0. The event name is passed to the listener call.
-     *
      * @api
      */
     public function getName()
@@ -118,8 +111,6 @@ class Event
      * Sets the event's name property.
      *
      * @param string $name The event name.
-     *
-     * @deprecated Deprecated in 2.4, to be removed in 3.0. The event name is passed to the listener call.
      *
      * @api
      */

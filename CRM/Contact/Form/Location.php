@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contact_Form_Location {
 
@@ -36,6 +38,8 @@ class CRM_Contact_Form_Location {
    * Set variables up before form is built.
    *
    * @param CRM_Core_Form $form
+   *
+   * @return void
    */
   public static function preProcess(&$form) {
     $form->_addBlockName = CRM_Utils_Request::retrieve('block', 'String', CRM_Core_DAO::$_nullObject);
@@ -73,6 +77,8 @@ class CRM_Contact_Form_Location {
    * Build the form object.
    *
    * @param CRM_Core_Form $form
+   *
+   * @return void
    */
   public static function buildQuickForm(&$form) {
     // required for subsequent AJAX requests.

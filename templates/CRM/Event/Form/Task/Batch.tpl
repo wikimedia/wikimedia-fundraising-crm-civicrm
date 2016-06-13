@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,7 +25,7 @@
 *}
 <div class="batch-update crm-block crm-form-block crm-event-batch-form-block">
 <fieldset>
-<div class="help">
+<div id="help">
     {if $context EQ 'statusChange'} {* Update Participant Status task *}
         {ts}Update the status for each participant individually, OR change all statuses to:{/ts}
         {$form.status_change.html}  {help id="id-status_change"}
@@ -42,6 +42,7 @@
     {/if}
     <p>{ts}Click <strong>Update Participant(s)</strong> below to save all your changes.{/ts}</p>
 </div>
+    <legend>{$profileTitle}</legend>
         <table class="crm-copy-fields">
        <thead class="sticky">
             <tr class="columnheader">

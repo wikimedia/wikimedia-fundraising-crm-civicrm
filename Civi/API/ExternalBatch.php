@@ -28,7 +28,7 @@ class ExternalBatch {
 
   protected $settingsPath;
 
-  protected $env;
+  protected $env = array();
 
   /**
    * @var array
@@ -51,7 +51,6 @@ class ExternalBatch {
     $this->root = $civicrm_root;
     $this->settingsPath = defined('CIVICRM_SETTINGS_PATH') ? CIVICRM_SETTINGS_PATH : NULL;
     $this->defaultParams = $defaultParams;
-    $this->env = $_ENV;
   }
 
   /**
@@ -180,35 +179,23 @@ class ExternalBatch {
   public function createProcess($apiCall) {
     $parts = array();
 
-    if (defined('CIVICRM_TEST') && CIVICRM_TEST) {
-      // When testing, civicrm.settings.php may rely on $_CV, which is only
-      // populated/propagated if we execute through `cv`.
-      $parts[] = 'cv api';
-      $parts[] = escapeshellarg($apiCall['entity'] . '.' . $apiCall['action']);
-      $parts[] = "--out=json-strict";
-      foreach ($apiCall['params'] as $key => $value) {
-        $parts[] = escapeshellarg("$key=$value");
-      }
+    $executableFinder = new PhpExecutableFinder();
+    $php = $executableFinder->find();
+    if (!$php) {
+      throw new \CRM_Core_Exception("Failed to locate PHP interpreter.");
     }
-    else {
-      // But in production, we may not have `cv` installed.
-      $executableFinder = new PhpExecutableFinder();
-      $php = $executableFinder->find();
-      if (!$php) {
-        throw new \CRM_Core_Exception("Failed to locate PHP interpreter.");
-      }
-      $parts[] = $php;
-      $parts[] = escapeshellarg($this->root . '/bin/cli.php');
-      $parts[] = escapeshellarg("-e=" . $apiCall['entity']);
-      $parts[] = escapeshellarg("-a=" . $apiCall['action']);
-      $parts[] = "--json";
-      $parts[] = escapeshellarg("-u=dummyuser");
-      foreach ($apiCall['params'] as $key => $value) {
-        $parts[] = escapeshellarg("--$key=$value");
-      }
-    }
+    $parts[] = $php;
 
+    $parts[] = escapeshellarg($this->root . '/bin/cli.php');
+    $parts[] = escapeshellarg("-e=" . $apiCall['entity']);
+    $parts[] = escapeshellarg("-a=" . $apiCall['action']);
+    $parts[] = "--json";
+    $parts[] = escapeshellarg("-u=dummyuser");
+    foreach ($apiCall['params'] as $key => $value) {
+      $parts[] = escapeshellarg("--$key=$value");
+    }
     $command = implode(" ", $parts);
+
     $env = array_merge($this->env, array(
       'CIVICRM_SETTINGS' => $this->settingsPath,
     ));

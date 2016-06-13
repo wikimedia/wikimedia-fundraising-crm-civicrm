@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,9 @@
 
 /**
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -37,6 +39,8 @@ class CRM_Contribute_Form_ContributionPage_Custom extends CRM_Contribute_Form_Co
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
 
@@ -73,27 +77,42 @@ class CRM_Contribute_Form_ContributionPage_Custom extends CRM_Contribute_Form_Co
     $this->addProfileSelector('custom_pre_id', ts('Include Profile') . '<br />' . ts('(top of page)'), $allowCoreTypes, $allowSubTypes, $entities, TRUE);
     $this->addProfileSelector('custom_post_id', ts('Include Profile') . '<br />' . ts('(bottom of page)'), $allowCoreTypes, $allowSubTypes, $entities, TRUE);
 
-    $this->addFormRule(array('CRM_Contribute_Form_ContributionPage_Custom', 'formRule'), $this);
+    $this->addFormRule(array('CRM_Contribute_Form_ContributionPage_Custom', 'formRule'), $this->_id);
 
     parent::buildQuickForm();
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. Note that in edit/view mode
+   * the default values are retrieved from the database
    *
-   * Note that in edit/view mode the default values are retrieved from the database.
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $defaults = parent::setDefaultValues();
 
-    $defaults['custom_pre_id'] = $this->_values['custom_pre_id'];
-    $defaults['custom_post_id'] = $this->_values['custom_post_id'];
+    if ($this->_id) {
+      $title = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_ContributionPage', $this->_id, 'title');
+      CRM_Utils_System::setTitle(ts('Include Profiles') . " ($title)");
+    }
+
+    $ufJoinParams = array(
+      'module' => 'CiviContribute',
+      'entity_table' => 'civicrm_contribution_page',
+      'entity_id' => $this->_id,
+    );
+    list($defaults['custom_pre_id'],
+      $second) = CRM_Core_BAO_UFJoin::getUFGroupIds($ufJoinParams);
+    $defaults['custom_post_id'] = $second ? array_shift($second) : '';
 
     return $defaults;
   }
 
   /**
    * Process the form.
+   *
+   * @return void
    */
   public function postProcess() {
     // get the submitted form values.
@@ -150,19 +169,19 @@ class CRM_Contribute_Form_ContributionPage_Custom extends CRM_Contribute_Form_Co
    *   The input form values.
    *
    * @param $files
-   * @param object $form
+   * @param int $contributionPageId
    *
    * @return bool|array
    *   true if no errors, else array of errors
    */
-  public static function formRule($fields, $files, $form) {
+  public static function formRule($fields, $files, $contributionPageId) {
     $errors = array();
     $preProfileType = $postProfileType = NULL;
     // for membership profile make sure Membership section is enabled
     // get membership section for this contribution page
     $dao = new CRM_Member_DAO_MembershipBlock();
     $dao->entity_table = 'civicrm_contribution_page';
-    $dao->entity_id = $form->_id;
+    $dao->entity_id = $contributionPageId;
 
     $membershipEnable = FALSE;
 
@@ -188,7 +207,7 @@ class CRM_Contribute_Form_ContributionPage_Custom extends CRM_Contribute_Form_Co
       $errors['custom_post_id'] = $errorMsg;
     }
 
-    $behalf = (!empty($form->_values['onbehalf_profile_id'])) ? $form->_values['onbehalf_profile_id'] : NULL;
+    $behalf = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_ContributionPage', $contributionPageId, 'is_for_organization');
     if ($fields['custom_pre_id']) {
       $errorMsg = ts('You should move the membership related fields in the "On Behalf" profile for this Contribution Page');
       if ($preProfileType == 'Membership' && $behalf) {

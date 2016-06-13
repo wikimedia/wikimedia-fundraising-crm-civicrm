@@ -101,6 +101,10 @@ class Manager {
         'ext' => 'civicrm',
         'js' => array('ang/crmUi.js'),
         'partials' => array('ang/crmUi'),
+        'settings' => array(
+          'browseUrl' => $config->userFrameworkResourceURL . 'packages/kcfinder/browse.php',
+          'uploadUrl' => $config->userFrameworkResourceURL . 'packages/kcfinder/upload.php',
+        ),
       );
       $angularModules['crmUtil'] = array(
         'ext' => 'civicrm',
@@ -130,14 +134,6 @@ class Manager {
       $angularModules['unsavedChanges'] = array(
         'ext' => 'civicrm',
         'js' => array('bower_components/angular-unsavedChanges/dist/unsavedChanges.min.js'),
-      );
-
-      $angularModules['statuspage'] = array(
-        'ext' => 'civicrm',
-        'js' => array('ang/crmStatusPage.js', 'ang/crmStatusPage/*.js'),
-        'css' => array('ang/crmStatusPage.css'),
-        'partials' => array('ang/crmStatusPage'),
-        'settings' => array(),
       );
 
       foreach (\CRM_Core_Component::getEnabledComponents() as $component) {

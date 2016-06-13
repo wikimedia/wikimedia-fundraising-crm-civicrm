@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,17 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  */
 class CRM_Core_I18n {
-
-  /**
-   * Constants for communication preferences.
-   *
-   * @var int
-   */
-  const NONE = 'none', AUTO = 'auto';
-
 
   /**
    * A PHP-gettext instance for string translation;
@@ -59,11 +51,6 @@ class CRM_Core_I18n {
   private $_extensioncache = array();
 
   /**
-   * @var string
-   */
-  private $locale;
-
-  /**
    * A locale-based constructor that shouldn't be called from outside of this class (use singleton() instead).
    *
    * @param string $locale
@@ -72,8 +59,9 @@ class CRM_Core_I18n {
    * @return \CRM_Core_I18n
    */
   public function __construct($locale) {
-    $this->locale = $locale;
     if ($locale != '' and $locale != 'en_US') {
+      $config = CRM_Core_Config::singleton();
+
       if (defined('CIVICRM_GETTEXT_NATIVE') && CIVICRM_GETTEXT_NATIVE && function_exists('gettext')) {
         // Note: the file hierarchy for .po must be, for example: l10n/fr_FR/LC_MESSAGES/civicrm.mo
 
@@ -87,7 +75,7 @@ class CRM_Core_I18n {
         setlocale(LC_MESSAGES, $locale);
         setlocale(LC_CTYPE, $locale);
 
-        bindtextdomain('civicrm', CRM_Core_I18n::getResourceDir());
+        bindtextdomain('civicrm', $config->gettextResourceDir);
         bind_textdomain_codeset('civicrm', 'UTF-8');
         textdomain('civicrm');
 
@@ -103,11 +91,11 @@ class CRM_Core_I18n {
       require_once 'PHPgettext/streams.php';
       require_once 'PHPgettext/gettext.php';
 
-      $mo_file = CRM_Core_I18n::getResourceDir() . $locale . DIRECTORY_SEPARATOR . 'LC_MESSAGES' . DIRECTORY_SEPARATOR . 'civicrm.mo';
+      $mo_file = $config->gettextResourceDir . $locale . DIRECTORY_SEPARATOR . 'LC_MESSAGES' . DIRECTORY_SEPARATOR . 'civicrm.mo';
 
       if (!file_exists($mo_file)) {
         // fallback to pre-4.5 mode
-        $mo_file = CRM_Core_I18n::getResourceDir() . $locale . DIRECTORY_SEPARATOR . 'civicrm.mo';
+        $mo_file = $config->gettextResourceDir . $locale . DIRECTORY_SEPARATOR . 'civicrm.mo';
       }
 
       $streamer = new FileReader($mo_file);
@@ -143,8 +131,9 @@ class CRM_Core_I18n {
       $all = CRM_Contact_BAO_Contact::buildOptions('preferred_language');
 
       // check which ones are available; add them to $all if not there already
+      $config = CRM_Core_Config::singleton();
       $codes = array();
-      if (is_dir(CRM_Core_I18n::getResourceDir()) && $dir = opendir(CRM_Core_I18n::getResourceDir())) {
+      if (is_dir($config->gettextResourceDir) && $dir = opendir($config->gettextResourceDir)) {
         while ($filename = readdir($dir)) {
           if (preg_match('/^[a-z][a-z]_[A-Z][A-Z]$/', $filename)) {
             $codes[] = $filename;
@@ -206,14 +195,6 @@ class CRM_Core_I18n {
       }
     }
     return strtr($str, $tr);
-  }
-
-  public static function getResourceDir() {
-    static $dir = NULL;
-    if ($dir === NULL) {
-      $dir = dirname(dirname(__DIR__)) . DIRECTORY_SEPARATOR . 'l10n' . DIRECTORY_SEPARATOR;
-    }
-    return $dir;
   }
 
   /**
@@ -347,16 +328,11 @@ class CRM_Core_I18n {
     }
 
     // do all wildcard translations first
-
-    if (!isset(Civi::$statics[__CLASS__]) || !array_key_exists($this->locale, Civi::$statics[__CLASS__])) {
-      if (defined('CIVICRM_DSN') && !CRM_Core_Config::isUpgradeMode()) {
-        Civi::$statics[__CLASS__][$this->locale] = CRM_Core_BAO_WordReplacement::getLocaleCustomStrings($this->locale);
-      }
-      else {
-        Civi::$statics[__CLASS__][$this->locale] = array();
-      }
-    }
-    $stringTable = Civi::$statics[__CLASS__][$this->locale];
+    $config = CRM_Core_Config::singleton();
+    $stringTable = CRM_Utils_Array::value(
+      $config->lcMessages,
+      $config->localeCustomStrings
+    );
 
     $exactMatch = FALSE;
     if (isset($stringTable['enabled']['exactMatch'])) {
@@ -489,6 +465,8 @@ class CRM_Core_I18n {
 
     // It's only necessary to find/bind once
     if (!isset($this->_extensioncache[$key])) {
+      $config = CRM_Core_Config::singleton();
+
       try {
         $mapper = CRM_Extension_System::singleton()->getMapper();
         $path = $mapper->keyToBasePath($key);
@@ -502,7 +480,7 @@ class CRM_Core_I18n {
         }
         else {
           // phpgettext
-          $mo_file = $path . DIRECTORY_SEPARATOR . 'l10n' . DIRECTORY_SEPARATOR . $this->locale . DIRECTORY_SEPARATOR . 'LC_MESSAGES' . DIRECTORY_SEPARATOR . $domain . '.mo';
+          $mo_file = $path . DIRECTORY_SEPARATOR . 'l10n' . DIRECTORY_SEPARATOR . $config->lcMessages . DIRECTORY_SEPARATOR . 'LC_MESSAGES' . DIRECTORY_SEPARATOR . $domain . '.mo';
           $streamer = new FileReader($mo_file);
           $this->_extensioncache[$key] = new gettext_reader($streamer);
         }
@@ -527,84 +505,6 @@ class CRM_Core_I18n {
     }
 
     return FALSE;
-  }
-
-
-  /**
-   * Is the CiviCRM in multilingual mode.
-   *
-   * @return Bool
-   *   True if CiviCRM is in multilingual mode.
-   */
-  public static function isMultilingual() {
-    $domain = new CRM_Core_DAO_Domain();
-    $domain->find(TRUE);
-    return (bool) $domain->locales;
-  }
-
-  /**
-   * Is the language written "right-to-left"?
-   *
-   * @param $language
-   *   Language (for example 'en_US', or 'fr_CA').
-   *
-   * @return Bool
-   *   True if it is an RTL language.
-   */
-  public static function isLanguageRTL($language) {
-    $rtl = CRM_Core_I18n_PseudoConstant::getRTLlanguages();
-    $short = CRM_Core_I18n_PseudoConstant::shortForLong($language);
-
-    return (in_array($short, $rtl));
-  }
-
-  /**
-   * Change the processing language without changing the current user language
-   *
-   * @param $language
-   *   Language (for example 'en_US', or 'fr_CA').
-   *   True if the domain was changed for an extension.
-   */
-  public function setLocale($language) {
-
-    $config = CRM_Core_Config::singleton();
-
-    // Change the language of the CMS as well, for URLs.
-    CRM_Utils_System::setUFLocale($language);
-
-    // change the gettext ressources
-    if ($this->_nativegettext) {
-      $locale = $language . '.utf8';
-      putenv("LANG=$locale");
-
-      setlocale(LC_TIME, $locale);
-      setlocale(LC_MESSAGES, $locale);
-      setlocale(LC_CTYPE, $locale);
-
-      bindtextdomain('civicrm', $config->gettextResourceDir);
-      bind_textdomain_codeset('civicrm', 'UTF-8');
-      textdomain('civicrm');
-
-      $this->_phpgettext = new CRM_Core_I18n_NativeGettext();
-      $this->_extensioncache['civicrm'] = 'civicrm';
-    }
-    else {
-      // phpgettext
-      require_once 'PHPgettext/streams.php';
-      require_once 'PHPgettext/gettext.php';
-
-      $mo_file = $config->gettextResourceDir . $language . DIRECTORY_SEPARATOR . 'LC_MESSAGES' . DIRECTORY_SEPARATOR . 'civicrm.mo';
-
-      $streamer = new FileReader($mo_file);
-      $this->_phpgettext = new gettext_reader($streamer);
-      $this->_extensioncache['civicrm'] = $this->_phpgettext;
-
-    }
-
-    // for sql queries
-    global $dbLocale;
-    $dbLocale = "_{$language}";
-
   }
 
   /**
@@ -652,7 +552,7 @@ class CRM_Core_I18n {
    * @return string
    */
   public static  function getContactDefaultLanguage() {
-    $language = Civi::settings()->get('contact_default_language');
+    $language = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::LOCALIZATION_PREFERENCES_NAME, 'contact_default_language');
     if ($language == 'undefined') {
       return NULL;
     }

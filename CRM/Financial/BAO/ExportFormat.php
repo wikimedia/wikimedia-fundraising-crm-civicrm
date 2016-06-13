@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                             |
+ | CiviCRM version 4.6                                             |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -103,6 +105,14 @@ class CRM_Financial_BAO_ExportFormat {
   }
 
   /**
+   * Override this if appropriate.
+   * @return null
+   */
+  public function getTemplateFileName() {
+    return NULL;
+  }
+
+  /**
    * @return object
    */
   public static function &getTemplate() {
@@ -140,14 +150,14 @@ class CRM_Financial_BAO_ExportFormat {
 
   public function initiateDownload() {
     $config = CRM_Core_Config::singleton();
-    // zip files if more than one.
+    //zip files if more than one.
     if (count($this->_downloadFile) > 1) {
       $zip = $config->customFileUploadDir . 'Financial_Transactions_' . date('YmdHis') . '.zip';
       $result = $this->createZip($this->_downloadFile, $zip, TRUE);
       if ($result) {
-        CRM_Utils_System::setHttpHeader('Content-Type', 'application/zip');
-        CRM_Utils_System::setHttpHeader('Content-Disposition', 'attachment; filename=' . CRM_Utils_File::cleanFileName(basename($zip)));
-        CRM_Utils_System::setHttpHeader('Content-Length', '' . filesize($zip));
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename=' . CRM_Utils_File::cleanFileName(basename($zip)));
+        header('Content-Length: ' . filesize($zip));
         ob_clean();
         flush();
         readfile($config->customFileUploadDir . CRM_Utils_File::cleanFileName(basename($zip)));
@@ -156,9 +166,9 @@ class CRM_Financial_BAO_ExportFormat {
       }
     }
     else {
-      CRM_Utils_System::setHttpHeader('Content-Type', 'text/plain');
-      CRM_Utils_System::setHttpHeader('Content-Disposition', 'attachment; filename=' . CRM_Utils_File::cleanFileName(basename($this->_downloadFile[0])));
-      CRM_Utils_System::setHttpHeader('Content-Length', '' . filesize($this->_downloadFile[0]));
+      header('Content-Type: text/plain');
+      header('Content-Disposition: attachment; filename=' . CRM_Utils_File::cleanFileName(basename($this->_downloadFile[0])));
+      header('Content-Length: ' . filesize($this->_downloadFile[0]));
       ob_clean();
       flush();
       readfile($config->customFileUploadDir . CRM_Utils_File::cleanFileName(basename($this->_downloadFile[0])));
@@ -185,7 +195,7 @@ class CRM_Financial_BAO_ExportFormat {
       $paymentInstrument = array_flip(CRM_Contribute_PseudoConstant::paymentInstrument('label'));
       $values['payment_instrument_id'] = array_search($values['payment_instrument_id'], $paymentInstrument);
     }
-    $details = '<p>' . ts('Record:') . ' ' . $values['title'] . '</p><p>' . ts('Description:') . '</p><p>' . ts('Created By:') . " $createdBy" . '</p><p>' . ts('Created Date:') . ' ' . $values['created_date'] . '</p><p>' . ts('Last Modified By:') . ' ' . $modifiedBy . '</p><p>' . ts('Payment Method:') . ' ' . $values['payment_instrument_id'] . '</p>';
+    $details = '<p>' . ts('Record:') . ' ' . $values['title'] . '</p><p>' . ts('Description:') . '</p><p>' . ts('Created By:') . " $createdBy" . '</p><p>' . ts('Created Date:') . ' ' . $values['created_date'] . '</p><p>' . ts('Last Modified By:') . ' ' . $modifiedBy . '</p><p>' . ts('Payment Instrument:') . ' ' . $values['payment_instrument_id'] . '</p>';
     $subject = '';
     if (!empty($values['total'])) {
       $subject .= ts('Total') . '[' . CRM_Utils_Money::format($values['total']) . '],';
@@ -194,7 +204,7 @@ class CRM_Financial_BAO_ExportFormat {
       $subject .= ' ' . ts('Count') . '[' . $values['item_count'] . '],';
     }
 
-    // create activity.
+    //create activity.
     $subject .= ' ' . ts('Batch') . '[' . $values['title'] . ']';
     $activityTypes = CRM_Core_PseudoConstant::activityType(TRUE, FALSE, FALSE, 'name');
     $activityParams = array(
@@ -225,14 +235,14 @@ class CRM_Financial_BAO_ExportFormat {
    * @return bool
    */
   public function createZip($files = array(), $destination = NULL, $overwrite = FALSE) {
-    // if the zip file already exists and overwrite is false, return false
+    //if the zip file already exists and overwrite is false, return false
     if (file_exists($destination) && !$overwrite) {
       return FALSE;
     }
     $valid_files = array();
     if (is_array($files)) {
       foreach ($files as $file) {
-        // make sure the file exists
+        //make sure the file exists
         if (file_exists($file)) {
           $validFiles[] = $file;
         }

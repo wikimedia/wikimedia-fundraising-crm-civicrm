@@ -8,8 +8,8 @@
 
   var VISIBILITY = [
     {val: 'User and User Admin Only', label: ts('User and User Admin Only'), isInSelectorAllowed: false},
-    {val: 'Public Pages', label: ts('Expose Publicly'), isInSelectorAllowed: true},
-    {val: 'Public Pages and Listings', label: ts('Expose Publicly and for Listings'), isInSelectorAllowed: true}
+    {val: 'Public Pages', label: ts('Public Pages'), isInSelectorAllowed: true},
+    {val: 'Public Pages and Listings', label: ts('Public Pages and Listings'), isInSelectorAllowed: true}
   ];
 
   var LOCATION_TYPES = _.map(CRM.PseudoConstant.locationType, function(value, key) {
@@ -124,7 +124,7 @@
    */
   CRM.UF.UFFieldModel = CRM.Backbone.Model.extend({
     /**
-     * Backbone.Form description of the field to which this refers
+     * Backbone.Form descripton of the field to which this refers
      */
     defaults: {
       help_pre: '',
@@ -197,8 +197,7 @@
       },
       'label': {
         title: ts('Field Label'),
-        type: 'Text',
-        editorAttrs: {maxlength: 255}
+        type: 'Text'
       },
       'location_type_id': {
         title: ts('Location Type'),
@@ -488,7 +487,6 @@
         title: ts('Profile Name'),
         help: ts(''),
         type: 'Text',
-        editorAttrs: {maxlength: 64},
         validators: ['required']
       },
       'group_type': {
@@ -670,8 +668,9 @@
           return _.omit(ufFieldModel.toStrictJSON(), ['id', 'uf_group_id']);
         })
       );
-      var copyLabel = ' ' + ts('(Copy)');
-      copy.set('title', copy.get('title').slice(0, 64 - copyLabel.length) + copyLabel);
+      copy.set('title', ts('%1 (Copy)', {
+        1: copy.get('title')
+      }));
       return copy;
     },
     getModelClass: function(entity_name) {

@@ -1,14 +1,12 @@
 /// crmUi: Sundry UI helpers
 (function (angular, $, _) {
 
-  var uidCount = 0,
-    pageTitle = 'CiviCRM',
-    documentTitle = 'CiviCRM';
+  var uidCount = 0;
 
   angular.module('crmUi', [])
 
     // example <div crm-ui-accordion crm-title="ts('My Title')" crm-collapsed="true">...content...</div>
-    // WISHLIST: crmCollapsed should support two-way/continuous binding
+    // WISHLIST: crmCollapsed should support two-way/continous binding
     .directive('crmUiAccordion', function() {
       return {
         scope: {
@@ -363,13 +361,31 @@
     // Example:
     //   <a ng-click="$broadcast('my-insert-target', 'some new text')>Insert</a>
     //   <textarea crm-ui-insert-rx='my-insert-target'></textarea>
+    // TODO Consider ways to separate the plain-text/rich-text implementations
     .directive('crmUiInsertRx', function() {
       return {
         link: function(scope, element, attrs) {
           scope.$on(attrs.crmUiInsertRx, function(e, tokenName) {
-            CRM.wysiwyg.insert(element, tokenName);
-            $(element).select2('close').select2('val', '');
-            CRM.wysiwyg.focus(element);
+            var id = element.attr('id');
+            if (CKEDITOR.instances[id]) {
+              CKEDITOR.instances[id].insertText(tokenName);
+              $(element).select2('close').select2('val', '');
+              CKEDITOR.instances[id].focus();
+            }
+            else {
+              var crmForEl = $('#' + id);
+              var origVal = crmForEl.val();
+              var origPos = crmForEl[0].selectionStart;
+              var newVal = origVal.substring(0, origPos) + tokenName + origVal.substring(origPos, origVal.length);
+              crmForEl.val(newVal);
+              var newPos = (origPos + tokenName.length);
+              crmForEl[0].selectionStart = newPos;
+              crmForEl[0].selectionEnd = newPos;
+
+              $(element).select2('close').select2('val', '');
+              crmForEl.triggerHandler('change');
+              crmForEl.focus();
+            }
           });
         }
       };
@@ -381,24 +397,50 @@
       return {
         require: '?ngModel',
         link: function (scope, elm, attr, ngModel) {
+          var ck = CKEDITOR.replace(elm[0]);
 
-          var editor = CRM.wysiwyg.create(elm);
+          if (ck) {
+            _.extend(ck.config, {
+              width: '94%',
+              height: '400',
+              filebrowserBrowseUrl: CRM.crmUi.browseUrl + '?cms=civicrm&type=files',
+              filebrowserImageBrowseUrl: CRM.crmUi.browseUrl + '?cms=civicrm&type=images',
+              filebrowserFlashBrowseUrl: CRM.crmUi.browseUrl + '?cms=civicrm&type=flash',
+              filebrowserUploadUrl: CRM.crmUi.uploadUrl + '?cms=civicrm&type=files',
+              filebrowserImageUploadUrl: CRM.crmUi.uploadUrl + '?cms=civicrm&type=images',
+              filebrowserFlashUploadUrl: CRM.crmUi.uploadUrl + '?cms=civicrm&type=flash',
+            });
+          }
+
           if (!ngModel) {
             return;
           }
 
           if (attr.ngBlur) {
-            $(elm).on('blur', function() {
-              $timeout(function() {
+            ck.on('blur', function(){
+              $timeout(function(){
                 scope.$eval(attr.ngBlur);
               });
             });
           }
 
-          ngModel.$render = function(value) {
-            editor.done(function() {
-              CRM.wysiwyg.setVal(elm, ngModel.$viewValue || '');
+          // CRM-16445 - When one inserts an image, none of these events seem to fire at the right time:
+          // afterCommandExec, afterInsertHtml, afterPaste, afterSetData, change, insertElement,
+          // insertHtml, insertText, pasteState. It seems that 'pasteState' is the general equivalent of
+          // what 'change' should be, except (in the case of image insertion) it fires too soon.
+          // The 'key' event is needed to detect changes in "Source" mode.
+          var debounce = null;
+          angular.forEach(['key', 'pasteState'], function(evName){
+            ck.on(evName, function(evt) {
+              $timeout.cancel(debounce);
+              debounce = $timeout(function() {
+                ngModel.$setViewValue(ck.getData());
+              }, 50);
             });
+          });
+
+          ngModel.$render = function (value) {
+            ck.setData(ngModel.$viewValue);
           };
         }
       };
@@ -433,20 +475,20 @@
           var titleLocked = parse(attrs.titleLocked, ts('Locked'));
           var titleUnlocked = parse(attrs.titleUnlocked, ts('Unlocked'));
 
-          $(element).addClass('crm-i lock-button');
+          $(element).addClass('ui-icon lock-button');
           var refresh = function () {
             var locked = binding(scope);
             if (locked) {
               $(element)
-                .removeClass('fa-unlock')
-                .addClass('fa-lock')
+                .removeClass('ui-icon-unlocked')
+                .addClass('ui-icon-locked')
                 .prop('title', titleLocked(scope))
               ;
             }
             else {
               $(element)
-                .removeClass('fa-lock')
-                .addClass('fa-unlock')
+                .removeClass('ui-icon-locked')
+                .addClass('ui-icon-unlocked')
                 .prop('title', titleUnlocked(scope))
               ;
             }
@@ -588,7 +630,7 @@
               $timeout(function () {
                 // ex: msg_template_id adds new item then selects it; use $timeout to ensure that
                 // new item is added before selection is made
-                element.select2('val', ngModel.$modelValue);
+                element.select2('val', ngModel.$viewValue);
               });
             };
           }
@@ -603,7 +645,7 @@
 
           function init() {
             // TODO watch select2-options
-            element.crmSelect2(scope.crmUiSelect || {});
+            element.select2(scope.crmUiSelect || {});
             if (ngModel) {
               element.on('change', refreshModel);
               $timeout(ngModel.$render);
@@ -631,7 +673,7 @@
             $timeout(function () {
               // ex: msg_template_id adds new item then selects it; use $timeout to ensure that
               // new item is added before selection is made
-              element.select2('val', ngModel.$modelValue);
+              element.select2('val', ngModel.$viewValue);
             });
           };
           function refreshModel() {
@@ -655,7 +697,7 @@
       };
     })
 
-    // example <div crm-ui-tab id="tab-1" crm-title="ts('My Title')" count="3">...content...</div>
+    // example <div crm-ui-tab crm-title="ts('My Title')">...content...</div>
     // WISHLIST: use a full Angular component instead of an incomplete jQuery wrapper
     .directive('crmUiTab', function($parse) {
       return {
@@ -663,8 +705,6 @@
         restrict: 'EA',
         scope: {
           crmTitle: '@',
-          crmIcon: '@',
-          count: '@',
           id: '@'
         },
         template: '<div ng-transclude></div>',
@@ -843,22 +883,13 @@
       };
     })
 
-    // Example for Font Awesome: <button crm-icon="fa-check">Save</button>
-    // Example for jQuery UI (deprecated): <button crm-icon="check">Save</button>
+    // Example: <button crm-icon="check">Save</button>
     .directive('crmIcon', function() {
       return {
         restrict: 'EA',
+        scope: {},
         link: function (scope, element, attrs) {
-          if (element.is('[crm-ui-tab]')) {
-            // handled in crmUiTab ctrl
-            return;
-          }
-          if (attrs.crmIcon.substring(0,3) == 'fa-') {
-            $(element).prepend('<i class="crm-i ' + attrs.crmIcon + '"></i> ');
-          }
-          else {
-            $(element).prepend('<span class="icon ui-icon-' + attrs.crmIcon + '"></span> ');
-          }
+          $(element).prepend('<span class="icon ui-icon-' + attrs.crmIcon + '"></span> ');
           if ($(element).is('button')) {
             $(element).addClass('crm-button');
           }
@@ -977,39 +1008,6 @@
         }
       };
     })
-
-    // Sets document title & page title; attempts to override CMS title markup for the latter
-    // WARNING: Use only once per route!
-    // Example (same title for both): <h1 crm-page-title>{{ts('Hello')}}</h1>
-    // Example (separate document title): <h1 crm-document-title="ts('Hello')" crm-page-title><i class="crm-i fa-flag"></i>{{ts('Hello')}}</h1>
-    .directive('crmPageTitle', function($timeout) {
-      return {
-        scope: {
-          crmDocumentTitle: '='
-        },
-        link: function(scope, $el, attrs) {
-          function update() {
-            $timeout(function() {
-              var newPageTitle = _.trim($el.html()),
-                newDocumentTitle = scope.crmDocumentTitle || $el.text();
-              document.title = $('title').text().replace(documentTitle, newDocumentTitle);
-              // If the CMS has already added title markup to the page, use it
-              $('h1').not('.crm-container h1').each(function() {
-                if (_.trim($(this).html()) === pageTitle) {
-                  $(this).html(newPageTitle);
-                  $el.hide();
-                }
-              });
-              pageTitle = newPageTitle;
-              documentTitle = newDocumentTitle;
-            });
-          }
-
-          scope.$watch(function() {return scope.crmDocumentTitle + $el.html();}, update);
-        }
-      };
-    })
-
     .run(function($rootScope, $location) {
       /// Example: <button ng-click="goto('home')">Go home!</button>
       $rootScope.goto = function(path) {

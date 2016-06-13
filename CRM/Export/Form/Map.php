@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -89,7 +89,7 @@ class CRM_Export_Form_Map extends CRM_Core_Form {
       'Export',
       $this->_mappingId,
       $this->_exportColumnCount,
-      2,
+      $blockCnt = 2,
       $this->get('exportMode')
     );
 
@@ -105,7 +105,7 @@ class CRM_Export_Form_Map extends CRM_Core_Form {
         ),
         array(
           'type' => 'done',
-          'icon' => 'fa-times',
+          'icon' => 'close',
           'name' => ts('Done'),
         ),
       )
@@ -158,7 +158,11 @@ class CRM_Export_Form_Map extends CRM_Core_Form {
    */
   public function postProcess() {
     $params = $this->controller->exportValues($this->_name);
-    $exportParams = $this->controller->exportValues('Select');
+    if (array_key_exists('Select', $this->controller->_pages)) {
+      $exportParams = $this->controller->exportValues('Select');
+    } else {
+      $exportParams = array();
+    }
 
     $greetingOptions = CRM_Export_Form_Select::getGreetingOptions();
 

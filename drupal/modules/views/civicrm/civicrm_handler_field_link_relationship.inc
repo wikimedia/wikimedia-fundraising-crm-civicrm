@@ -1,7 +1,7 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -54,7 +54,7 @@ class civicrm_handler_field_link_relationship extends views_handler_field {
     $options = parent::option_definition();
     $options['link_to_civicrm_relationship'] = array('default' => 'view');
     $options['custom_link'] = array('default' => '');
-    $options['link_text'] = array('default' => '');
+    $options['link_text'] = array('default' => 'View Relationship');
     return $options;
   }
 
@@ -71,8 +71,7 @@ class civicrm_handler_field_link_relationship extends views_handler_field {
         'delete' => t('Link to Delete Relationship'),
         'custom' => t('Link to a Custom Node'),
       ),
-      '#default_value' => $this->options['link_to_civicrm_relationship'],
-      '#required' => TRUE,
+      '#default_value' => !empty($this->options['link_to_civicrm_relationship']),
     );
 
     $form['custom_link'] = array(
@@ -80,15 +79,14 @@ class civicrm_handler_field_link_relationship extends views_handler_field {
       '#title' => t('Custom Link to a Drupal Node'),
       '#description' => t('Link to a Drupal Node or View, from the base path. The relationship ID will be appended to the end of the link.'),
       '#default_value' => isset($this->options['custom_link']) ? $this->options['custom_link'] : '',
-      '#dependency' => array('edit-options-link-to-civicrm-relationship' => array('custom')),
+      '#dependency' => array('link_to_civicrm_relationship' => array('custom')),
     );
 
     $form['link_text'] = array(
       '#type' => 'textfield',
-      '#title' => t('Link Text'),
+      '#title' => t('Links Text'),
       '#description' => t('The text that will display in the field with the link.'),
       '#default_value' => isset($this->options['link_text']) ? $this->options['link_text'] : '',
-      '#required' => TRUE,
     );
   }
 

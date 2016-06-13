@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -160,10 +160,7 @@ function civicrm_api3_attachment_create($params) {
     file_put_contents($path, $content);
   }
   elseif (is_string($moveFile)) {
-    // CRM-17432 Do not use rename() since it will break file permissions.
-    // Also avoid move_uplaoded_file() because the API can use options.move-file.
-    copy($moveFile, $path);
-    unlink($moveFile);
+    rename($moveFile, $path);
   }
 
   // Save custom field to entity

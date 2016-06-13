@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Business object for managing price sets.
+ * Business object for managing price sets
+ *
  */
 class CRM_Upgrade_Snapshot_V4p2_Price_BAO_Set extends CRM_Upgrade_Snapshot_V4p2_Price_DAO_Set {
 
@@ -83,19 +86,21 @@ class CRM_Upgrade_Snapshot_V4p2_Price_BAO_Set extends CRM_Upgrade_Snapshot_V4p2_
    *   Value we want to set the is_active field.
    *
    * @return Object
-   *   DAO object on success, null otherwise
+   *   DAO object on sucess, null otherwise
    */
   public static function setIsActive($id, $isActive) {
     return CRM_Core_DAO::setFieldValue('CRM_Upgrade_Snapshot_V4p2_Price_DAO_Set', $id, 'is_active', $isActive);
   }
 
   /**
-   * Calculate the default price set id assigned to the contribution/membership etc.
+   * Calculate the default price set id.
+   * assigned to the contribution/membership etc
    *
    * @param string $entity
    *
    * @return int
    *   priceSetID
+   *
    */
   public static function getDefaultPriceSet($entity = 'contribution') {
     if ($entity == 'contribution') {
@@ -133,6 +138,7 @@ WHERE       ps.name = '{$entityName}'
    *
    * @return string
    *   title
+   *
    */
   public static function getTitle($id) {
     return CRM_Core_DAO::getFieldValue('CRM_Upgrade_Snapshot_V4p2_Price_DAO_Set', $id, 'title');
@@ -249,6 +255,7 @@ WHERE     ct.id = cp.contribution_type_id AND
    * @return bool
    *   false if fields exist for this set, true if the
    *   set could be deleted
+   *
    */
   public static function deleteSet($id) {
     // remove from all inactive forms
@@ -323,8 +330,7 @@ WHERE     ct.id = cp.contribution_type_id AND
   }
 
   /**
-   * Find a price_set_id associated with the given details.
-   *
+   * Find a price_set_id associatied with the given table, id and usedFor
    * Used For value for events:1, contribution:2, membership:3
    *
    * @param string $entityTable
@@ -544,8 +550,6 @@ WHERE  id = %1";
   }
 
   /**
-   * Initialise set.
-   *
    * @param CRM_Core_Form $form
    * @param int $id
    * @param string $entityTable
@@ -647,11 +651,9 @@ WHERE  id = %1";
   }
 
   /**
-   * Process amount.
-   *
-   * @param array $fields
+   * @param $fields
    * @param array $params
-   * @param array $lineItem
+   * @param $lineItem
    */
   public static function processAmount(&$fields, &$params, &$lineItem) {
     // using price set
@@ -762,6 +764,8 @@ WHERE  id = %1";
    * Build the price set form.
    *
    * @param CRM_Core_Form $form
+   *
+   * @return void
    */
   public static function buildPriceSet(&$form) {
     $priceSetId = $form->get('priceSetId');
@@ -837,16 +841,12 @@ WHERE  id = %1";
   }
 
   /**
-   * Check the current Membership.
-   *
-   * @param array $options
-   * @param int $userid
-   *
-   * @return bool
+   * check the current Membership
+   * having end date null.
    */
   public static function checkCurrentMembership(&$options, $userid) {
     if (!$userid || empty($options)) {
-      return FALSE;
+      return;
     }
     static $_contact_memberships = array();
     $checklifetime = FALSE;
@@ -871,10 +871,10 @@ WHERE  id = %1";
   }
 
   /**
-   * Set default the price set fields.
+   * Set daefult the price set fields.
    *
    * @param CRM_Core_Form $form
-   * @param array $defaults
+   * @param $defaults
    *
    * @return array
    */
@@ -905,6 +905,7 @@ WHERE  id = %1";
    *
    * @return array
    *   Array of the field ids
+   *
    */
   public static function getFieldIds($id) {
     $priceField = new CRM_Upgrade_Snapshot_V4p2_Price_DAO_Field();
@@ -917,7 +918,7 @@ WHERE  id = %1";
   }
 
   /**
-   * Copy a price set, including all the fields.
+   * Copy a price set, including all the fields
    *
    * @param int $id
    *   The price set id to copy.
@@ -964,7 +965,7 @@ WHERE  id = %1";
   }
 
   /**
-   * Check price set permission.
+   * check price set permission.
    *
    * @param int $sid
    *   The price set id.
@@ -984,7 +985,8 @@ WHERE  id = %1";
   }
 
   /**
-   * Get the sum of participant count for all fields of given price set.
+   * Get the sum of participant count.
+   * for all fields of given price set.
    *
    * @param int $sid
    *   The price set id.
@@ -1022,9 +1024,7 @@ INNER JOIN  civicrm_price_set pset    ON ( pset.id = field.price_set_id )
   }
 
   /**
-   * Get membership count.
-   *
-   * @param array $ids
+   * @param $ids
    *
    * @return array
    */
@@ -1118,12 +1118,13 @@ GROUP BY     mt.member_of_contact_id";
   }
 
   /**
-   * Get event price set for domain.
-   *
    * @return object
    */
   public static function eventPriceSetDomainID() {
-    return Civi::settings()->get('event_price_set_domain_id');
+    return CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MULTISITE_PREFERENCES_NAME,
+      'event_price_set_domain_id',
+      NULL, FALSE
+    );
   }
 
   /**

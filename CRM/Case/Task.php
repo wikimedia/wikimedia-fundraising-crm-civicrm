@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,15 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Class to represent the actions that can be performed on a group of contacts.
+ * class to represent the actions that can be performed on a group of contacts
+ * used by the search forms
  *
- * Used by the search forms
  */
 class CRM_Case_Task {
   const DELETE_CASES = 1, PRINT_CASES = 2, EXPORT_CASES = 3, RESTORE_CASES = 4;
@@ -64,17 +66,17 @@ class CRM_Case_Task {
     if (!self::$_tasks) {
       self::$_tasks = array(
         1 => array(
-          'title' => ts('Delete cases'),
+          'title' => ts('Delete Cases'),
           'class' => 'CRM_Case_Form_Task_Delete',
           'result' => FALSE,
         ),
         2 => array(
-          'title' => ts('Print selected rows'),
+          'title' => ts('Print Selected Rows'),
           'class' => 'CRM_Case_Form_Task_Print',
           'result' => FALSE,
         ),
         3 => array(
-          'title' => ts('Export cases'),
+          'title' => ts('Export Cases'),
           'class' => array(
             'CRM_Export_Form_Select',
             'CRM_Export_Form_Map',
@@ -82,7 +84,7 @@ class CRM_Case_Task {
           'result' => FALSE,
         ),
         4 => array(
-          'title' => ts('Restore cases'),
+          'title' => ts('Restore Cases'),
           'class' => 'CRM_Case_Form_Task_Restore',
           'result' => FALSE,
         ),

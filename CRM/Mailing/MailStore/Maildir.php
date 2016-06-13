@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,8 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
+
+require_once 'ezc/Base/src/ezc_bootstrap.php';
+require_once 'ezc/autoload/mail_autoload.php';
 
 /**
  * Class CRM_Mailing_MailStore_Maildir
@@ -74,7 +79,7 @@ class CRM_Mailing_MailStore_Maildir extends CRM_Mailing_MailStore {
   public function fetchNext($count = 0) {
     $mails = array();
     $parser = new ezcMailParser();
-    // set property text attachment as file CRM-5408
+    //set property text attachment as file CRM-5408
     $parser->options->parseTextAttachmentsAsFiles = TRUE;
 
     foreach (array(
@@ -109,6 +114,7 @@ class CRM_Mailing_MailStore_Maildir extends CRM_Mailing_MailStore {
    *   File location of the message to fetch.
    *
    * @throws Exception
+   * @return void
    */
   public function markIgnored($file) {
     if ($this->_debug) {
@@ -127,6 +133,7 @@ class CRM_Mailing_MailStore_Maildir extends CRM_Mailing_MailStore {
    *   File location of the message to fetch.
    *
    * @throws Exception
+   * @return void
    */
   public function markProcessed($file) {
     if ($this->_debug) {

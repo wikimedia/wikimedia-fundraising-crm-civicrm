@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -49,7 +49,8 @@
  * @endcode
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
  */
 
 require_once 'api/Wrapper.php';
@@ -65,8 +66,6 @@ class CRM_Utils_API_MatchOption implements API_Wrapper {
   private static $_singleton = NULL;
 
   /**
-   * Singleton function.
-   *
    * @return CRM_Utils_API_MatchOption
    */
   public static function singleton() {
@@ -80,10 +79,9 @@ class CRM_Utils_API_MatchOption implements API_Wrapper {
    * @inheritDoc
    */
   public function fromApiInput($apiRequest) {
-
     // Parse options.match or options.match-mandatory
-    $keys = NULL;
-    if (isset($apiRequest['params'], $apiRequest['params']['options']) && is_array($apiRequest['params']['options'])) {
+    $keys = NULL; // array of fields to match against
+    if (isset($apiRequest['params'], $apiRequest['params']['options'])) {
       if (isset($apiRequest['params']['options']['match-mandatory'])) {
         $isMandatory = TRUE;
         $keys = $apiRequest['params']['options']['match-mandatory'];
@@ -127,7 +125,7 @@ class CRM_Utils_API_MatchOption implements API_Wrapper {
           break;
 
         default:
-          // be forgiving of sloppy api calls
+          // be forgiveful of sloppily api calls
       }
     }
 
@@ -141,7 +139,6 @@ class CRM_Utils_API_MatchOption implements API_Wrapper {
    * @param array $createParams
    * @param array $keys
    * @param bool $isMandatory
-   *
    * @return array
    *   revised $createParams, including 'id' if known
    * @throws API_Exception

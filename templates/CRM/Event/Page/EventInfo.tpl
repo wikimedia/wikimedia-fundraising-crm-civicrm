@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 {if $registerClosed }
 <div class="spacer"></div>
 <div class="messages status no-popup">
-  <i class="crm-i fa-info-circle"></i>
+  <div class="icon inform-icon"></div>
      &nbsp;{ts}Registration is closed for this event{/ts}
   </div>
 {/if}
@@ -39,7 +39,7 @@
   <li>
     <div id="crm-event-links-wrapper">
       <span id="crm-event-configure-link" class="crm-hover-button">
-        <span title="{ts}Configure this event.{/ts}" class="crm-i fa-wrench"></span>
+        <span title="{ts}Configure this event.{/ts}" class="icon ui-icon-wrench"></span>
       </span>
       <div class="ac_results" id="crm-event-links-list" style="margin-left: -25px;">
         <div class="crm-event-links-list-inner">
@@ -63,7 +63,7 @@
   <li>
     <div id="crm-participant-wrapper">
       <span id="crm-participant-links" class="crm-hover-button">
-        <span title="{ts}Participant listing links.{/ts}" class="crm-i fa-search"></span>
+        <span title="{ts}Participant listing links.{/ts}" class="icon ui-icon-search"></span>
       </span>
       <div class="ac_results" id="crm-participant-list" style="margin-left: -25px;">
         <div class="crm-participant-list-inner">
@@ -148,7 +148,7 @@
 
       {if ( $event.is_map && $config->mapProvider &&
           ( is_numeric($location.address.1.geo_code_1)  ||
-          ( $location.address.1.city AND $location.address.1.state_province ) ) ) }
+          ( $config->mapGeoCoding && $location.address.1.city AND $location.address.1.state_province ) ) ) }
           <div class="crm-section event_map-section">
               <div class="content">
                     {assign var=showDirectly value="1"}

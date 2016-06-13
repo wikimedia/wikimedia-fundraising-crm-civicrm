@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contact_BAO_GroupContact extends CRM_Contact_DAO_GroupContact {
 
@@ -148,7 +150,7 @@ class CRM_Contact_BAO_GroupContact extends CRM_Contact_DAO_GroupContact {
 
     // reset the group contact cache for all group(s)
     // if this group is being used as a smart group
-    CRM_Contact_BAO_GroupContactCache::opportunisticCacheFlush();
+    CRM_Contact_BAO_GroupContactCache::remove();
 
     CRM_Utils_Hook::post('create', 'GroupContact', $groupId, $contactIds);
 
@@ -250,12 +252,6 @@ class CRM_Contact_BAO_GroupContact extends CRM_Contact_DAO_GroupContact {
 
     // reset the group contact cache for all group(s)
     // if this group is being used as a smart group
-    // @todo consider what to do here - it feels like we should either
-    // 1) just invalidate the specific group's cache(& perhaps any parents) & let cron do it's thing or
-    // possibly clear this specific groups cache, or just call opportunisticCacheFlush() - which would have the
-    // same effect as the remove call. The reservation about that is that it is no more aggressive for the group that
-    // we know is altered than for all the others, or perhaps, more the point with it's parents & groups that use it in
-    // their criteria.
     CRM_Contact_BAO_GroupContactCache::remove();
 
     CRM_Utils_Hook::post($op, 'GroupContact', $groupId, $contactIds);
@@ -326,10 +322,9 @@ class CRM_Contact_BAO_GroupContact extends CRM_Contact_DAO_GroupContact {
    *
    * @param bool $excludeHidden
    *
-   * @param int $groupId
-   *
-   * @return array|int $values
-   *   the relevant data object values for the contact or the total count when $count is TRUE
+   * @return array (reference)|int $values
+   *   the relevant data object values for the contact or
+   *   the total count when $count is TRUE
    */
   public static function &getContactGroup(
     $contactId,
@@ -453,7 +448,7 @@ class CRM_Contact_BAO_GroupContact extends CRM_Contact_DAO_GroupContact {
    * @param int $contactId
    *   Id of the contact.
    * @param int $groupID
-   *   Id of a particular group.
+   *   Id of a perticuler group.
    * @param string $method
    *   If we want the subscription history details for a specific method.
    *
@@ -495,7 +490,7 @@ SELECT    *
    * Method to get Group Id.
    *
    * @param int $groupContactID
-   *   Id of a particular group.
+   *   Id of a perticuler group.
    *
    *
    * @return groupID
@@ -519,6 +514,8 @@ SELECT    *
    *
    * @param bool $visibility
    * @param string $method
+   *
+   * @return void
    */
   public static function create(&$params, $contactId, $visibility = FALSE, $method = 'Admin') {
     $contactIds = array();
@@ -582,7 +579,7 @@ SELECT    *
     }
 
     $params = array(
-      array('group', 'IN', array($groupID), 0, 0),
+      array('group', 'IN', array($groupID => 1), 0, 0),
       array('contact_id', '=', $contactID, 0, 0),
     );
     list($contacts, $_) = CRM_Contact_BAO_Query::apiQuery($params, array('contact_id'));
@@ -605,6 +602,9 @@ SELECT    *
    * @see CRM_Dedupe_Merger::cpTables()
    *
    * TODO: use the 3rd $sqls param to append sql statements rather than executing them here
+   *
+   * @return void
+   *
    */
   public static function mergeGroupContact($mainContactId, $otherContactId) {
     $params = array(

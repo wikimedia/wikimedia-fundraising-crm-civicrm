@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Utils_ReCAPTCHA {
 
@@ -41,17 +43,16 @@ class CRM_Utils_ReCAPTCHA {
   protected $_phrase = NULL;
 
   /**
-   * Singleton.
-   *
    * We only need one instance of this object. So we use the singleton
    * pattern and cache the instance in this variable
    *
-   * @var CRM_Utils_ReCAPTCHA
+   * @var object
    */
   static private $_singleton = NULL;
 
   /**
    * Singleton function used to manage this object.
+   *
    *
    * @return object
    */
@@ -63,9 +64,12 @@ class CRM_Utils_ReCAPTCHA {
   }
 
   /**
+   */
+  public function __construct() {
+  }
+
+  /**
    * Add element to form.
-   *
-   * @param CRM_Core_Form $form
    */
   public static function add(&$form) {
     $error = NULL;

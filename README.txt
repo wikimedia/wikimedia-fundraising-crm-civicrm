@@ -26,10 +26,8 @@ and WordPress content management systems.
 *************************
 The download URLs and installation instructions are available on our
 website:
-https://civicrm.org/download
 
-Installation instruction can be found on the wiki:
-http://wiki.civicrm.org/
+https://civicrm.org/download
 
 
 *************************
@@ -38,8 +36,8 @@ http://wiki.civicrm.org/
 Documentation, as well as the project bug tracker and mailing lists,
 can be found at https://civicrm.org/ Just click on the appropriate link.
 
-Our main documentation site is the CiviCRM wiki:
-http://wiki.civicrm.org/
+Our main documentation site is the wiki at http://wiki.civicrm.org/
+- particularly http://docs.civicrm.org/
 
 
 *************************
@@ -61,7 +59,7 @@ http://forum.civicrm.org/index.php/board,20.0.html
 
 Installing the latest developmental code requires some special steps. Full
 instructions are on the wiki:
-http://wiki.civicrm.org/confluence/display/CRMDOC/Contributing+to+CiviCRM+using+GitHub
+http://wiki.civicrm.org/confluence/display/CRMDOC/Github+for+CiviCRM
 
 Report all issues to CiviCRM via JIRA:
 https://issues.civicrm.org

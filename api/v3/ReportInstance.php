@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -38,7 +38,7 @@
  *   Input parameters.
  *
  * @return array
- *   API result array
+ *   Details of found instances
  */
 function civicrm_api3_report_instance_get($params) {
   return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
@@ -50,7 +50,6 @@ function civicrm_api3_report_instance_get($params) {
  * @param array $params
  *
  * @return array
- *   API result array
  */
 function civicrm_api3_report_instance_create($params) {
   return _civicrm_api3_basic_create(_civicrm_api3_get_BAO(__FUNCTION__), $params);
@@ -67,12 +66,11 @@ function civicrm_api3_report_instance_create($params) {
 function _civicrm_api3_report_instance_create_spec(&$params) {
   $params['report_id']['api.required'] = 1;
   $params['title']['api.required'] = 1;
-  $params['view_mode']['api.default'] = 'view';
-  $params['view_mode']['title'] = ts('View Mode for Navigation URL');
+  $params['view_mode']['title'] = ts('Report output mode');
   $params['view_mode']['type'] = CRM_Utils_Type::T_STRING;
   $params['view_mode']['options'] = array(
-    'view' => ts('View'),
-    'criteria' => ts('Show Criteria'),
+    'view' => 'View Results',
+    'criteria' => 'Show criteria',
   );
 }
 
@@ -82,7 +80,7 @@ function _civicrm_api3_report_instance_create_spec(&$params) {
  * @param array $params
  *
  * @return array
- *   API result array
+ *   Api result
  */
 function civicrm_api3_report_instance_delete($params) {
   return _civicrm_api3_basic_delete(_civicrm_api3_get_BAO(__FUNCTION__), $params);

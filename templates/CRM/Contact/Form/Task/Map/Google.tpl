@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -32,7 +32,7 @@
 {/if}
 {assign var=defaultZoom value=16}
 {literal}
-<script src="//maps.googleapis.com/maps/api/js?{/literal}{if $mapKey}key={$mapKey}{/if}{literal}&sensor=false&callback=initMap" type="text/javascript" defer="defer"></script>
+<script src="//maps.googleapis.com/maps/api/js?{/literal}{if $mapKey}key={$mapKey}{/if}{literal}&sensor=false&callback=initMap" type="text/javascript"></script>
 <script type="text/javascript">
     function initMap() {
         var latlng = new google.maps.LatLng({/literal}{$center.lat},{$center.lng}{literal});

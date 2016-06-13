@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,12 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
  */
 
 /**
- * This class generates form components for search-result tasks.
+ * This class generates form components for search-result tasks
  */
 class CRM_Contact_Form_Task extends CRM_Core_Form {
 
@@ -200,7 +201,7 @@ class CRM_Contact_Form_Task extends CRM_Core_Form {
       // need to perform action on only selected contacts
       $insertString = array();
 
-      // refire sql in case of custom search
+      // refire sql in case of custom seach
       if ($form->_action == CRM_Core_Action::COPY) {
         // selected contacts only
         // need to perform action on only selected contacts
@@ -373,7 +374,7 @@ class CRM_Contact_Form_Task extends CRM_Core_Form {
         array(
           'type' => $backType,
           'name' => ts('Cancel'),
-          'icon' => 'fa-times',
+          'icon' => 'close',
         ),
       )
     );

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,18 +28,22 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
  * Main page for viewing contact.
+ *
  */
 class CRM_Contact_Page_View_Print extends CRM_Contact_Page_View_Summary {
 
   /**
-   * Heart of the viewing process.
+   * Heart of the viewing process. The runner gets all the meta data for
+   * the contact and calls the appropriate type of page to view.
    *
-   * The runner gets all the meta data for the contact and calls the appropriate type of page to view.
+   * @return void
    */
   public function run() {
     $this->_print = CRM_Core_Smarty::PRINT_PAGE;
@@ -53,6 +57,8 @@ class CRM_Contact_Page_View_Print extends CRM_Contact_Page_View_Summary {
 
   /**
    * View summary details of a contact.
+   *
+   * @return void
    */
   public function view() {
     $params = array();

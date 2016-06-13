@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,26 +28,32 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for Mapping and Geocoding.
+ * This class generates form components for Mapping and Geocoding
+ *
  */
 class CRM_Admin_Form_Setting_Mapping extends CRM_Admin_Form_Setting {
 
-  protected $_settings = array(
-    'mapAPIKey' => CRM_Core_BAO_Setting::MAP_PREFERENCES_NAME,
-    'mapProvider' => CRM_Core_BAO_Setting::MAP_PREFERENCES_NAME,
-    'geoAPIKey' => CRM_Core_BAO_Setting::MAP_PREFERENCES_NAME,
-    'geoProvider' => CRM_Core_BAO_Setting::MAP_PREFERENCES_NAME,
-  );
-
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     CRM_Utils_System::setTitle(ts('Settings - Mapping and Geocoding Providers'));
+
+    $map = CRM_Core_SelectValues::mapProvider();
+    $geo = CRM_Core_SelectValues::geoProvider();
+    $this->addElement('select', 'mapProvider', ts('Mapping Provider'), array('' => '- select -') + $map, array('class' => 'crm-select2'));
+    $this->add('text', 'mapAPIKey', ts('Map Provider Key'), NULL);
+    $this->addElement('select', 'geoProvider', ts('Geocoding Provider'), array('' => '- select -') + $geo, array('class' => 'crm-select2'));
+    $this->add('text', 'geoAPIKey', ts('Geo Provider Key'), NULL);
+
     parent::buildQuickForm();
   }
 
@@ -79,9 +85,10 @@ class CRM_Admin_Form_Setting_Mapping extends CRM_Admin_Form_Setting {
   }
 
   /**
-   * Add the rules (mainly global rules) for form.
-   *
+   * add the rules (mainly global rules) for form.
    * All local rules are added near the element
+   *
+   * @return void
    */
   public function addRules() {
     $this->addFormRule(array('CRM_Admin_Form_Setting_Mapping', 'formRule'));

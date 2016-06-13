@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,8 +26,11 @@
  */
 
 /**
+ *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id: $
+ *
  */
 
 /**
@@ -64,13 +67,7 @@ class CRM_Utils_Network {
   }
 
   /**
-   * Check whether a TCP service is available on $host and $port.
-   *
-   * @param string $host
-   * @param string $port
-   * @param string $serverConnectionTimeOut
-   *
-   * @return bool
+   * Check whether a TCP service is available on $host and $port
    */
   public static function checkService($host, $port, $serverConnectionTimeOut) {
     $old_error_reporting = error_reporting();

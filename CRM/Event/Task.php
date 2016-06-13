@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -70,17 +70,17 @@ class CRM_Event_Task {
     if (!(self::$_tasks)) {
       self::$_tasks = array(
         1 => array(
-          'title' => ts('Delete participants from event'),
+          'title' => ts('Delete Participants'),
           'class' => 'CRM_Event_Form_Task_Delete',
           'result' => FALSE,
         ),
         2 => array(
-          'title' => ts('Print selected rows'),
+          'title' => ts('Print Selected Rows'),
           'class' => 'CRM_Event_Form_Task_Print',
           'result' => FALSE,
         ),
         3 => array(
-          'title' => ts('Export participants'),
+          'title' => ts('Export Participants'),
           'class' => array(
             'CRM_Export_Form_Select',
             'CRM_Export_Form_Map',
@@ -88,7 +88,7 @@ class CRM_Event_Task {
           'result' => FALSE,
         ),
         4 => array(
-          'title' => ts('Update multiple participants'),
+          'title' => ts('Batch Update Participants Via Profile'),
           'class' => array(
             'CRM_Event_Form_Task_PickProfile',
             'CRM_Event_Form_Task_Batch',
@@ -96,42 +96,37 @@ class CRM_Event_Task {
           'result' => TRUE,
         ),
         5 => array(
-          'title' => ts('Cancel registration'),
+          'title' => ts('Cancel Registration'),
           'class' => 'CRM_Event_Form_Task_Cancel',
           'result' => FALSE,
         ),
         6 => array(
-          'title' => ts('Email - send now'),
+          'title' => ts('Send Email to Contacts'),
           'class' => 'CRM_Event_Form_Task_Email',
           'result' => TRUE,
         ),
         13 => array(
-          'title' => ts('Group - create smart group'),
+          'title' => ts('New Smart Group'),
           'class' => 'CRM_Event_Form_Task_SaveSearch',
           'result' => TRUE,
         ),
         14 => array(
-          'title' => ts('Group - update smart group'),
+          'title' => ts('Update Smart Group'),
           'class' => 'CRM_Event_Form_Task_SaveSearch_Update',
           'result' => TRUE,
         ),
         15 => array(
-          'title' => ts('Participant status - change (emails sent)'),
+          'title' => ts('Change Participant Status'),
           'class' => 'CRM_Event_Form_Task_ParticipantStatus',
           'result' => TRUE,
         ),
         16 => array(
-          'title' => ts('Name badges - print'),
+          'title' => ts('Print Event Name Badges'),
           'class' => 'CRM_Event_Form_Task_Badge',
           'result' => FALSE,
         ),
-        17 => array(
-          'title' => ts('PDF letter - print for participants'),
-          'class' => 'CRM_Event_Form_Task_PDF',
-          'result' => TRUE,
-        ),
         20 => array(
-          'title' => ts('Group - add contacts'),
+          'title' => ts('Add Contacts to Group'),
           'class' => 'CRM_Event_Form_Task_AddToGroup',
           'result' => FALSE,
         ),
@@ -148,7 +143,7 @@ class CRM_Event_Task {
     }
 
     CRM_Utils_Hook::searchTasks('event', self::$_tasks);
-
+    asort(self::$_tasks);
     return self::$_tasks;
   }
 
@@ -229,7 +224,6 @@ class CRM_Event_Task {
       // make the print task by default
       $value = 2;
     }
-    asort(self::$_tasks);
     return array(
       self::$_tasks[$value]['class'],
       self::$_tasks[$value]['result'],

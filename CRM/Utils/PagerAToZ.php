@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,12 +26,16 @@
  */
 
 /**
+ *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
  * This class is for displaying alphabetical bar
+ *
  */
 class CRM_Utils_PagerAToZ {
 
@@ -57,7 +61,7 @@ class CRM_Utils_PagerAToZ {
    * Return the all the static characters.
    *
    * @return array
-   *   is an array of static characters
+   *   is a array of static characters
    */
   public static function getStaticCharacters() {
     $staticAlphabets = array(
@@ -98,7 +102,7 @@ class CRM_Utils_PagerAToZ {
    * @param $isDAO
    *
    * @return array
-   *   is an array of dynamic characters
+   *   is a array of dynamic characters
    */
   public static function getDynamicCharacters(&$query, $isDAO) {
     if ($isDAO) {
@@ -143,7 +147,7 @@ class CRM_Utils_PagerAToZ {
     sort($AToZBar, SORT_STRING);
     $AToZBar = array_unique($AToZBar);
 
-    // get the current path
+    //get the current path
     $path = CRM_Utils_System::currentPath();
 
     $qfKey = NULL;

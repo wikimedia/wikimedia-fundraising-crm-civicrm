@@ -16,6 +16,8 @@ class CRM_Member_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDFLett
    * @param $skipOnHold
    * @param $skipDeceased
    * @param $contactIDs
+   *
+   * @return void
    */
   public static function postProcessMembers(&$form, $membershipIDs, $skipOnHold, $skipDeceased, $contactIDs) {
 
@@ -48,15 +50,14 @@ class CRM_Member_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDFLett
    * @param array $returnProperties
    * @param bool $skipOnHold
    * @param bool $skipDeceased
-   * @param array $messageToken
+   * @param unknown_type $messageToken
    * @param $html_message
    * @param $categories
    *
-   * @return array
+   * @return unknown
    */
   public static function generateHTML($membershipIDs, $returnProperties, $skipOnHold, $skipDeceased, $messageToken, $html_message, $categories) {
     $memberships = CRM_Utils_Token::getMembershipTokenDetails($membershipIDs);
-    $html = array();
 
     foreach ($membershipIDs as $membershipID) {
       $membership = $memberships[$membershipID];
@@ -64,7 +65,7 @@ class CRM_Member_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDFLett
       $contactId = $membership['contact_id'];
       $params = array('contact_id' => $contactId);
       //getTokenDetails is much like calling the api contact.get function - but - with some minor
-      // special handlings. It precedes the existence of the api
+      // special handlings. It preceeds the existence of the api
       list($contacts) = CRM_Utils_Token::getTokenDetails(
         $params,
         $returnProperties,

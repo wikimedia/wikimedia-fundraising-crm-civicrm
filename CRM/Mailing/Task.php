@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,24 +28,26 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
  * class to represent the actions that can be performed on a group of contacts
- * used by the search forms.
+ * used by the search forms
  *
  */
 class CRM_Mailing_Task {
   /**
-   * The task array.
+   * The task array
    *
    * @var array
    */
   static $_tasks = NULL;
 
   /**
-   * The optional task array.
+   * The optional task array
    *
    * @var array
    */
@@ -53,10 +55,10 @@ class CRM_Mailing_Task {
 
   /**
    * These tasks are the core set of tasks that the user can perform
-   * on a contact / group of contacts.
+   * on a contact / group of contacts
    *
    * @return array
-   *   the set of tasks for a group of contacts.
+   *   the set of tasks for a group of contacts
    */
   public static function &tasks() {
     if (!(self::$_tasks)) {
@@ -77,10 +79,10 @@ class CRM_Mailing_Task {
 
   /**
    * These tasks are the core set of task titles
-   * on mailing recipients.
+   * on mailing recipients
    *
    * @return array
-   *   the set of task titles.
+   *   the set of task titles
    */
   public static function &taskTitles() {
     return array();
@@ -88,7 +90,7 @@ class CRM_Mailing_Task {
 
   /**
    * Show tasks selectively based on the permission level
-   * of the user.
+   * of the user
    *
    * @param int $permission
    *
@@ -102,7 +104,7 @@ class CRM_Mailing_Task {
 
   /**
    * These tasks are the core set of tasks that the user can perform.
-   * on mailing recipients.
+   * on mailing recipients
    *
    * @param int $value
    *

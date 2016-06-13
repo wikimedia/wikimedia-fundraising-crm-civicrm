@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,21 +28,25 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
 
   protected $_tableName;
 
+  /**#@+
+   * @var integer
+   */
+
   /**
    * Total number of lines in file
-   *
-   * @var integer
    */
   protected $_rowCount;
 
   /**
-   * Running total number of un-matched Contacts.
+   * Running total number of un matched Conact
    */
   protected $_unMatchCount;
 
@@ -81,20 +85,18 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
   public $_dedupeRuleGroupID = NULL;
 
   /**
-   * Run import.
-   *
    * @param string $tableName
-   * @param array $mapper
+   * @param $mapper
    * @param int $mode
    * @param int $contactType
    * @param string $primaryKeyName
    * @param string $statusFieldName
    * @param int $onDuplicate
    * @param int $statusID
-   * @param int $totalRowCount
+   * @param null $totalRowCount
    * @param bool $doGeocodeAddress
    * @param int $timeout
-   * @param string $contactSubType
+   * @param null $contactSubType
    * @param int $dedupeRuleGroupID
    *
    * @return mixed
@@ -145,6 +147,8 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
     $this->_conflicts = array();
     $this->_unparsedAddresses = array();
 
+    $status = '';
+
     $this->_tableName = $tableName;
     $this->_primaryKeyName = $primaryKeyName;
     $this->_statusFieldName = $statusFieldName;
@@ -194,6 +198,8 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
       $this->_rowCount++;
 
       /* trim whitespace around the values */
+
+      $empty = TRUE;
       foreach ($values as $k => $v) {
         $values[$k] = trim($v, " \t\r\n");
       }
@@ -449,6 +455,8 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
    *
    * @param array $elements
    *   IM service provider type ids.
+   *
+   * @return void
    */
   public function setActiveFieldImProviders($elements) {
     for ($i = 0; $i < count($elements); $i++) {
@@ -493,9 +501,7 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
   }
 
   /**
-   * Set active field for related contact's phone type.
-   *
-   * @param array $elements
+   * @param $elements
    */
   public function setActiveFieldRelatedContactPhoneType($elements) {
     for ($i = 0; $i < count($elements); $i++) {
@@ -517,6 +523,8 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
    *
    * @param array $elements
    *   IM service provider type ids of related contact.
+   *
+   * @return void
    */
   public function setActiveFieldRelatedContactImProvider($elements) {
     for ($i = 0; $i < count($elements); $i++) {
@@ -659,6 +667,8 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
    * @param CRM_Core_Session $store
    *
    * @param int $mode
+   *
+   * @return void
    */
   public function set($store, $mode = self::MODE_SUMMARY) {
     $store->set('rowCount', $this->_rowCount);
@@ -721,6 +731,8 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
    * @param string $fileName
    * @param array $header
    * @param array $data
+   *
+   * @return void
    */
   public static function exportCSV($fileName, $header, $data) {
 
@@ -762,10 +774,12 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
   }
 
   /**
-   * Update the record with PK $id in the import database table.
+   * Update the record with PK $id in the import database table
    *
    * @param int $id
    * @param array $params
+   *
+   * @return void
    */
   public function updateImportRecord($id, &$params) {
     $statusFieldName = $this->_statusFieldName;

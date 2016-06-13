@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,8 @@
     {ts}None found.{/ts}
   </div>
   <div class="action-link">
-    {crmButton p="civicrm/campaign/add" q="reset=1" icon="crm-i fa-plus-circle" h=0}{ts}Add Campaign{/ts}{/crmButton}
+    <a href="{crmURL p='civicrm/campaign/add' q='reset=1' h=0 }" class="button"><span><div
+          class="icon ui-icon-circle-plus"></div>{ts}Add Campaign{/ts}</span></a>
   </div>
 {elseif $buildSelector}
 
@@ -49,7 +50,7 @@
   <table class="campaigns">
     <thead>
     <tr class="columnheader">
-      <th>{ts}ID{/ts}</th>
+      <th class="hiddenElement">{ts}Campaign ID{/ts}</th>
       <th class="hiddenElement">{ts}Campaign Name{/ts}</th>
       <th>{ts}Title{/ts}</th>
       <th>{ts}Description{/ts}</th>
@@ -68,7 +69,8 @@
   </table>
 {else}
   <div class="action-link">
-    {crmButton p="civicrm/campaign/add" q="reset=1" icon="crm-i fa-plus-circle" h=0}{ts}Add Campaign{/ts}{/crmButton}
+    <a href="{crmURL p='civicrm/campaign/add' q='reset=1' h=0 }" class="button"><span><div
+          class="icon ui-icon-circle-plus"></div>{ts}Add Campaign{/ts}</span></a>
   </div>
 {* build search form here *}
 
@@ -112,9 +114,6 @@
               </td>
               <td>{$form.status_id.label}<br/>
                 {$form.status_id.html}
-              </td>
-              <td>{$form.is_active.label}<br/>
-                {$form.is_active.html}
               </td>
             </tr>
 
@@ -191,7 +190,7 @@
       "bLengthChange": false,
       "aaSorting": [],
       "aoColumns": [
-        {sClass: 'crm-campaign-id'                         },
+        {sClass: 'crm-campaign-id                   hiddenElement' },
         {sClass: 'crm-campaign-name                 hiddenElement' },
         {sClass: 'crmf-title'                              },
         {sClass: 'crmf-description'                        },

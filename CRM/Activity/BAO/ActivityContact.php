@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class is for activity assignment functions.
+ * This class is for activity assignment functions
+ *
  */
 class CRM_Activity_BAO_ActivityContact extends CRM_Activity_DAO_ActivityContact {
 
@@ -143,13 +146,15 @@ AND        civicrm_contact.is_deleted = 0
    * Should look a bit like
    *       [local_col_name] => "related_tablename:related_col_name"
    *
-   * @see DB_DataObject::getLinks()
-   * @see DB_DataObject::getLink()
    *
    * @return array|null
    *           array       = if there are links defined for this table.
    *           empty array - if there is a links.ini file, but no links on this table
    *           null        - if no links.ini exists for this database (hence try auto_links).
+   * @see      DB_DataObject::getLinks(), DB_DataObject::getLink()
+   */
+  /**
+   * @return array|null
    */
   public function links() {
     $link = array('activity_id' => 'civicrm_activity:id');

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class contain function for Website handling.
+ * This class contain function for Website handling
  */
 class CRM_Core_BAO_Website extends CRM_Core_DAO_Website {
 
@@ -64,9 +66,9 @@ class CRM_Core_BAO_Website extends CRM_Core_DAO_Website {
    * @param int $contactID
    *   Contact id.
    *
-   * @param bool $skipDelete
+   * @param $skipDelete
    *
-   * @return bool
+   * @return void
    */
   public static function create(&$params, $contactID, $skipDelete) {
     if (empty($params)) {
@@ -75,20 +77,35 @@ class CRM_Core_BAO_Website extends CRM_Core_DAO_Website {
 
     $ids = self::allWebsites($contactID);
     foreach ($params as $key => $values) {
-      if (empty($values['id']) && is_array($ids) && !empty($ids)) {
+      $websiteId = CRM_Utils_Array::value('id', $values);
+      if ($websiteId) {
+        if (array_key_exists($websiteId, $ids)) {
+          unset($ids[$websiteId]);
+        }
+        else {
+          unset($values['id']);
+        }
+      }
+
+      if (empty($values['id']) &&
+        is_array($ids) && !empty($ids)
+      ) {
         foreach ($ids as $id => $value) {
-          if (($value['website_type_id'] == $values['website_type_id'])) {
+          if (($value['website_type_id'] == $values['website_type_id']) && !empty($values['url'])) {
             $values['id'] = $id;
+            unset($ids[$id]);
+            break;
           }
         }
       }
+      $values['contact_id'] = $contactID;
       if (!empty($values['url'])) {
-        $values['contact_id'] = $contactID;
         self::add($values);
       }
-      elseif ($skipDelete && !empty($values['id'])) {
-        self::del(array($values['id']));
-      }
+    }
+
+    if ($skipDelete && !empty($ids)) {
+      self::del(array_keys($ids));
     }
   }
 
@@ -98,7 +115,7 @@ class CRM_Core_BAO_Website extends CRM_Core_DAO_Website {
    * @param array $ids
    *   Website ids.
    *
-   * @return bool
+   * @return void
    */
   public static function del($ids) {
     $query = 'DELETE FROM civicrm_website WHERE id IN ( ' . implode(',', $ids) . ')';

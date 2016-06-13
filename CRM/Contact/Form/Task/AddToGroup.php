@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class provides the functionality to group contacts.
- *
- * This class provides functionality for the actual
+ * This class provides the functionality to group
+ * contacts. This class provides functionality for the actual
  * addition of contacts to groups.
  */
 class CRM_Contact_Form_Task_AddToGroup extends CRM_Contact_Form_Task {
@@ -62,6 +63,8 @@ class CRM_Contact_Form_Task_AddToGroup extends CRM_Contact_Form_Task {
 
   /**
    * Build all the data structures needed to build the form.
+   *
+   * @return void
    */
   public function preProcess() {
     // initialize the task and row fields
@@ -73,6 +76,9 @@ class CRM_Contact_Form_Task_AddToGroup extends CRM_Contact_Form_Task {
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
 
@@ -160,6 +166,9 @@ class CRM_Contact_Form_Task_AddToGroup extends CRM_Contact_Form_Task {
 
   /**
    * Add local and global form rules.
+   *
+   *
+   * @return void
    */
   public function addRules() {
     $this->addFormRule(array('CRM_Contact_Form_task_AddToGroup', 'formRule'));
@@ -188,6 +197,9 @@ class CRM_Contact_Form_Task_AddToGroup extends CRM_Contact_Form_Task {
 
   /**
    * Process the form after the input has been submitted and validated.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     $params = $this->controller->exportValues();

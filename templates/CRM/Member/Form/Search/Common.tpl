@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -51,11 +51,6 @@
     </p>
     <p>
     {$form.member_auto_renew.label}&nbsp;{$form.member_auto_renew.html}
-    </p>
-    <p>
-    {$form.member_is_override.label}
-    {help id="id-member_is_override" file="CRM/Member/Form/Search.hlp"}
-    {$form.member_is_override.html}
     </p>
   </td>
 </tr>

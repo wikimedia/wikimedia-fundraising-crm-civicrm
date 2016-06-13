@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Utils_Migrate_Export {
 
@@ -51,7 +53,6 @@ class CRM_Utils_Migrate_Export {
   protected $_xml;
 
   /**
-   * Class constructor.
    */
   public function __construct() {
     $this->_xml = array(
@@ -165,7 +166,9 @@ class CRM_Utils_Migrate_Export {
   }
 
   /**
-   * Scan local customizations and build an in-memory representation.
+   * Scan local customizations and build an in-memory representation
+   *
+   * @return void
    */
   public function build() {
     // fetch the option group / values for
@@ -263,10 +266,9 @@ class CRM_Utils_Migrate_Export {
   }
 
   /**
-   * Build custom groups.
-   *
    * @param array $customGroupIds
    *   List of custom groups to export.
+   * @return void
    */
   public function buildCustomGroups($customGroupIds) {
     $customGroupIdsSql = implode(',', array_filter($customGroupIds, 'is_numeric'));
@@ -320,6 +322,7 @@ class CRM_Utils_Migrate_Export {
   /**
    * @param array $ufGroupIds
    *   List of custom groups to export.
+   * @return void
    */
   public function buildUFGroups($ufGroupIds) {
     $ufGroupIdsSql = implode(',', array_filter($ufGroupIds, 'is_numeric'));

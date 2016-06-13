@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 abstract class CRM_Contribute_Import_Parser extends CRM_Import_Parser {
 
@@ -406,6 +408,8 @@ abstract class CRM_Contribute_Import_Parser extends CRM_Import_Parser {
    * set the active fields array to this list
    *
    * @param array $fieldKeys mapped array of values
+   *
+   * @return void
    */
   public function setActiveFields($fieldKeys) {
     $this->_activeFieldCount = count($fieldKeys);
@@ -563,6 +567,8 @@ abstract class CRM_Contribute_Import_Parser extends CRM_Import_Parser {
    * @param string $fileName
    * @param array $header
    * @param array $data
+   *
+   * @return void
    */
   public static function exportCSV($fileName, $header, $data) {
     $output = array();

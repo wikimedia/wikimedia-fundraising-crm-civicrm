@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -61,7 +61,7 @@ class CRM_Member_PseudoConstant extends CRM_Core_PseudoConstant {
    * @return array
    *   array reference of all membership types if any
    */
-  public static function membershipType($id = NULL, $force = TRUE) {
+  public static function &membershipType($id = NULL, $force = FALSE) {
     if (!self::$membershipType || $force) {
       CRM_Core_PseudoConstant::populate(self::$membershipType,
         'CRM_Member_DAO_MembershipType',
@@ -89,10 +89,8 @@ class CRM_Member_PseudoConstant extends CRM_Core_PseudoConstant {
    * @param string $column
    * @param bool $force
    *
-   * @param bool $allStatus
-   *
    * @return array
-   *    array reference of all membership statuses if any
+   *   array reference of all membership statuss if any
    */
   public static function &membershipStatus($id = NULL, $cond = NULL, $column = 'name', $force = FALSE, $allStatus = FALSE) {
     if (self::$membershipStatus === NULL) {

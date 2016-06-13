@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -33,14 +33,15 @@
  * list display, pagination, sorting and export in multiple formats (CSV is
  * supported right now, XML support will be added as and when needed
  *
+ *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 interface CRM_Core_Selector_API {
 
   /**
-   * Get pager parameters.
-   *
    * Based on the action, the GET variables and the session state
    * it adds various key => value pairs to the params array including
    *
@@ -54,6 +55,8 @@ interface CRM_Core_Selector_API {
    *   The action being performed.
    * @param array $params
    *   The array that the pagerParams will be inserted into.
+   *
+   * @return void
    */
   public function getPagerParams($action, &$params);
 
@@ -69,8 +72,7 @@ interface CRM_Core_Selector_API {
   public function &getSortOrder($action);
 
   /**
-   * Returns the column headers as an array of tuples.
-   *
+   * Returns the column headers as an array of tuples:
    * (name, sortName (key to the sort array))
    *
    * @param string $action
@@ -114,7 +116,7 @@ interface CRM_Core_Selector_API {
   public function &getRows($action, $offset, $rowCount, $sort, $type = NULL);
 
   /**
-   * Return the template (.tpl) filename.
+   * Return the template (.tpl) filename
    *
    * @param string $action
    *   The action being performed.

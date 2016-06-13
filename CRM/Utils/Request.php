@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Class for managing a http request
+ * class for managing a http request
+ *
  */
 class CRM_Utils_Request {
 
@@ -94,15 +97,15 @@ class CRM_Utils_Request {
     $value = NULL;
     switch ($method) {
       case 'GET':
-        $value = self::getValue($name, $_GET);
+        $value = CRM_Utils_Array::value($name, $_GET);
         break;
 
       case 'POST':
-        $value = self::getValue($name, $_POST);
+        $value = CRM_Utils_Array::value($name, $_POST);
         break;
 
       default:
-        $value = self::getValue($name, $_REQUEST);
+        $value = CRM_Utils_Array::value($name, $_REQUEST);
         break;
     }
 
@@ -134,34 +137,6 @@ class CRM_Utils_Request {
     }
 
     return $value;
-  }
-
-  /**
-   * @param string $name
-   *   Name of the variable to be retrieved.
-   *
-   * @param array $method - '$_GET', '$_POST' or '$_REQUEST'.
-   *
-   * @return mixed
-   *    The value of the variable
-   */
-  public static function getValue($name, $method) {
-    if (isset($method[$name])) {
-      return $method[$name];
-    }
-    // CRM-18384 - decode incorrect keys generated when &amp; is present in url
-    foreach ($method as $key => $value) {
-      if (strpos($key, 'amp;') !== FALSE) {
-        $method[str_replace('amp;', '', $key)] = $method[$key];
-        if (isset($method[$name])) {
-          return $method[$name];
-        }
-        else {
-          continue;
-        }
-      }
-    }
-    return NULL;
   }
 
   /**

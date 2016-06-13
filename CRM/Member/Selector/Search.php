@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,16 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
  * This class is used to retrieve and display a range of
  * contacts that match the given criteria (specifically for
  * results of advanced search options.
+ *
  */
 class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_Core_Selector_API {
 
@@ -173,14 +176,13 @@ class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_C
 
   /**
    * This method returns the links that are given for each search row.
-   *
-   * Currently the links added for each row are
+   * currently the links added for each row are
    *
    * - View
    * - Edit
    *
    * @param string $status
-   * @param bool $isPaymentProcessor
+   * @param null $isPaymentProcessor
    * @param null $accessContribution
    * @param null $qfKey
    * @param null $context
@@ -268,7 +270,7 @@ class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_C
   /**
    * Getter for array of the parameters required for creating pager.
    *
-   * @param int $action
+   * @param $action
    * @param array $params
    */
   public function getPagerParams($action, &$params) {
@@ -288,7 +290,7 @@ class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_C
   /**
    * Returns total number of rows for the query.
    *
-   * @param int $action
+   * @param
    *
    * @return int
    *   Total number of rows
@@ -390,35 +392,20 @@ class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_C
         }
 
         $isCancelSupported = CRM_Member_BAO_Membership::isCancelSubscriptionSupported($row['membership_id']);
-        $links = self::links('all',
-          $this->_isPaymentProcessor,
-          $this->_accessContribution,
-          $this->_key,
-          $this->_context,
-          $isCancelSupported
-        );
-
-        // check permissions
-        $finTypeId = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_MembershipType', $result->membership_type_id, 'financial_type_id');
-        $finType = CRM_Contribute_PseudoConstant::financialType($finTypeId);
-        if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()
-          && !CRM_Core_Permission::check('edit contributions of type ' . $finType)
-        ) {
-          unset($links[CRM_Core_Action::UPDATE]);
-        }
-        if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus() &&
-          !CRM_Core_Permission::check('delete contributions of type ' . $finType)
-        ) {
-          unset($links[CRM_Core_Action::DELETE]);
-        }
-        $row['action'] = CRM_Core_Action::formLink($links,
+        $row['action'] = CRM_Core_Action::formLink(self::links('all',
+            $this->_isPaymentProcessor,
+            $this->_accessContribution,
+            $this->_key,
+            $this->_context,
+            $isCancelSupported
+          ),
           $currentMask,
           array(
             'id' => $result->membership_id,
             'cid' => $result->contact_id,
             'cxt' => $this->_context,
           ),
-          ts('Renew') . '...',
+          ts('more'),
           FALSE,
           'membership.selector.row',
           'Membership',
@@ -426,8 +413,7 @@ class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_C
         );
       }
       else {
-        $links = self::links('view');
-        $row['action'] = CRM_Core_Action::formLink($links, $mask,
+        $row['action'] = CRM_Core_Action::formLink(self::links('view'), $mask,
           array(
             'id' => $result->membership_id,
             'cid' => $result->contact_id,
@@ -467,8 +453,7 @@ class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_C
   }
 
   /**
-   * Returns the column headers as an array of tuples.
-   *
+   * Returns the column headers as an array of tuples:
    * (name, sortName (key to the sort array))
    *
    * @param string $action
@@ -534,8 +519,6 @@ class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_C
   }
 
   /**
-   * Alphabet query.
-   *
    * @return mixed
    */
   public function alphabetQuery() {
@@ -543,8 +526,6 @@ class CRM_Member_Selector_Search extends CRM_Core_Selector_Base implements CRM_C
   }
 
   /**
-   * Get query.
-   *
    * @return string
    */
   public function &getQuery() {

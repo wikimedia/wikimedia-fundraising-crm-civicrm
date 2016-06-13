@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -49,15 +49,7 @@
             CRM.$(function($) {
               var $table = $("#{/literal}custom-{$customGroupId}-table-wrapper{literal}");
               $('a.delete-custom-row', $table).on('click', function(e) {
-                deleteRow($(this));
-                e.preventDefault();
-              });
-              $(".crm-multifield-selector").on('click', '.delete-custom-row', function (e) {
-                deleteRow($(this));
-                e.preventDefault();
-              });
-
-              function deleteRow($el) {
+                var $el = $(this);
                 CRM.confirm({
                   message: '{/literal}{ts escape='js'}Are you sure you want to delete this record?{/ts}{literal}'
                 }).on('crmConfirm:yes', function() {
@@ -68,7 +60,8 @@
                     CRM.refreshParent($el);
                   });
                 })
-              }
+                e.preventDefault();
+              });
             });
           </script>
         {/literal}

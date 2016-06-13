@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id: Display.php 36505 2011-10-03 14:19:56Z lobo $
  *
  */
@@ -119,7 +119,10 @@ class CRM_Admin_Form_Preferences_Mailing extends CRM_Admin_Form_Preferences {
     $params = $this->controller->exportValues($this->_name);
 
     if (empty($params['write_activity_record'])) {
-      $existingViewOptions = Civi::settings()->get('contact_view_options');
+      $existingViewOptions = CRM_Core_BAO_Setting::getItem(
+        CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+        'contact_view_options'
+      );
 
       $displayValue = CRM_Core_OptionGroup::getValue('contact_view_options', 'CiviMail', 'name');
       $viewOptions = explode(CRM_Core_DAO::VALUE_SEPARATOR, $existingViewOptions);
@@ -127,7 +130,7 @@ class CRM_Admin_Form_Preferences_Mailing extends CRM_Admin_Form_Preferences {
       if (!in_array($displayValue, $viewOptions)) {
         $existingViewOptions .= $displayValue . CRM_Core_DAO::VALUE_SEPARATOR;
 
-        Civi::settings()->set('contact_view_options', $existingViewOptions);
+        CRM_Core_BAO_Setting::setItem($existingViewOptions, CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'contact_view_options');
         CRM_Core_Session::setStatus(ts('We have automatically enabled the Mailings tab for the Contact Summary screens
         so that you can view mailings sent to each contact.'), ts('Saved'), 'success');
       }

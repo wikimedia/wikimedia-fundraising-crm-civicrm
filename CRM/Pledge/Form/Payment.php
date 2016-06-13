@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for processing a pledge payment.
+ * This class generates form components for processing a pledge payment
+ *
  */
 class CRM_Pledge_Form_Payment extends CRM_Core_Form {
 
@@ -45,6 +48,8 @@ class CRM_Pledge_Form_Payment extends CRM_Core_Form {
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
     // check for edit permission
@@ -59,7 +64,10 @@ class CRM_Pledge_Form_Payment extends CRM_Core_Form {
 
   /**
    * Set default values for the form.
-   * the default values are retrieved from the database.
+   * the default values are retrieved from the database
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -79,9 +87,11 @@ class CRM_Pledge_Form_Payment extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
-    // add various dates
+    //add various dates
     $this->addDate('scheduled_date', ts('Scheduled Date'), TRUE);
 
     $this->addMoney('scheduled_amount',
@@ -120,9 +130,12 @@ class CRM_Pledge_Form_Payment extends CRM_Core_Form {
 
   /**
    * Process the form submission.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
-    // get the submitted form values.
+    //get the submitted form values.
     $formValues = $this->controller->exportValues($this->_name);
     $params = array();
     $formValues['scheduled_date'] = CRM_Utils_Date::processDate($formValues['scheduled_date']);
@@ -160,7 +173,7 @@ class CRM_Pledge_Form_Payment extends CRM_Core_Form {
     if (($formValues['scheduled_amount'] - $pledgeScheduledAmount) >= $oldestPaymentAmount['amount']) {
       $adjustTotalAmount = TRUE;
     }
-    // update pledge status
+    //update pledge status
     CRM_Pledge_BAO_PledgePayment::updatePledgePaymentStatus($pledgeId,
       array($params['id']),
       $params['status_id'],

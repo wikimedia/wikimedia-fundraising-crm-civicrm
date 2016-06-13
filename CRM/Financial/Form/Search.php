@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
- */
-
-/**
- * @todo Add comments if possible.
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Financial_Form_Search extends CRM_Core_Form {
 
@@ -80,7 +78,7 @@ class CRM_Financial_Form_Search extends CRM_Core_Form {
     $this->add(
       'select',
       'payment_instrument_id',
-      ts('Payment Method'),
+      ts('Payment Instrument'),
       array('' => ts('- any -')) + CRM_Contribute_PseudoConstant::paymentInstrument(),
       FALSE
     );

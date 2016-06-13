@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,16 +28,21 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class helps to print the labels for contacts.
+ * This class helps to print the labels for contacts
+ *
  */
 class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
 
   /**
    * Build all the data structures needed to build the form.
+   *
+   * @return void
    */
   public function preProcess() {
     $this->set('contactIds', $this->_contactIds);
@@ -46,6 +51,9 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
     CRM_Utils_System::setTitle(ts('Make Mailing Labels'));
@@ -98,13 +106,18 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
 
   /**
    * Process the form after the input has been submitted and validated.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     $fv = $this->controller->exportValues($this->_name);
     $config = CRM_Core_Config::singleton();
     $locName = NULL;
     //get the address format sequence from the config file
-    $mailingFormat = Civi::settings()->get('mailing_format');
+    $mailingFormat = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+      'mailing_format'
+    );
 
     $sequence = CRM_Utils_Address::sequence($mailingFormat);
 
@@ -118,7 +131,9 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
 
     //build the returnproperties
     $returnProperties = array('display_name' => 1, 'contact_type' => 1, 'prefix_id' => 1);
-    $mailingFormat = Civi::settings()->get('mailing_format');
+    $mailingFormat = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+      'mailing_format'
+    );
 
     $mailingFormatProperties = array();
     if ($mailingFormat) {
@@ -169,7 +184,7 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
       $locName = $locType[$fv['location_type_id']];
       $location = array('location' => array("{$locName}" => $address));
       $returnProperties = array_merge($returnProperties, $location);
-      $params[] = array('location_type', '=', array(1 => $fv['location_type_id']), 0, 0);
+      $params[] = array('location_type', '=', array($fv['location_type_id'] => 1), 0, 0);
     }
     else {
       $returnProperties = array_merge($returnProperties, $address);
@@ -229,7 +244,7 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
     foreach ($this->_contactIds as $value) {
       foreach ($custom as $cfID) {
         if (isset($details[0][$value]["custom_{$cfID}"])) {
-          $details[0][$value]["custom_{$cfID}"] = CRM_Core_BAO_CustomField::displayValue($details[0][$value]["custom_{$cfID}"], $cfID);
+          $details[0][$value]["custom_{$cfID}"] = CRM_Core_BAO_CustomField::getDisplayValue($details[0][$value]["custom_{$cfID}"], $cfID, $details[1]);
         }
       }
       $contact = CRM_Utils_Array::value($value, $details['0']);
@@ -365,10 +380,10 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
   }
 
   /**
-   * Create labels (pdf).
+   * Create labels (pdf)
    *
    * @param array $contactRows
-   *   Associated array of contact data.
+   *   Assciated array of contact data.
    * @param string $format
    *   Format in which labels needs to be printed.
    * @param string $fileName

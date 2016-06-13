@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,21 +28,16 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
 class CRM_Event_BAO_Query {
 
   /**
-   * Function get the import/export fields for contribution.
-   *
-   * @param bool $checkPermission
-   *
    * @return array
-   *   Associative array of contribution fields
    */
-  public static function &getFields($checkPermission = TRUE) {
+  public static function &getFields() {
     $fields = array();
     $fields = array_merge($fields, CRM_Event_DAO_Event::import());
     $fields = array_merge($fields, self::getParticipantFields());
@@ -63,6 +58,8 @@ class CRM_Event_BAO_Query {
    * Build select for CiviEvent.
    *
    * @param $query
+   *
+   * @return void
    */
   public static function select(&$query) {
     if (($query->_mode & CRM_Contact_BAO_Query::MODE_EVENT) ||
@@ -283,23 +280,12 @@ class CRM_Event_BAO_Query {
               $exEventId = $val;
               $extractEventId = explode(" ", $val);
               $value = $extractEventId[2];
-              $where = $query->_where[$grouping][$key];
-            }
-            elseif (strstr($val, 'civicrm_event.id IN')) {
-              //extract the first event id if multiple events are selected
-              preg_match('/civicrm_event.id IN \(\"(\d+)/', $val, $matches);
-              $value = $matches[1];
-              $where = $query->_where[$grouping][$key];
+              unset($query->_where[$grouping][$key]);
             }
           }
-          if ($exEventId) {
-            $extractEventId = explode(" ", $exEventId);
-            $value = $extractEventId[2];
-          }
-          elseif (!empty($matches[1])) {
-            $value = $matches[1];
-          }
-          $where = $query->_where[$grouping][$key];
+          $extractEventId = explode(" ", $exEventId);
+          $value = $extractEventId[2];
+          unset($query->_where[$grouping][$key]);
         }
         $thisEventHasParent = CRM_Core_BAO_RecurringEntity::getParentFor($value, 'civicrm_event');
         if ($thisEventHasParent) {
@@ -313,7 +299,7 @@ class CRM_Event_BAO_Query {
             $value = "(" . implode(",", $allEventIds) . ")";
           }
         }
-        $query->_where[$grouping][] = "{$where} OR civicrm_event.id $op {$value}";
+        $query->_where[$grouping][] = "civicrm_event.id $op {$value}";
         $query->_qill[$grouping][] = ts('Include Repeating Events');
         $query->_tables['civicrm_event'] = $query->_whereTables['civicrm_event'] = 1;
         return;
@@ -331,21 +317,20 @@ class CRM_Event_BAO_Query {
             $value,
             "Boolean"
           );
-
-          $isTest = $value ? 'a Test' : 'not a Test';
-          $query->_qill[$grouping][] = ts("Participant is %1", array(1 => $isTest));
+          if ($value) {
+            $query->_qill[$grouping][] = ts("Participant is a Test");
+          }
           $query->_tables['civicrm_participant'] = $query->_whereTables['civicrm_participant'] = 1;
         }
         return;
 
       case 'participant_fee_id':
-        foreach ($value as $k => &$val) {
-          $val = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceFieldValue', $val, 'label');
-          $val = CRM_Core_DAO::escapeString(trim($val));
+        $feeLabel = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceFieldValue', $value, 'label');
+        $feeLabel = CRM_Core_DAO::escapeString(trim($feeLabel));
+        if ($value) {
+          $query->_where[$grouping][] = "civicrm_participant.fee_level LIKE '%$feeLabel%'";
+          $query->_qill[$grouping][] = ts("Fee level") . " contains $feeLabel";
         }
-        $feeLabel = implode('|', $value);
-        $query->_where[$grouping][] = "civicrm_participant.fee_level REGEXP '{$feeLabel}'";
-        $query->_qill[$grouping][] = ts("Fee level") . " IN " . implode(', ', $value);
         $query->_tables['civicrm_participant'] = $query->_whereTables['civicrm_participant'] = 1;
         return;
 
@@ -367,20 +352,16 @@ class CRM_Event_BAO_Query {
       case 'participant_is_pay_later':
       case 'participant_fee_amount':
       case 'participant_fee_level':
-      case 'participant_campaign_id':
-
         $qillName = $name;
         if (in_array($name, array(
-          'participant_status_id',
-          'participant_source',
-          'participant_id',
-          'participant_contact_id',
-          'participant_fee_amount',
-          'participant_fee_level',
-          'participant_is_pay_later',
-          'participant_campaign_id',
-        ))
-        ) {
+              'participant_status_id',
+              'participant_source',
+              'participant_id',
+              'participant_contact_id',
+              'participant_fee_amount',
+              'participant_fee_level',
+              'participant_is_pay_later',
+            ))) {
           $name = str_replace('participant_', '', $name);
           if ($name == 'is_pay_later') {
             $qillName = $name;
@@ -392,10 +373,7 @@ class CRM_Event_BAO_Query {
 
         $dataType = !empty($fields[$qillName]['type']) ? CRM_Utils_Type::typeToString($fields[$qillName]['type']) : 'String';
         $tableName = empty($tableName) ? 'civicrm_participant' : $tableName;
-        if (is_array($value) && in_array(key($value), CRM_Core_DAO::acceptedSQLOperators(), TRUE)) {
-          $op = key($value);
-          $value = $value[$op];
-        }
+
         $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("$tableName.$name", $op, $value, $dataType);
 
         list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Event_DAO_Participant', $name, $value, $op);
@@ -442,12 +420,11 @@ class CRM_Event_BAO_Query {
       case 'event_title':
         $qillName = $name;
         if (in_array($name, array(
-            'event_id',
-            'event_title',
-            'event_is_public',
-          )
-        )
-        ) {
+              'event_id',
+              'event_title',
+              'event_is_public',
+            )
+          )) {
           $name = str_replace('event_', '', $name);
         }
         $dataType = !empty($fields[$qillName]['type']) ? CRM_Utils_Type::typeToString($fields[$qillName]['type']) : 'String';
@@ -459,6 +436,19 @@ class CRM_Event_BAO_Query {
         }
         list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Event_DAO_Event', $name, $value, $op);
         $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => $fields[$qillName]['title'], 2 => $op, 3 => $value));
+        return;
+
+      case 'participant_campaign_id':
+        if (CRM_Utils_Array::value($op, $value)) {
+          $value = $value[$op];
+        }
+        $campParams = array(
+          'op' => $op,
+          'campaign' => $value,
+          'grouping' => $grouping,
+          'tableName' => 'civicrm_participant',
+        );
+        CRM_Campaign_BAO_Query::componentSearchClause($campParams, $query);
         return;
     }
   }
@@ -478,8 +468,7 @@ class CRM_Event_BAO_Query {
         break;
 
       case 'civicrm_event':
-        //CRM-17121
-        $from = " LEFT JOIN civicrm_event ON civicrm_participant.event_id = civicrm_event.id ";
+        $from = " INNER JOIN civicrm_event ON civicrm_participant.event_id = civicrm_event.id ";
         break;
 
       case 'event_type':
@@ -525,7 +514,7 @@ class CRM_Event_BAO_Query {
    *
    * @return array|null
    */
-  public static function defaultReturnProperties(
+  public  static function defaultReturnProperties(
     $mode,
     $includeCustomFields = TRUE
   ) {
@@ -587,7 +576,6 @@ class CRM_Event_BAO_Query {
     $form->addEntityRef('event_id', ts('Event Name'), array(
         'entity' => 'event',
         'placeholder' => ts('- any -'),
-        'multiple' => 1,
         'select' => array('minimumInputLength' => 0),
       )
     );
@@ -600,41 +588,20 @@ class CRM_Event_BAO_Query {
         ),
       )
     );
-    $obj = new CRM_Report_Form_Event_ParticipantListing();
-    $form->add('select', 'participant_fee_id',
-       ts('Fee Level'),
-       $obj->getPriceLevels(),
-       FALSE, array('class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -'))
-    );
+    $form->add('text', 'participant_fee_id', ts('Fee Level'), array('class' => 'big crm-ajax-select'));
 
     CRM_Core_Form_Date::buildDateRange($form, 'event', 1, '_start_date_low', '_end_date_high', ts('From'), FALSE);
 
     CRM_Core_Form_Date::buildDateRange($form, 'participant', 1, '_register_date_low', '_register_date_high', ts('From'), FALSE);
 
-    $form->addElement('hidden', 'event_date_range_error');
-    $form->addElement('hidden', 'participant_date_range_error');
-    $form->addFormRule(array('CRM_Event_BAO_Query', 'formRule'), $form);
-
     $form->addElement('checkbox', "event_include_repeating_events", NULL, ts('Include participants from all events in the %1 series', array(1 => '<em>%1</em>')));
 
     $form->addSelect('participant_status_id',
-      array(
-        'entity' => 'participant',
-        'label' => ts('Participant Status'),
-        'multiple' => 'multiple',
-        'option_url' => NULL,
-        'placeholder' => ts('- any -'),
-      )
+      array('entity' => 'participant', 'label' => ts('Participant Status'), 'multiple' => 'multiple', 'option_url' => NULL, 'placeholder' => ts('- any -'))
     );
 
     $form->addSelect('participant_role_id',
-      array(
-        'entity' => 'participant',
-        'label' => ts('Participant Role'),
-        'multiple' => 'multiple',
-        'option_url' => NULL,
-        'placeholder' => ts('- any -'),
-      )
+      array('entity' => 'participant', 'label' => ts('Participant Role'), 'multiple' => 'multiple', 'option_url' => NULL, 'placeholder' => ts('- any -'))
     );
 
     $form->addYesNo('participant_test', ts('Participant is a Test?'), TRUE);
@@ -653,7 +620,11 @@ class CRM_Event_BAO_Query {
         foreach ($group['fields'] as $field) {
           $fieldId = $field['id'];
           $elementName = 'custom_' . $fieldId;
-          CRM_Core_BAO_CustomField::addQuickFormElement($form, $elementName, $fieldId, FALSE, TRUE);
+          CRM_Core_BAO_CustomField::addQuickFormElement($form,
+            $elementName,
+            $fieldId,
+            FALSE, FALSE, TRUE
+          );
         }
       }
     }
@@ -679,39 +650,6 @@ class CRM_Event_BAO_Query {
     if (!empty($tables['civicrm_event'])) {
       $tables = array_merge(array('civicrm_participant' => 1), $tables);
     }
-  }
-
-  /**
-   * Check if the values in the date range are in correct chronological order.
-   *
-   * @todo Get this to work with CRM_Utils_Rule::validDateRange
-   *
-   * @param array $fields
-   * @param array $files
-   * @param CRM_Core_Form $form
-   *
-   * @return bool|array
-   */
-  public static function formRule($fields, $files, $form) {
-    $errors = array();
-
-    if ((empty($fields['event_start_date_low']) || empty($fields['event_end_date_high'])) && (empty($fields['participant_register_date_low']) || empty($fields['participant_register_date_high']))) {
-      return TRUE;
-    }
-    $lowDate = strtotime($fields['event_start_date_low']);
-    $highDate = strtotime($fields['event_end_date_high']);
-
-    if ($lowDate > $highDate) {
-      $errors['event_date_range_error'] = ts('Please check that your Event Date Range is in correct chronological order.');
-    }
-
-    $lowDate1 = strtotime($fields['participant_register_date_low']);
-    $highDate1 = strtotime($fields['participant_register_date_high']);
-
-    if ($lowDate1 > $highDate1) {
-      $errors['participant_date_range_error'] = ts('Please check that your Registration Date Range is in correct chronological order.');
-    }
-    return empty($errors) ? TRUE : $errors;
   }
 
 }

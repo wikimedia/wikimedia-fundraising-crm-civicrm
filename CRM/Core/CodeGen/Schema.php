@@ -108,8 +108,14 @@ class CRM_Core_CodeGen_Schema extends CRM_Core_CodeGen_BaseTask {
     require_once 'CRM/Core/Config.php';
     $config = CRM_Core_Config::singleton(FALSE);
     $locales = array();
-    $localeDir = CRM_Core_I18n::getResourceDir();
+    if (substr($config->gettextResourceDir, 0, 1) === '/') {
+      $localeDir = $config->gettextResourceDir;
+    }
+    else {
+      $localeDir = '../' . $config->gettextResourceDir;
+    }
     if (file_exists($localeDir)) {
+      $config->gettextResourceDir = $localeDir;
       $locales = preg_grep('/^[a-z][a-z]_[A-Z][A-Z]$/', scandir($localeDir));
     }
 

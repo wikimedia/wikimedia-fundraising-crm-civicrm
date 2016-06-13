@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Financial_BAO_FinancialTypeAccount extends CRM_Financial_DAO_EntityFinancialAccount {
 
@@ -105,14 +107,14 @@ class CRM_Financial_BAO_FinancialTypeAccount extends CRM_Financial_DAO_EntityFin
    *
    */
   public static function del($financialTypeAccountId, $accountId = NULL) {
-    // check if financial type is present
+    //checking if financial type is present
     $check = FALSE;
     $relationValues = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_EntityFinancialAccount', 'account_relationship');
 
     $financialTypeId = CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_EntityFinancialAccount', $financialTypeAccountId, 'entity_id');
-    // check dependencies
+    //check dependencies
     // FIXME more table containing financial_type_id to come
-    $dependency = array(
+    $dependancy = array(
       array('Contribute', 'Contribution'),
       array('Contribute', 'ContributionPage'),
       array('Member', 'MembershipType'),
@@ -123,7 +125,7 @@ class CRM_Financial_BAO_FinancialTypeAccount extends CRM_Financial_DAO_EntityFin
       array('Price', 'LineItem'),
     );
 
-    foreach ($dependency as $name) {
+    foreach ($dependancy as $name) {
       $daoString = 'CRM_' . $name[0] . '_DAO_' . $name[1];
       $dao = new $daoString();
       $dao->financial_type_id = $financialTypeId;
@@ -144,7 +146,7 @@ class CRM_Financial_BAO_FinancialTypeAccount extends CRM_Financial_DAO_EntityFin
       return CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/admin/financial/financialType/accounts', "reset=1&action=browse&aid={$accountId}"));
     }
 
-    // delete from financial Type table
+    //delete from financial Type table
     $financialType = new CRM_Financial_DAO_EntityFinancialAccount();
     $financialType->id = $financialTypeAccountId;
     $financialType->find(TRUE);
@@ -223,9 +225,8 @@ WHERE cog.name = 'payment_instrument' ";
    */
   public static function createDefaultFinancialAccounts($financialType) {
     $titles = array();
-    $financialAccountTypeID = CRM_Core_OptionGroup::values('financial_account_type', FALSE, FALSE, FALSE, NULL, 'name');
-    $accountRelationship    = CRM_Core_OptionGroup::values('account_relationship', FALSE, FALSE, FALSE, NULL, 'name');
-
+    $financialAccountTypeID = CRM_Core_PseudoConstant::accountOptionValues('financial_account_type');
+    $accountRelationship = CRM_Core_PseudoConstant::accountOptionValues('account_relationship');
     $relationships = array(
       array_search('Accounts Receivable Account is', $accountRelationship) => array_search('Asset', $financialAccountTypeID),
       array_search('Expense Account is', $accountRelationship) => array_search('Expenses', $financialAccountTypeID),

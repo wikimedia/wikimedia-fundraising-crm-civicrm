@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,10 +28,13 @@
 /**
  *
  * @package CRM
+ * $Id$
+ *
  */
 
 /**
- * Dummy page for details of Email.
+ * Dummy page for details of Email
+ *
  */
 class CRM_Contact_Page_View_Useradd extends CRM_Core_Page {
 
@@ -39,6 +42,8 @@ class CRM_Contact_Page_View_Useradd extends CRM_Core_Page {
    * Run the page.
    *
    * This method is called after the page is created.
+   *
+   * @return void
    */
   public function run() {
     $controller = new CRM_Core_Controller_Simple('CRM_Contact_Form_Task_Useradd',

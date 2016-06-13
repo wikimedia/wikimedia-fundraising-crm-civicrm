@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class provides the functionality to create PDF letter for a group of contacts or a single contact.
+ * This class provides the functionality to create PDF letter for a group of
+ * contacts or a single contact.
  */
 class CRM_Contact_Form_Task_PDF extends CRM_Contact_Form_Task {
 
@@ -51,6 +54,8 @@ class CRM_Contact_Form_Task_PDF extends CRM_Contact_Form_Task {
 
   /**
    * Build all the data structures needed to build the form.
+   *
+   * @return void
    */
   public function preProcess() {
 
@@ -82,7 +87,13 @@ class CRM_Contact_Form_Task_PDF extends CRM_Contact_Form_Task {
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. Relationship that in edit/view action
+   * the default values are retrieved from the database
+   *
+   *
+   * @return void
+   */
+  /**
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -97,6 +108,9 @@ class CRM_Contact_Form_Task_PDF extends CRM_Contact_Form_Task {
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
     //enable form element
@@ -106,23 +120,12 @@ class CRM_Contact_Form_Task_PDF extends CRM_Contact_Form_Task {
 
   /**
    * Process the form after the input has been submitted and validated.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     CRM_Contact_Form_Task_PDFLetterCommon::postProcess($this);
-  }
-
-  /**
-   * List available tokens for this form.
-   *
-   * @return array
-   */
-  public function listTokens() {
-    $tokens = CRM_Core_SelectValues::contactTokens();
-    if (isset($this->_caseId)) {
-      $caseTypeId = CRM_Core_DAO::getFieldValue('CRM_Case_DAO_Case', $this->_caseId, 'case_type_id');
-      $tokens += CRM_Core_SelectValues::caseTokens($caseTypeId);
-    }
-    return $tokens;
   }
 
 }

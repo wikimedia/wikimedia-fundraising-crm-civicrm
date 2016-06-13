@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -33,7 +33,9 @@
  * run method as explained below.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id: $
+ *
  */
 class CRM_Utils_Wrapper {
 
@@ -57,15 +59,15 @@ class CRM_Utils_Wrapper {
    *  - bool addSequence: should we add a unique sequence number to the end of the key
    *  - bool ignoreKey: should we not set a qfKey for this controller (for standalone forms)
    *
-   * @return mixed
+   * @return void
    */
   public function run($formName, $formLabel = NULL, $arguments = NULL) {
     if (is_array($arguments)) {
       $mode = CRM_Utils_Array::value('mode', $arguments);
-      $imageUpload = !empty($arguments['imageUpload']);
-      $addSequence = !empty($arguments['addSequence']);
-      $attachUpload = !empty($arguments['attachUpload']);
-      $ignoreKey = !empty($arguments['ignoreKey']);
+      $imageUpload = (bool) CRM_Utils_Array::value('imageUpload', $arguments, FALSE);
+      $addSequence = (bool) CRM_Utils_Array::value('addSequence', $arguments, FALSE);
+      $attachUpload = (bool) CRM_Utils_Array::value('attachUpload', $arguments, FALSE);
+      $ignoreKey = (bool) CRM_Utils_Array::value('ignoreKey', $arguments, FALSE);
     }
     else {
       $arguments = array();

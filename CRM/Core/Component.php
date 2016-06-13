@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@
  * CiviCRM components
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -42,6 +42,8 @@ class CRM_Core_Component {
    */
   const COMPONENT_INFO_CLASS = 'Info';
 
+  private static $_info = NULL;
+
   static $_contactSubTypes = NULL;
 
   /**
@@ -50,8 +52,8 @@ class CRM_Core_Component {
    * @return array|null
    */
   private static function &_info($force = FALSE) {
-    if (!isset(Civi::$statics[__CLASS__]['info'])|| $force) {
-      Civi::$statics[__CLASS__]['info'] = array();
+    if (self::$_info == NULL || $force) {
+      self::$_info = array();
       $c = array();
 
       $config = CRM_Core_Config::singleton();
@@ -59,12 +61,12 @@ class CRM_Core_Component {
 
       foreach ($c as $name => $comp) {
         if (in_array($name, $config->enableComponents)) {
-          Civi::$statics[__CLASS__]['info'][$name] = $comp;
+          self::$_info[$name] = $comp;
         }
       }
     }
 
-    return Civi::$statics[__CLASS__]['info'];
+    return self::$_info;
   }
 
   /**
@@ -88,8 +90,10 @@ class CRM_Core_Component {
    * @throws Exception
    */
   public static function &getComponents($force = FALSE) {
-    if (!isset(Civi::$statics[__CLASS__]['all']) || $force) {
-      Civi::$statics[__CLASS__]['all'] = array();
+    static $_cache = NULL;
+
+    if (!$_cache || $force) {
+      $_cache = array();
 
       $cr = new CRM_Core_DAO_Component();
       $cr->find(FALSE);
@@ -100,12 +104,12 @@ class CRM_Core_Component {
         if ($infoObject->info['name'] !== $cr->name) {
           CRM_Core_Error::fatal("There is a discrepancy between name in component registry and in info file ({$cr->name}).");
         }
-        Civi::$statics[__CLASS__]['all'][$cr->name] = $infoObject;
+        $_cache[$cr->name] = $infoObject;
         unset($infoObject);
       }
     }
 
-    return Civi::$statics[__CLASS__]['all'];
+    return $_cache;
   }
 
   /**
@@ -230,6 +234,22 @@ class CRM_Core_Component {
       $items = array_merge($items, $ret);
     }
     return $items;
+  }
+
+  /**
+   * @param $config
+   * @param bool $oldMode
+   *
+   * @return null
+   */
+  public static function addConfig(&$config, $oldMode = FALSE) {
+    $info = self::_info();
+
+    foreach ($info as $name => $comp) {
+      $cfg = $comp->getConfigObject();
+      $cfg->add($config, $oldMode);
+    }
+    return NULL;
   }
 
   /**
@@ -436,10 +456,6 @@ class CRM_Core_Component {
 
   /**
    * Get components info from info file.
-   *
-   * @param string $crmFolderDir
-   *
-   * @return array
    */
   public static function getComponentsFromFile($crmFolderDir) {
     $components = array();

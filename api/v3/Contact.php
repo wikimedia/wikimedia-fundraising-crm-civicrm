@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.7                                                |
+  | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2016                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -49,12 +49,8 @@
  *   API Result Array
  */
 function civicrm_api3_contact_create($params) {
+
   $contactID = CRM_Utils_Array::value('contact_id', $params, CRM_Utils_Array::value('id', $params));
-
-  if ($contactID && !empty($params['check_permissions']) && !CRM_Contact_BAO_Contact_Permission::allow($contactID, CRM_Core_Permission::EDIT)) {
-    throw new \Civi\API\Exception\UnauthorizedException('Permission denied to modify contact record');
-  }
-
   $dupeCheck = CRM_Utils_Array::value('dupe_check', $params, FALSE);
   $values = _civicrm_api3_contact_check_params($params, $dupeCheck);
   if ($values) {
@@ -233,51 +229,30 @@ function _civicrm_api3_contact_get_spec(&$params) {
   $params['state_province_id'] = array(
     'title' => 'Primary Address State Province ID',
     'type' => CRM_Utils_Type::T_INT,
-    'pseudoconstant' => array(
-      'table' => 'civicrm_state_province',
-    ),
   );
   $params['state_province_name'] = array(
     'title' => 'Primary Address State Province Name',
     'type' => CRM_Utils_Type::T_STRING,
-    'pseudoconstant' => array(
-      'table' => 'civicrm_state_province',
-    ),
   );
   $params['state_province'] = array(
     'title' => 'Primary Address State Province',
     'type' => CRM_Utils_Type::T_STRING,
-    'pseudoconstant' => array(
-      'table' => 'civicrm_state_province',
-    ),
   );
   $params['country_id'] = array(
     'title' => 'Primary Address Country ID',
     'type' => CRM_Utils_Type::T_INT,
-    'pseudoconstant' => array(
-      'table' => 'civicrm_country',
-    ),
   );
   $params['country'] = array(
     'title' => 'Primary Address country',
     'type' => CRM_Utils_Type::T_STRING,
-    'pseudoconstant' => array(
-      'table' => 'civicrm_country',
-    ),
   );
   $params['worldregion_id'] = array(
     'title' => 'Primary Address World Region ID',
     'type' => CRM_Utils_Type::T_INT,
-    'pseudoconstant' => array(
-      'table' => 'civicrm_world_region',
-    ),
   );
   $params['worldregion'] = array(
     'title' => 'Primary Address World Region',
     'type' => CRM_Utils_Type::T_STRING,
-    'pseudoconstant' => array(
-      'table' => 'civicrm_world_region',
-    ),
   );
   $params['phone_id'] = array(
     'title' => 'Primary Phone ID',
@@ -374,6 +349,8 @@ function _civicrm_api3_contact_get_supportanomalies(&$params, &$options) {
       $groups = explode(',', $params['filter.group_id']);
     }
     unset($params['filter.group_id']);
+    $groups = array_flip($groups);
+    $groups[key($groups)] = 1;
     $options['input_params']['group'] = $groups;
   }
 }
@@ -384,16 +361,12 @@ function _civicrm_api3_contact_get_supportanomalies(&$params, &$options) {
  * @param array $params
  *   input parameters per getfields
  *
- * @throws \Civi\API\Exception\UnauthorizedException
  * @return array
  *   API Result Array
  */
 function civicrm_api3_contact_delete($params) {
-  $contactID = CRM_Utils_Array::value('id', $params);
 
-  if (!empty($params['check_permissions']) && !CRM_Contact_BAO_Contact_Permission::allow($contactID, CRM_Core_Permission::DELETE)) {
-    throw new \Civi\API\Exception\UnauthorizedException('Permission denied to modify contact record');
-  }
+  $contactID = CRM_Utils_Array::value('id', $params);
 
   $session = CRM_Core_Session::singleton();
   if ($contactID == $session->get('userID')) {
@@ -797,7 +770,7 @@ function civicrm_api3_contact_getquick($params) {
   }
   $from = implode(' ', $from);
   $limit = (int) CRM_Utils_Array::value('limit', $params);
-  $limit = $limit > 0 ? $limit : Civi::settings()->get('search_autocomplete_count');
+  $limit = $limit > 0 ? $limit : CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SEARCH_PREFERENCES_NAME, 'search_autocomplete_count', NULL, 10);
 
   // add acl clause here
   list($aclFrom, $aclWhere) = CRM_Contact_BAO_Contact_Permission::cacheClause('cc');
@@ -814,9 +787,9 @@ function civicrm_api3_contact_getquick($params) {
     $currEmpDetails = array();
     if (!empty($params['employee_id'])) {
       if ($currentEmployer = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact',
-          (int) $params['employee_id'],
-          'employer_id'
-        )) {
+        (int) $params['employee_id'],
+        'employer_id'
+      )) {
         if ($config->includeWildCardInName) {
           $strSearch = "%$name%";
         }
@@ -921,7 +894,7 @@ function civicrm_api3_contact_getquick($params) {
 
   //CRM-5954
   $query = "
-        SELECT DISTINCT(id), data, sort_name {$selectAliases}, exactFirst
+        SELECT DISTINCT(id), data, sort_name {$selectAliases}
         FROM   (
             ( SELECT IF($table_name.$field_name = '{$name}', 0, 1) as exactFirst, cc.id as id, CONCAT_WS( ' :: ',
             {$actualSelectElements} )

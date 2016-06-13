@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,15 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Class to represent the actions that can be performed on a group of contacts used by the search forms.
+ * class to represent the actions that can be performed on a group of contacts
+ * used by the search forms
+ *
  */
 class CRM_Contact_Task {
   const
@@ -80,23 +84,23 @@ class CRM_Contact_Task {
     if (!self::$_tasks) {
       self::$_tasks = array(
         self::GROUP_CONTACTS => array(
-          'title' => ts('Group - add contacts'),
+          'title' => ts('Add Contacts to Group'),
           'class' => 'CRM_Contact_Form_Task_AddToGroup',
         ),
         self::REMOVE_CONTACTS => array(
-          'title' => ts('Group - remove contacts'),
+          'title' => ts('Remove Contacts from Group'),
           'class' => 'CRM_Contact_Form_Task_RemoveFromGroup',
         ),
         self::TAG_CONTACTS => array(
-          'title' => ts('Tag - add to contacts'),
+          'title' => ts('Tag Contacts (assign tags)'),
           'class' => 'CRM_Contact_Form_Task_AddToTag',
         ),
         self::REMOVE_TAGS => array(
-          'title' => ts('Tag - remove from contacts'),
+          'title' => ts('Untag Contacts (remove tags)'),
           'class' => 'CRM_Contact_Form_Task_RemoveFromTag',
         ),
         self::EXPORT_CONTACTS => array(
-          'title' => ts('Export contacts'),
+          'title' => ts('Export Contacts'),
           'class' => array(
             'CRM_Export_Form_Select',
             'CRM_Export_Form_Map',
@@ -104,41 +108,46 @@ class CRM_Contact_Task {
           'result' => FALSE,
         ),
         self::EMAIL_CONTACTS => array(
-          'title' => ts('Email - send now (to 50 or less)'),
+          'title' => ts('Send Email to Contacts'),
           'class' => 'CRM_Contact_Form_Task_Email',
           'result' => TRUE,
         ),
+        self::SMS_CONTACTS => array(
+          'title' => ts('Send SMS to Contacts'),
+          'class' => 'CRM_Contact_Form_Task_SMS',
+          'result' => TRUE,
+        ),
         self::DELETE_CONTACTS => array(
-          'title' => ts('Delete contacts'),
+          'title' => ts('Delete Contacts'),
           'class' => 'CRM_Contact_Form_Task_Delete',
           'result' => FALSE,
         ),
         self::RECORD_CONTACTS => array(
-          'title' => ts('Add activity'),
+          'title' => ts('Record Activity for Contacts'),
           'class' => 'CRM_Activity_Form_Activity',
         ),
         self::SAVE_SEARCH => array(
-          'title' => ts('Group - create smart group'),
+          'title' => ts('New Smart Group'),
           'class' => 'CRM_Contact_Form_Task_SaveSearch',
           'result' => TRUE,
         ),
         self::SAVE_SEARCH_UPDATE => array(
-          'title' => ts('Group - update smart group'),
+          'title' => ts('Update Smart Group'),
           'class' => 'CRM_Contact_Form_Task_SaveSearch_Update',
           'result' => TRUE,
         ),
         self::PRINT_CONTACTS => array(
-          'title' => ts('Print selected rows'),
+          'title' => ts('Print Selected Rows'),
           'class' => 'CRM_Contact_Form_Task_Print',
           'result' => FALSE,
         ),
         self::LABEL_CONTACTS => array(
-          'title' => ts('Mailing labels - print'),
+          'title' => ts('Mailing Labels'),
           'class' => 'CRM_Contact_Form_Task_Label',
           'result' => TRUE,
         ),
         self::BATCH_UPDATE => array(
-          'title' => ts('Update multiple contacts'),
+          'title' => ts('Batch Update via Profile'),
           'class' => array(
             'CRM_Contact_Form_Task_PickProfile',
             'CRM_Contact_Form_Task_Batch',
@@ -146,44 +155,34 @@ class CRM_Contact_Task {
           'result' => TRUE,
         ),
         self::PRINT_FOR_CONTACTS => array(
-          'title' => ts('PDF letters - print'),
+          'title' => ts('Print PDF Letter for Contacts'),
           'class' => 'CRM_Contact_Form_Task_PDF',
           'result' => TRUE,
         ),
         self::EMAIL_UNHOLD => array(
-          'title' => ts('Email - unhold addresses'),
+          'title' => ts('Unhold Emails'),
           'class' => 'CRM_Contact_Form_Task_Unhold',
         ),
         self::COMMUNICATION_PREFS => array(
-          'title' => ts('Communication preferences - alter'),
+          'title' => ts('Alter Contact Communication Preferences'),
           'class' => 'CRM_Contact_Form_Task_AlterPreferences',
         ),
         self::RESTORE => array(
-          'title' => ts('Restore contacts from trash'),
+          'title' => ts('Restore Contacts'),
           'class' => 'CRM_Contact_Form_Task_Delete',
           'result' => FALSE,
         ),
         self::DELETE_PERMANENTLY => array(
-          'title' => ts('Delete permanently'),
+          'title' => ts('Delete Permanently'),
           'class' => 'CRM_Contact_Form_Task_Delete',
           'result' => FALSE,
         ),
       );
 
-      //CRM-16329, if SMS provider is configured show sms action.
-      $providersCount = CRM_SMS_BAO_Provider::activeProviderCount();
-      if ($providersCount) {
-        self::$_tasks[self::SMS_CONTACTS] = array(
-          'title' => ts('SMS - schedule/send'),
-          'class' => 'CRM_Contact_Form_Task_SMS',
-          'result' => TRUE,
-        );
-      }
-
       if (CRM_Contact_BAO_ContactType::isActive('Household')) {
-        $label = CRM_Contact_BAO_ContactType::getLabel('household');
+        $label = CRM_Contact_BAO_ContactType::getLabel('Household');
         self::$_tasks[self::HOUSEHOLD_CONTACTS] = array(
-          'title' => ts('Add relationship - to %1',
+          'title' => ts('Add Contacts to %1',
             array(1 => $label)
           ),
           'class' => 'CRM_Contact_Form_Task_AddToHousehold',
@@ -191,9 +190,9 @@ class CRM_Contact_Task {
       }
 
       if (CRM_Contact_BAO_ContactType::isActive('Organization')) {
-        $label = CRM_Contact_BAO_ContactType::getLabel('organization');
+        $label = CRM_Contact_BAO_ContactType::getLabel('Organization');
         self::$_tasks[self::ORGANIZATION_CONTACTS] = array(
-          'title' => ts('Add relationship - to %1',
+          'title' => ts('Add Contacts to %1',
             array(1 => $label)
           ),
           'class' => 'CRM_Contact_Form_Task_AddToOrganization',
@@ -202,7 +201,7 @@ class CRM_Contact_Task {
 
       if (CRM_Core_Permission::check('merge duplicate contacts')) {
         self::$_tasks[self::MERGE_CONTACTS] = array(
-          'title' => ts('Merge contacts'),
+          'title' => ts('Merge Contacts'),
           'class' => 'CRM_Contact_Form_Task_Merge',
           'result' => TRUE,
         );
@@ -225,7 +224,7 @@ class CRM_Contact_Task {
         )
       ) {
         self::$_tasks[self::MAP_CONTACTS] = array(
-          'title' => ts('Map contacts'),
+          'title' => ts('Map Contacts'),
           'class' => 'CRM_Contact_Form_Task_Map',
           'result' => FALSE,
         );
@@ -233,25 +232,57 @@ class CRM_Contact_Task {
 
       if (CRM_Core_Permission::access('CiviEvent')) {
         self::$_tasks[self::ADD_EVENT] = array(
-          'title' => ts('Register participants for event'),
+          'title' => ts('Add Contacts to Event'),
           'class' => 'CRM_Event_Form_Participant',
         );
       }
 
-      if (CRM_Core_Permission::access('CiviMail')
-        || (CRM_Mailing_Info::workflowEnabled() && CRM_Core_Permission::check('create mailings'))
-      ) {
-        self::$_tasks[self::CREATE_MAILING] = array(
-          'title' => ts('Email - schedule/send via CiviMail'),
-          'class' => 'CRM_Mailing_Form_Task_AdhocMailing',
-          'result' => FALSE,
-        );
+      if (defined('CIVICRM_CIVIMAIL_UI_LEGACY')) {
+        if (CRM_Core_Permission::access('CiviMail')) {
+          self::$_tasks[self::CREATE_MAILING] = array(
+            'title' => ts('Schedule/Send a Mass Mailing'),
+            'class' => array(
+              'CRM_Mailing_Form_Group',
+              'CRM_Mailing_Form_Settings',
+              'CRM_Mailing_Form_Upload',
+              'CRM_Mailing_Form_Test',
+              'CRM_Mailing_Form_Schedule',
+            ),
+            'result' => FALSE,
+          );
+        }
+        elseif (CRM_Mailing_Info::workflowEnabled() &&
+          CRM_Core_Permission::check('create mailings')
+        ) {
+          self::$_tasks[self::CREATE_MAILING] = array(
+            'title' => ts('Create a Mass Mailing'),
+            'class' => array(
+              'CRM_Mailing_Form_Group',
+              'CRM_Mailing_Form_Settings',
+              'CRM_Mailing_Form_Upload',
+              'CRM_Mailing_Form_Test',
+            ),
+            'result' => FALSE,
+          );
+        }
+      }
+      else {
+        if (CRM_Core_Permission::access('CiviMail')
+          || (CRM_Mailing_Info::workflowEnabled() && CRM_Core_Permission::check('create mailings'))
+        ) {
+          self::$_tasks[self::CREATE_MAILING] = array(
+            'title' => ts('Schedule/Send a Mass Mailing'),
+            'class' => 'CRM_Mailing_Form_Task_AdhocMailing',
+            'result' => FALSE,
+          );
+        }
       }
 
       self::$_tasks += CRM_Core_Component::taskList();
 
       CRM_Utils_Hook::searchTasks('contact', self::$_tasks);
 
+      asort(self::$_tasks);
     }
   }
 
@@ -284,6 +315,7 @@ class CRM_Contact_Task {
     ) {
       unset($titles[self::DELETE_PERMANENTLY]);
     }
+    asort($titles);
     return $titles;
   }
 

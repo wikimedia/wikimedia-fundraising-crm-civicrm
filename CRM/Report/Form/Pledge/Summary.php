@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -85,9 +85,6 @@ class CRM_Report_Form_Pledge_Summary extends CRM_Report_Form {
             'no_display' => TRUE,
             'required' => FALSE,
           ),
-          'financial_type_id' => array(
-            'title' => ts('Financial Type'),
-          ),
           'currency' => array(
             'required' => TRUE,
             'no_display' => TRUE,
@@ -142,15 +139,8 @@ class CRM_Report_Form_Pledge_Summary extends CRM_Report_Form {
           'sid' => array(
             'name' => 'status_id',
             'title' => ts('Pledge Status'),
-            'type' => CRM_Utils_Type::T_INT,
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
             'options' => CRM_Core_OptionGroup::values('contribution_status'),
-          ),
-          'financial_type_id' => array(
-            'title' => ts('Financial Type'),
-            'type' => CRM_Utils_Type::T_INT,
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Contribute_PseudoConstant::financialType(),
           ),
         ),
         'group_bys' => array(
@@ -164,9 +154,6 @@ class CRM_Report_Form_Pledge_Summary extends CRM_Report_Form {
           ),
           'status_id' => array(
             'title' => ts('Pledge Status'),
-          ),
-          'financial_type_id' => array(
-            'title' => ts('Financial Type'),
           ),
         ),
       ),
@@ -401,13 +388,6 @@ class CRM_Report_Form_Pledge_Summary extends CRM_Report_Form {
         );
         $rows[$rowNum]['civicrm_contact_sort_name_link'] = $url;
         $rows[$rowNum]['civicrm_contact_sort_name_hover'] = ts("View Contact Summary for this Contact.");
-        $entryFound = TRUE;
-      }
-
-      if (array_key_exists('civicrm_pledge_financial_type_id', $row)) {
-        if ($value = $row['civicrm_pledge_financial_type_id']) {
-          $rows[$rowNum]['civicrm_pledge_financial_type_id'] = CRM_Contribute_PseudoConstant::financialType($value, FALSE);
-        }
         $entryFound = TRUE;
       }
 

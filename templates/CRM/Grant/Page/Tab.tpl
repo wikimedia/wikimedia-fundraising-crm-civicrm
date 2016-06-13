@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -33,7 +33,7 @@
         {capture assign=newGrantURL}{crmURL p="civicrm/contact/view/grant" q="reset=1&action=add&cid=`$contactId`&context=grant"}{/capture}
     {/if}
 
-    <div class="help">
+    <div id="help">
         <p>{ts 1=$displayName}This page lists all grants for %1 since inception.{/ts}
         {if $permission EQ 'edit'}
           {capture assign=link}accesskey='N' href='{$newGrantURL}' class='action-item'{/capture}
@@ -43,7 +43,7 @@
     </div>
 {if $action eq 16 and $permission EQ 'edit'}
             <div class="action-link">
-            <a href="{$newGrantURL}" class="button"><span><i class="crm-i fa-plus-circle"></i> {ts}Add Grant{/ts}</span></a><br/><br/>
+            <a href="{$newGrantURL}" class="button"><span><div class="icon ui-icon-circle-plus"></div>{ts}Add Grant{/ts}</span></a><br/><br/>
             </div>
         {/if}
     {if $rows}

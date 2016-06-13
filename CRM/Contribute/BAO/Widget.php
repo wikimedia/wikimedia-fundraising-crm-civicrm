@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,12 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
  */
 
 /**
- * Class to retrieve information about a contribution page.
+ * Class to retrieve information about a contribution page
  */
 class CRM_Contribute_BAO_Widget extends CRM_Contribute_DAO_Widget {
 
@@ -40,12 +41,11 @@ class CRM_Contribute_BAO_Widget extends CRM_Contribute_DAO_Widget {
    * Gets all campaign related data and returns it as a std class.
    *
    * @param int $contributionPageID
-   * @param int $widgetID
-   * @param bool $includePending
+   * @param string $widgetID
    *
    * @return object
    */
-  public static function getContributionPageData($contributionPageID, $widgetID, $includePending = FALSE) {
+  public static function getContributionPageData($contributionPageID, $widgetID) {
     $config = CRM_Core_Config::singleton();
 
     $data = array();
@@ -78,18 +78,12 @@ class CRM_Contribute_BAO_Widget extends CRM_Contribute_DAO_Widget {
     $data['button_title'] = $widget->button_title;
     $data['about'] = $widget->about;
 
-    //check if pending status needs to be included
-    $status = '1';
-    if ($includePending) {
-      $status = '1,2';
-    }
-
     $query = "
             SELECT count( id ) as count,
             sum( total_amount) as amount
             FROM   civicrm_contribution
             WHERE  is_test = 0
-            AND    contribution_status_id IN ({$status})
+            AND    contribution_status_id = 1
             AND    contribution_page_id = %1";
     $params = array(1 => array($contributionPageID, 'Integer'));
     $dao = CRM_Core_DAO::executeQuery($query, $params);

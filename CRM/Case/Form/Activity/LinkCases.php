@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for LinkCase Activity.
+ * This class generates form components for OpenCase Activity
+ *
  */
 class CRM_Case_Form_Activity_LinkCases {
   /**
@@ -41,7 +44,7 @@ class CRM_Case_Form_Activity_LinkCases {
    * @throws Exception
    */
   public static function preProcess(&$form) {
-    if (empty($form->_caseId)) {
+    if (!isset($form->_caseId)) {
       CRM_Core_Error::fatal(ts('Case Id not found.'));
     }
     if (count($form->_caseId) != 1) {
@@ -51,7 +54,6 @@ class CRM_Case_Form_Activity_LinkCases {
     $caseId = CRM_Utils_Array::first($form->_caseId);
 
     $form->assign('clientID', $form->_currentlyViewedContactId);
-    $form->assign('sortName', CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $form->_currentlyViewedContactId, 'sort_name'));
     $form->assign('caseTypeLabel', CRM_Case_BAO_Case::getCaseType($caseId));
 
     // get the related cases for given case.
@@ -60,14 +62,21 @@ class CRM_Case_Form_Activity_LinkCases {
       $relatedCases = CRM_Case_BAO_Case::getRelatedCases($caseId, $form->_currentlyViewedContactId);
       $form->set('relatedCases', empty($relatedCases) ? FALSE : $relatedCases);
     }
+    $excludeCaseIds = array($caseId);
+    if (is_array($relatedCases) && !empty($relatedCases)) {
+      $excludeCaseIds = array_merge($excludeCaseIds, array_keys($relatedCases));
+    }
+    $form->assign('excludeCaseIds', implode(',', $excludeCaseIds));
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. For edit/view mode
+   * the default values are retrieved from the database
+   *
    *
    * @param CRM_Core_Form $form
    *
-   * @return array
+   * @return void
    */
   public static function setDefaultValues(&$form) {
     return $defaults = array();
@@ -77,21 +86,7 @@ class CRM_Case_Form_Activity_LinkCases {
    * @param CRM_Core_Form $form
    */
   public static function buildQuickForm(&$form) {
-    $excludeCaseIds = (array) $form->_caseId;
-    $relatedCases = $form->get('relatedCases');
-    if (is_array($relatedCases) && !empty($relatedCases)) {
-      $excludeCaseIds = array_merge($excludeCaseIds, array_keys($relatedCases));
-    }
-    $form->addEntityRef('link_to_case_id', ts('Link To Case'), array(
-      'entity' => 'Case',
-      'api' => array(
-        'extra' => array('case_id.case_type_id.title', 'contact_id.sort_name'),
-        'params' => array(
-          'case_id' => array('NOT IN' => $excludeCaseIds),
-          'case_id.is_deleted' => 0,
-        ),
-      ),
-    ), TRUE);
+    $form->add('text', 'link_to_case_id', ts('Link To Case'), array('class' => 'huge'), TRUE);
   }
 
   /**
@@ -130,6 +125,8 @@ class CRM_Case_Form_Activity_LinkCases {
    *
    * @param CRM_Core_Form $form
    * @param array $params
+   *
+   * @return void
    */
   public static function beginPostProcess(&$form, &$params) {
   }
@@ -140,7 +137,9 @@ class CRM_Case_Form_Activity_LinkCases {
    *
    * @param CRM_Core_Form $form
    * @param array $params
-   * @param CRM_Activity_BAO_Activity $activity
+   * @param $activity
+   *
+   * @return void
    */
   public static function endPostProcess(&$form, &$params, &$activity) {
     $activityId = $activity->id;

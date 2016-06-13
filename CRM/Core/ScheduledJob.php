@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@
  * by every scheduled job (cron task) in CiviCRM.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -67,7 +67,7 @@ class CRM_Core_ScheduledJob {
 
       foreach ($lines as $line) {
         $pair = explode("=", $line);
-        if ($pair === FALSE || count($pair) != 2 || trim($pair[0]) == '' || trim($pair[1]) == '') {
+        if (empty($pair[0]) || empty($pair[1])) {
           $this->remarks[] .= 'Malformed parameters!';
           break;
         }
@@ -87,32 +87,9 @@ class CRM_Core_ScheduledJob {
   }
 
   /**
-   * @return void
-   */
-  public function clearScheduledRunDate() {
-    CRM_Core_DAO::executeQuery('UPDATE civicrm_job SET scheduled_run_date = NULL WHERE id = %1',
-      array(
-        '1' => array($this->id, 'Integer'),
-      ));
-  }
-
-  /**
    * @return bool
    */
   public function needsRunning() {
-
-    // CRM-17686
-    // check if the job has a specific scheduled date/time
-    if (!empty($this->scheduled_run_date)) {
-      if (strtotime($this->scheduled_run_date) <= time()) {
-        $this->clearScheduledRunDate();
-        return TRUE;
-      }
-      else {
-        return FALSE;
-      }
-    }
-
     // run if it was never run
     if (empty($this->last_run)) {
       return TRUE;
@@ -123,37 +100,20 @@ class CRM_Core_ScheduledJob {
       case 'Always':
         return TRUE;
 
-      // CRM-17669
-      case 'Yearly':
-        $offset = '+1 year';
-        break;
-
-      case 'Quarter':
-        $offset = '+3 months';
-        break;
-
-      case 'Monthly':
-        $offset = '+1 month';
-        break;
-
-      case 'Weekly':
-        $offset = '+1 week';
+      case 'Hourly':
+        $format = 'YmdH';
         break;
 
       case 'Daily':
-        $offset = '+1 day';
-        break;
-
-      case 'Hourly':
-        $offset = '+1 hour';
+        $format = 'Ymd';
         break;
     }
 
-    $now = strtotime(CRM_Utils_Date::currentDBDate());
-    $lastTime = strtotime($this->last_run);
-    $nextTime = strtotime($offset, $lastTime);
+    $now = CRM_Utils_Date::currentDBDate();
+    $lastTime = date($format, strtotime($this->last_run));
+    $thisTime = date($format, strtotime($now));
 
-    return ($now >= $nextTime);
+    return ($lastTime <> $thisTime);
   }
 
   public function __destruct() {

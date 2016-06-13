@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,9 @@
 <div class="crm-actions-ribbon crm-contribpage-tab-actions-ribbon">
    <ul id="actions">
       <li><div id="crm-contribpage-links-wrapper">
-            {crmButton id="crm-contribpage-links-link" href="#" icon="bars"}{ts}Contribution Links{/ts}{/crmButton}
+            <a id="crm-contribpage-links-link" class="button">
+              <span><div class="icon ui-icon-arrow-1-se css_right"></div>{ts}Contribution Links{/ts}</span>
+            </a>
               <div class="ac_results" id="crm-contribpage-links-list">
                  <div class="crm-contribpage-links-list-inner">
                    <ul>

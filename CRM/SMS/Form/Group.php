@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,16 +28,21 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Choose include / exclude groups and mass sms.
+ * Choose include / exclude groups and mass sms
+ *
  */
 class CRM_SMS_Form_Group extends CRM_Contact_Form_Task {
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
     if (!CRM_SMS_BAO_Provider::activeProviderCount()) {
@@ -50,7 +55,10 @@ class CRM_SMS_Form_Group extends CRM_Contact_Form_Task {
 
   /**
    * Set default values for the form.
-   * The default values are retrieved from the database.
+   * the default values are retrieved from the database
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $mailingID = CRM_Utils_Request::retrieve('mid', 'Integer', $this, FALSE, NULL);
@@ -94,10 +102,12 @@ class CRM_SMS_Form_Group extends CRM_Contact_Form_Task {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
 
-    // Get the context.
+    //get the context
     $context = $this->get('context');
 
     $this->assign('context', $context);
@@ -107,10 +117,10 @@ class CRM_SMS_Form_Group extends CRM_Contact_Form_Task {
       TRUE
     );
 
-    // Get the mailing groups.
+    //get the mailing groups.
     $groups = CRM_Core_PseudoConstant::nestedGroup('Mailing');
 
-    // Get the sms mailing list.
+    //get the sms mailing list
     $mailings = CRM_Mailing_PseudoConstant::completed('sms');
     if (!$mailings) {
       $mailings = array();
@@ -180,10 +190,10 @@ class CRM_SMS_Form_Group extends CRM_Contact_Form_Task {
     $groups = array();
 
     foreach (array(
-      'name',
-      'group_id',
-      'is_sms',
-    ) as $n) {
+               'name',
+               'group_id',
+               'is_sms',
+             ) as $n) {
       if (!empty($values[$n])) {
         $params[$n] = $values[$n];
       }
@@ -242,9 +252,9 @@ class CRM_SMS_Form_Group extends CRM_Contact_Form_Task {
 
       // delete previous includes/excludes, if mailing already existed
       foreach (array(
-        'groups',
-        'mailings',
-      ) as $entity) {
+                 'groups',
+                 'mailings',
+               ) as $entity) {
         $mg = new CRM_Mailing_DAO_MailingGroup();
         $mg->mailing_id = $ids['mailing_id'];
         $mg->entity_table = ($entity == 'groups') ? $groupTableName : $mailingTableName;
@@ -268,6 +278,8 @@ class CRM_SMS_Form_Group extends CRM_Contact_Form_Task {
     // also compute the recipients and store them in the mailing recipients table
     CRM_Mailing_BAO_Mailing::getRecipients($mailing->id,
       $mailing->id,
+      NULL,
+      NULL,
       TRUE,
       FALSE,
       'sms'

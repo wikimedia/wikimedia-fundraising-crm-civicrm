@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,21 +25,21 @@
  +--------------------------------------------------------------------+
  */
 
-use Civi\Payment\System;
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
-
 /**
- * Base class for building payment block for online contribution / event pages.
+ * base class for building payment block for online contribution / event pages
  */
 class CRM_Core_Payment_ProcessorForm {
 
   /**
-   * @param CRM_Contribute_Form_Contribution_Main|CRM_Event_Form_Registration_Register|CRM_Financial_Form_Payment $form
+   * @param CRM_Core_Form $form
    * @param null $type
    * @param null $mode
    *
@@ -57,30 +57,18 @@ class CRM_Core_Payment_ProcessorForm {
       $form->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($form->_type, $form->_mode);
     }
 
-    if (empty($form->_paymentProcessor)) {
-      // This would happen when hitting the back-button on a multi-page form with a $0 selection in play.
-      return;
-    }
     $form->set('paymentProcessor', $form->_paymentProcessor);
-    $form->_paymentObject = System::singleton()->getByProcessor($form->_paymentProcessor);
-
-    $form->assign('suppressSubmitButton', $form->_paymentObject->isSuppressSubmitButtons());
-
-    $form->assign('currency', CRM_Utils_Array::value('currency', $form->_values));
 
     // also set cancel subscription url
     if (!empty($form->_paymentProcessor['is_recur']) && !empty($form->_values['is_recur'])) {
-      $form->_values['cancelSubscriptionUrl'] = $form->_paymentObject->subscriptionURL(NULL, NULL, 'cancel');
+      $form->_paymentObject = CRM_Core_Payment::singleton($mode, $form->_paymentProcessor, $form);
+      $form->_values['cancelSubscriptionUrl'] = $form->_paymentObject->subscriptionURL();
     }
 
     //checks after setting $form->_paymentProcessor
     // we do this outside of the above conditional to avoid
     // saving the country/state list in the session (which could be huge)
-    CRM_Core_Payment_Form::setPaymentFieldsByProcessor(
-      $form,
-      $form->_paymentProcessor,
-      CRM_Utils_Request::retrieve('billing_profile_id', 'String')
-    );
+    CRM_Core_Payment_Form::setPaymentFieldsByProcessor($form, $form->_paymentProcessor);
 
     $form->assign_by_ref('paymentProcessor', $form->_paymentProcessor);
 
@@ -102,7 +90,7 @@ class CRM_Core_Payment_ProcessorForm {
 
     if (!empty($form->_membershipBlock) && !empty($form->_membershipBlock['is_separate_payment']) &&
       (!empty($form->_paymentProcessor['class_name']) &&
-        !$form->_paymentObject->supports('MultipleConcurrentPayments')
+        !(CRM_Utils_Array::value('billing_mode', $form->_paymentProcessor) & CRM_Core_Payment::BILLING_MODE_FORM)
       )
     ) {
 
@@ -123,14 +111,12 @@ class CRM_Core_Payment_ProcessorForm {
     //CRM-15743 - we should not set/create hidden element for pay later
     // because payment processor is not selected
     $processorId = $form->getVar('_paymentProcessorID');
-    $billing_profile_id = CRM_Utils_Request::retrieve('billing_profile_id', 'String');
-    if (!empty($form->_values) && !empty($form->_values['is_billing_required'])) {
-      $billing_profile_id = 'billing';
-    }
+    $isBillingAddressRequiredForPayLater = $form->_isBillingAddressRequiredForPayLater;
     if (!empty($processorId)) {
+      $isBillingAddressRequiredForPayLater = FALSE;
       $form->addElement('hidden', 'hidden_processor', 1);
     }
-    CRM_Core_Payment_Form::buildPaymentForm($form, $form->_paymentProcessor, $billing_profile_id, FALSE);
+    CRM_Core_Payment_Form::buildPaymentForm($form, $form->_paymentProcessor, empty($isBillingAddressRequiredForPayLater), FALSE);
   }
 
 }

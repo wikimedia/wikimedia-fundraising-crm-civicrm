@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -82,9 +82,9 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
    */
   public function __construct() {
 
-    $this->storeDB();
+    $this->setDB();
 
-    $this->parsePropertiesFromUrl();
+    $this->getPropertiesFromUrl();
 
     parent::__construct();
 
@@ -131,10 +131,8 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
   }
 
   /**
-   * Build rows from query.
-   *
-   * @param string $sql
-   * @param array $rows
+   * @param $sql
+   * @param $rows
    */
   public function buildRows($sql, &$rows) {
     // safeguard for when there aren’t any log entries yet
@@ -263,21 +261,38 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
       $q .= '&oid=' . $this->oid;
     }
     $this->assign('revertURL', CRM_Report_Utils_Report::getNextUrl($this->detail, "$q&revert=1", FALSE, TRUE));
-    $this->assign('revertConfirm', ts('Are you sure you want to revert all changes?'));
+    $this->assign('revertConfirm', ts('Are you sure you want to revert all these changes?'));
+  }
+
+  /**
+   * Get the properties that might be in the URL.
+   */
+  protected function getPropertiesFromUrl() {
+    $this->log_conn_id = CRM_Utils_Request::retrieve('log_conn_id', 'String', CRM_Core_DAO::$_nullObject);
+    $this->log_date = CRM_Utils_Request::retrieve('log_date', 'String', CRM_Core_DAO::$_nullObject);
+    $this->cid = CRM_Utils_Request::retrieve('cid', 'Integer', CRM_Core_DAO::$_nullObject);
+    $this->raw = CRM_Utils_Request::retrieve('raw', 'Boolean', CRM_Core_DAO::$_nullObject);
+
+    $this->altered_name = CRM_Utils_Request::retrieve('alteredName', 'String', CRM_Core_DAO::$_nullObject);
+    $this->altered_by = CRM_Utils_Request::retrieve('alteredBy', 'String', CRM_Core_DAO::$_nullObject);
+    $this->altered_by_id = CRM_Utils_Request::retrieve('alteredById', 'Integer', CRM_Core_DAO::$_nullObject);
+    $this->oid = CRM_Utils_Request::retrieve('oid', 'Integer');
   }
 
   /**
    * Store the dsn for the logging database in $this->db.
    */
-  protected function storeDB() {
+  protected function setDB() {
     $dsn = defined('CIVICRM_LOGGING_DSN') ? DB::parseDSN(CIVICRM_LOGGING_DSN) : DB::parseDSN(CIVICRM_DSN);
     $this->db = $dsn['database'];
   }
 
   /**
    * Calculate all the contact related diffs for the change.
+   *
+   * @return array
    */
-  protected function calculateContactDiffs() {
+  protected function calculateContactDiffs(){
     $this->diffs = $this->getAllContactChangesForConnection();
   }
 
@@ -346,20 +361,6 @@ class CRM_Logging_ReportDetail extends CRM_Report_Form {
     else {
       CRM_Utils_System::redirect(CRM_Report_Utils_Report::getNextUrl($this->summary, 'reset=1', FALSE, TRUE));
     }
-  }
-
-  /**
-   * Get the properties that might be in the URL.
-   */
-  protected function parsePropertiesFromUrl() {
-    $this->log_conn_id = CRM_Utils_Request::retrieve('log_conn_id', 'String', CRM_Core_DAO::$_nullObject);
-    $this->log_date = CRM_Utils_Request::retrieve('log_date', 'String', CRM_Core_DAO::$_nullObject);
-    $this->cid = CRM_Utils_Request::retrieve('cid', 'Integer', CRM_Core_DAO::$_nullObject);
-    $this->raw = CRM_Utils_Request::retrieve('raw', 'Boolean', CRM_Core_DAO::$_nullObject);
-
-    $this->altered_name = CRM_Utils_Request::retrieve('alteredName', 'String', CRM_Core_DAO::$_nullObject);
-    $this->altered_by = CRM_Utils_Request::retrieve('alteredBy', 'String', CRM_Core_DAO::$_nullObject);
-    $this->altered_by_id = CRM_Utils_Request::retrieve('alteredById', 'Integer', CRM_Core_DAO::$_nullObject);
   }
 
 }

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contribute_Form_ContributionPage_Widget extends CRM_Contribute_Form_ContributionPage {
   protected $_colors;
@@ -141,7 +143,13 @@ class CRM_Contribute_Form_ContributionPage_Widget extends CRM_Contribute_Form_Co
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. Note that in edit/view mode
+   * the default values are retrieved from the database
+   *
+   *
+   * @return void
+   */
+  /**
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -178,7 +186,7 @@ class CRM_Contribute_Form_ContributionPage_Widget extends CRM_Contribute_Form_Co
       array('onclick' => "widgetBlock(this)")
     );
 
-    $this->add('wysiwyg', 'about', ts('About'), $attributes['about']);
+    $this->addWysiwyg('about', ts('About'), $attributes['about']);
 
     foreach ($this->_fields as $name => $val) {
       $this->add($val[1],

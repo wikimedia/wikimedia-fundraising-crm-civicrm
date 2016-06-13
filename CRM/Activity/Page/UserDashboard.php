@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class is for building event(participation) block on user dashboard.
+ * This class is for building event(participation) block on user dashboard
  */
 class CRM_Activity_Page_UserDashboard extends CRM_Contact_Page_View_UserDashBoard {
 
@@ -64,9 +66,10 @@ class CRM_Activity_Page_UserDashboard extends CRM_Contact_Page_View_UserDashBoar
   }
 
   /**
-   * The main function that is called when the page loads.
+   * the main function that is called when the page
+   * loads, it decides the which action has to be taken for the page.
    *
-   * It decides the which action has to be taken for the page.
+   * @return void
    */
   public function run() {
     parent::preProcess();

@@ -12,7 +12,6 @@
 namespace Civi\Cxn\Rpc;
 
 use Civi\Cxn\Rpc\Exception\CxnException;
-use Civi\Cxn\Rpc\Http\ViaPortHttp;
 
 class Cxn {
 
@@ -62,11 +61,6 @@ class Cxn {
 
     if (!isset($cxn['perm']) || !is_array($cxn['perm'])) {
       $errors['perm'] = 'Missing permisisons';
-    }
-
-    // viaPort is optional. If specified, expect "ip:port" or "host:port"
-    if (!empty($cxn['viaPort']) && !ViaPortHttp::validate($cxn['viaPort'])) {
-      $errors['viaPort'] = 'Malformed proxy address';
     }
 
     return $errors;

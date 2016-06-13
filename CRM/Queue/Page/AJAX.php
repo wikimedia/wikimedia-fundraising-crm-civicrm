@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -104,9 +104,6 @@ class CRM_Queue_Page_AJAX {
 
   /**
    * Performing any view-layer filtering on result and send to client.
-   *
-   * @param string $op
-   * @param array $result
    */
   public static function _return($op, $result) {
     if ($result['is_error']) {

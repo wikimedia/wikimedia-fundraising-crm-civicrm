@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for Location Type.
+ * This class generates form components for Location Type
+ *
  */
 class CRM_Mailing_Form_Component extends CRM_Core_Form {
 
@@ -57,9 +60,11 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
-    $this->applyFilter(array('name', 'subject', 'body_html'), 'trim');
+    $this->applyFilter('__ALL__', 'trim');
 
     $this->add('text', 'name', ts('Name'),
       CRM_Core_DAO::getAttribute('CRM_Mailing_DAO_Component', 'name'), TRUE
@@ -104,6 +109,9 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
 
   /**
    * Set default values for the form.
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -123,6 +131,9 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
 
   /**
    * Process the form submission.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     // store the submitted values in an array

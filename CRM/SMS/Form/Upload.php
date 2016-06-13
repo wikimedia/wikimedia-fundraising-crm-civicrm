@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This file is used to build the form configuring mass sms details.
+ * This file is used to build the form configuring mass sms details
  */
 class CRM_SMS_Form_Upload extends CRM_Core_Form {
   public $_mailingID;
@@ -46,11 +48,15 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
 
   /**
    * Set default values for the form.
+   * the default values are retrieved from the database
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $mailingID = CRM_Utils_Request::retrieve('mid', 'Integer', $this, FALSE, NULL);
 
-    // Need to differentiate new/reuse mailing, CRM-2873.
+    //need to differentiate new/reuse mailing, CRM-2873
     $reuseMailing = FALSE;
     if ($mailingID) {
       $reuseMailing = TRUE;
@@ -72,8 +78,8 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
       $dao->find(TRUE);
       $dao->storeValues($dao, $defaults);
 
-      // We don't want to retrieve template details once it is
-      // set in session.
+      //we don't want to retrieve template details once it is
+      //set in session
       $templateId = $this->get('template');
       $this->assign('templateSelected', $templateId ? $templateId : 0);
       if (isset($defaults['msg_template_id']) && !$templateId) {
@@ -94,7 +100,7 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
       }
     }
 
-    // Fix for CRM-2873.
+    //fix for CRM-2873
     if (!$reuseMailing) {
       $textFilePath = $this->get('textFilePath');
       if ($textFilePath &&
@@ -114,6 +120,8 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     $session = CRM_Core_Session::singleton();
@@ -227,7 +235,7 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
       'SMSsaveTemplateName',
     );
     $msgTemplate = NULL;
-    // Mail template is composed.
+    //mail template is composed
     if ($formValues['upload_type']) {
       $composeParams = array();
       foreach ($composeFields as $key) {
@@ -272,13 +280,13 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
 
     $ids['mailing_id'] = $this->_mailingID;
 
-    // Get the from email address.
+    //get the from email address
     $params['sms_provider_id'] = $formValues['sms_provider_id'];
 
-    // Get the from Name.
+    //get the from Name
     $params['from_name'] = CRM_Core_DAO::getFieldValue('CRM_SMS_DAO_Provider', $params['sms_provider_id'], 'username');
 
-    // Build SMS in mailing table.
+    //Build SMS in mailing table
     CRM_Mailing_BAO_Mailing::create($params, $ids);
   }
 
@@ -315,7 +323,7 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
     require_once 'api/api.php';
     $contact = civicrm_api('contact', 'get', $values);
 
-    // CRM-4524.
+    //CRM-4524
     $contact = reset($contact['values']);
 
     $verp = array_flip(array('optOut', 'reply', 'unsubscribe', 'resubscribe', 'owner'));
@@ -369,8 +377,8 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
 
       $dataErrors = array();
 
-      // Do a full token replacement on a dummy verp, the current
-      // contact and domain, and the first organization.
+      /* Do a full token replacement on a dummy verp, the current
+       * contact and domain, and the first organization. */
 
       // here we make a dummy mailing object so that we
       // can retrieve the tokens that we need to replace
@@ -405,7 +413,7 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
       if (!empty($dataErrors)) {
         $errors['textFile'] = ts('The following errors were detected in %1:', array(
           1 => $name,
-        )) . ' <ul>' . implode('', $dataErrors) . '</ul>';
+          )) . ' <ul>' . implode('', $dataErrors) . '</ul>';
       }
     }
 
@@ -425,16 +433,6 @@ class CRM_SMS_Form_Upload extends CRM_Core_Form {
    */
   public function getTitle() {
     return ts('SMS Content');
-  }
-
-  /**
-   * List available tokens for this form.
-   *
-   * @return array
-   */
-  public function listTokens() {
-    $tokens = CRM_Core_SelectValues::contactTokens();
-    return $tokens;
   }
 
 }

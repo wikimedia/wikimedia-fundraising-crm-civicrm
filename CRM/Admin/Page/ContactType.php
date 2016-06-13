@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Page for displaying list of contact Subtypes.
+ * Page for displaying list of contact Subtypes
  */
 class CRM_Admin_Page_ContactType extends CRM_Core_Page_Basic {
 
@@ -91,9 +93,6 @@ class CRM_Admin_Page_ContactType extends CRM_Core_Page_Basic {
     return self::$_links;
   }
 
-  /**
-   * Run page.
-   */
   public function run() {
     $action = CRM_Utils_Request::retrieve('action', 'String', $this, FALSE, 0);
     $this->assign('action', $action);
@@ -104,9 +103,6 @@ class CRM_Admin_Page_ContactType extends CRM_Core_Page_Basic {
     return parent::run();
   }
 
-  /**
-   * Browse contact types.
-   */
   public function browse() {
     $rows = CRM_Contact_BAO_ContactType::contactTypeInfo(TRUE);
     foreach ($rows as $key => $value) {

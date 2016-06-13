@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_PCP_BAO_PCP extends CRM_PCP_DAO_PCP {
 
@@ -40,7 +42,6 @@ class CRM_PCP_BAO_PCP extends CRM_PCP_DAO_PCP {
   static $_pcpLinks = NULL;
 
   /**
-   * Class constructor.
    */
   public function __construct() {
     parent::__construct();
@@ -53,6 +54,7 @@ class CRM_PCP_BAO_PCP extends CRM_PCP_DAO_PCP {
    *   Reference array contains the values submitted by the form.
    * @param bool $pcpBlock
    *   If true, create or update PCPBlock, else PCP.
+   *
    *
    * @return object
    */
@@ -102,7 +104,7 @@ FROM   civicrm_pcp, civicrm_contact
 WHERE  civicrm_pcp.contact_id = civicrm_contact.id
   AND  civicrm_pcp.id = {$id}
 ";
-    return CRM_Core_DAO::singleValueQuery($query);
+    return CRM_Core_DAO::singleValueQuery($query, CRM_Core_DAO::$_nullArray);
   }
 
   /**
@@ -118,7 +120,6 @@ WHERE  civicrm_pcp.contact_id = civicrm_contact.id
 
     $query = "
 SELECT * FROM civicrm_pcp pcp
-LEFT JOIN civicrm_pcp_block block ON block.id = pcp.pcp_block_id
 WHERE pcp.is_active = 1
   AND pcp.contact_id = %1
 ORDER BY page_type, page_id";
@@ -150,7 +151,7 @@ ORDER BY page_type, page_id";
 
       if ($pcpInfoDao->status_id != $approved || $pcpInfoDao->is_active != 1) {
         $class = 'disabled';
-        if (!$pcpInfoDao->is_tellfriend_enabled) {
+        if (!$pcpInfoDao->tellfriend) {
           $mask -= CRM_Core_Action::DETACH;
         }
       }
@@ -230,8 +231,9 @@ ORDER BY target_entity_type, target_entity_id
    * @param array $pcpId
    *   Contains the pcp ID.
    *
-   * @return float
-   *   Total amount
+   *
+   * @return total
+   *   amount
    */
   public static function thermoMeter($pcpId) {
     $query = "
@@ -246,10 +248,11 @@ WHERE pcp.id = %1 AND cc.contribution_status_id =1 AND cc.is_test = 0";
   }
 
   /**
-   * Show the amount, nickname on honor roll.
+   * Show the amount, nickname on honor roll
    *
    * @param array $pcpId
    *   Contains the pcp ID.
+   *
    *
    * @return array
    */
@@ -263,7 +266,7 @@ WHERE pcp.id = %1 AND cc.contribution_status_id =1 AND cc.is_test = 0";
                   AND cs.pcp_display_in_roll = 1
                   AND contribution_status_id = 1
                   AND is_test = 0";
-    $dao = CRM_Core_DAO::executeQuery($query);
+    $dao = CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
     $honor = array();
     while ($dao->fetch()) {
       $honor[$dao->id]['nickname'] = ucwords($dao->pcp_roll_nickname);
@@ -347,6 +350,8 @@ WHERE pcp.id = %1 AND cc.contribution_status_id =1 AND cc.is_test = 0";
    *
    * @param int $id
    *   Campaign page id.
+   *
+   * @return;
    */
   public static function deleteById($id) {
     CRM_Utils_Hook::pre('delete', 'Campaign', $id, CRM_Core_DAO::$_nullArray);
@@ -368,6 +373,8 @@ WHERE pcp.id = %1 AND cc.contribution_status_id =1 AND cc.is_test = 0";
    *
    * @param CRM_Core_Form $form
    *   Form object.
+   *
+   * @return void
    */
   public static function buildPCPForm($form) {
     $form->addElement('checkbox', 'pcp_active', ts('Enable Personal Campaign Pages?'), NULL, array('onclick' => "return showHideByValue('pcp_active',true,'pcpFields','block','radio',false);"));
@@ -474,8 +481,8 @@ WHERE pcp.id = %1 AND cc.contribution_status_id =1 AND cc.is_test = 0";
    * Process a PCP contribution.
    *
    * @param int $pcpId
-   * @param string $component
-   * @param string $entity
+   * @param $component
+   * @param $entity
    *
    * @return array
    */
@@ -573,12 +580,14 @@ WHERE pcp.id = %1 AND cc.contribution_status_id =1 AND cc.is_test = 0";
   }
 
   /**
-   * Approve / Reject the campaign page.
+   * Approve / Reject the campaign page
    *
    * @param int $id
    *   Campaign page id.
    *
-   * @param bool $is_active
+   * @param $is_active
+   *
+   * @return;
    */
   public static function setIsActive($id, $is_active) {
     switch ($is_active) {
@@ -613,8 +622,7 @@ WHERE pcp.id = %1 AND cc.contribution_status_id =1 AND cc.is_test = 0";
   }
 
   /**
-   * Send notification email to supporter.
-   *
+   * Send notfication email to supporter
    * 1. when their PCP status is changed by site admin.
    * 2. when supporter initially creates a Personal Campaign Page ($isInitial set to true).
    *
@@ -713,12 +721,12 @@ WHERE pcp.id = %1 AND cc.contribution_status_id =1 AND cc.is_test = 0";
   }
 
   /**
-   * Enable / Disable the campaign page.
+   * Enable / Disable the campaign page
    *
    * @param int $id
    *   Campaign page id.
    *
-   * @param bool $is_active
+   * @param $is_active
    * @return null
    */
   public static function setDisable($id, $is_active) {

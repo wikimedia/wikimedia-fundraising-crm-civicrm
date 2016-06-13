@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -37,6 +39,7 @@
  * It delegates the work to lower level subclasses and integrates the changes
  * back in. It also uses a lot of functionality with the CRM API's, so any change
  * made here could potentially affect the API etc. Be careful, be aware, use unit tests.
+ *
  */
 class CRM_Case_Form_CustomData extends CRM_Core_Form {
 
@@ -46,6 +49,13 @@ class CRM_Case_Form_CustomData extends CRM_Core_Form {
    * @var int
    */
   protected $_entityID;
+
+  /**
+   * The custom data type.
+   *
+   * @var int
+   */
+  protected $_cdType;
 
   /**
    * Entity sub type of the table id.
@@ -58,6 +68,10 @@ class CRM_Case_Form_CustomData extends CRM_Core_Form {
    * Pre processing work done here.
    *
    * gets session variables for table name, id of entity in table, type of entity and stores them.
+   *
+   * @param
+   *
+   * @return void
    */
   public function preProcess() {
     $this->_groupID = CRM_Utils_Request::retrieve('groupID', 'Positive', $this, TRUE);
@@ -94,6 +108,8 @@ class CRM_Case_Form_CustomData extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     // make this form an upload since we dont know if the custom data injected dynamically
@@ -114,13 +130,18 @@ class CRM_Case_Form_CustomData extends CRM_Core_Form {
 
   /**
    * Process the user submitted custom data values.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     $params = $this->controller->exportValues($this->_name);
+    $fields = array();
 
     $transaction = new CRM_Core_Transaction();
 
     CRM_Core_BAO_CustomValueTable::postProcess($params,
+      $fields,
       'civicrm_case',
       $this->_entityID,
       'Case'

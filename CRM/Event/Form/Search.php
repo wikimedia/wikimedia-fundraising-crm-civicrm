@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -67,6 +67,8 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
    * Prefix for the controller.
    */
   protected $_prefix = "event_";
+
+  protected $_defaults;
 
   /**
    * The saved search ID retrieved from the GET vars.
@@ -130,7 +132,7 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
       );
     }
 
-    $this->_queryParams = CRM_Contact_BAO_Query::convertFormValues($this->_formValues, 0, FALSE, NULL, array('event_id'));
+    $this->_queryParams = CRM_Contact_BAO_Query::convertFormValues($this->_formValues);
     $selector = new CRM_Event_Selector_Search($this->_queryParams,
       $this->_action,
       NULL,
@@ -170,10 +172,6 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
     parent::buildQuickForm();
     $this->addSortNameField();
 
-    if (CRM_Core_Permission::check('access deleted contacts') and Civi::settings()->get('contact_undelete')) {
-      $this->addElement('checkbox', 'deleted_contacts', ts('Search in Trash') . '<br />' . ts('(deleted contacts)'));
-    }
-
     CRM_Event_BAO_Query::buildSearchForm($this);
 
     $rows = $this->get('rows');
@@ -205,22 +203,15 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
           }
         }
         if (!empty($this->_formValues['participant_role_id'])) {
-          $escapedRoles = array();
-          foreach ((array) $this->_formValues['participant_role_id'] as $participantRole) {
-            $escapedRoles[] = CRM_Utils_Type::escape($participantRole, 'String');
-          }
-          $seatClause[] = "( participant.role_id IN ( '" . implode("' , '", $escapedRoles) . "' ) )";
+          $seatClause[] = '( participant.role_id IN ( ' . implode(' , ', (array) $this->_formValues['participant_role_id']) . ' ) )';
         }
 
         // CRM-15379
         if (!empty($this->_formValues['participant_fee_id'])) {
           $participant_fee_id = $this->_formValues['participant_fee_id'];
-          foreach ($participant_fee_id as $k => &$val) {
-            $val = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceFieldValue', $val, 'label');
-            $val = CRM_Core_DAO::escapeString(trim($val));
-          }
-          $feeLabel = implode('|', $participant_fee_id);
-          $seatClause[] = "( participant.fee_level REGEXP '{$feeLabel}' )";
+          $feeLabel = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceFieldValue', $participant_fee_id, 'label');
+          $feeLabel = CRM_Core_DAO::escapeString(trim($feeLabel));
+          $seatClause[] = "( participant.fee_level LIKE '%$feeLabel%' )";
         }
 
         $seatClause = implode(' AND ', $seatClause);
@@ -258,7 +249,7 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
    * @return string
    */
   protected function getSortNameLabelWithEmail() {
-    return ts('Participant Name or Email');
+    return ts('Participant Name or email');
   }
 
   /**
@@ -297,7 +288,6 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
 
     if (!empty($_POST)) {
       $this->_formValues = $this->controller->exportValues($this->_name);
-      CRM_Contact_BAO_Query::processSpecialFormValue($this->_formValues, array('participant_status_id'));
     }
 
     if (empty($this->_formValues)) {
@@ -318,7 +308,7 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
 
     CRM_Core_BAO_CustomValue::fixCustomFieldValue($this->_formValues);
 
-    $this->_queryParams = CRM_Contact_BAO_Query::convertFormValues($this->_formValues, 0, FALSE, NULL, array('event_id'));
+    $this->_queryParams = CRM_Contact_BAO_Query::convertFormValues($this->_formValues);
 
     $this->set('formValues', $this->_formValues);
     $this->set('queryParams', $this->_queryParams);
@@ -341,7 +331,7 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
       );
     }
 
-    $this->_queryParams = CRM_Contact_BAO_Query::convertFormValues($this->_formValues, 0, FALSE, NULL, array('event_id'));
+    $this->_queryParams = CRM_Contact_BAO_Query::convertFormValues($this->_formValues);
 
     $selector = new CRM_Event_Selector_Search($this->_queryParams,
       $this->_action,
@@ -427,10 +417,11 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
       elseif (is_numeric($status)) {
         $statusTypes = (int) $status;
       }
-      elseif (is_array($status) && !array_key_exists('IN', $status)) {
-        $statusTypes = array_keys($status);
-      }
-      $this->_formValues['participant_status_id'] = is_array($statusTypes) ? array_keys($statusTypes) : $statusTypes;
+
+      $this->_formValues['participant_status_id'] = is_array($statusTypes) ? array('IN' => array_keys($statusTypes)) : $statusTypes;
+    }
+    elseif ($statusTypes = CRM_Utils_Array::value('participant_status_id', $this->_formValues)) {
+      $this->_formValues['participant_status_id'] = is_array($statusTypes) ? array('IN' => $statusTypes) : $statusTypes;
     }
 
     $role = CRM_Utils_Request::retrieve('role', 'String',

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contact_Form_Edit_TagsAndGroups {
 
@@ -40,7 +42,8 @@ class CRM_Contact_Form_Edit_TagsAndGroups {
   const GROUP = 1, TAG = 2, ALL = 3;
 
   /**
-   * Build form elements.
+   * build form elements.
+   * params object $form object of the form
    *
    * @param CRM_Core_Form $form
    *   The form object that we are operating on.
@@ -225,6 +228,8 @@ class CRM_Contact_Form_Edit_TagsAndGroups {
    *   This is used in batch profile(i.e to build multiple blocks).
    *
    * @param string $groupElementType
+   *
+   * @return void
    */
   public static function setDefaults($id, &$defaults, $type = self::ALL, $fieldName = NULL, $groupElementType = 'checkbox') {
     $type = (int ) $type;
@@ -268,7 +273,9 @@ class CRM_Contact_Form_Edit_TagsAndGroups {
    *
    *
    * @param CRM_Core_Form $form
-   * @param array $defaults
+   * @param $defaults
+   *
+   * @return void
    */
   public static function setDefaultValues(&$form, &$defaults) {
     $contactEditOptions = $form->get('contactEditOptions');

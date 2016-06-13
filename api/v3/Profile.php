@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.7                                                |
+  | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2016                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -372,7 +372,8 @@ function civicrm_api3_profile_apply($params) {
  */
 function _civicrm_api3_profile_getbillingpseudoprofile(&$params) {
 
-  $locationTypeID = CRM_Core_BAO_LocationType::getBilling();
+  $locations = civicrm_api3('address', 'getoptions', array('field' => 'location_type_id', 'context' => 'validate'));
+  $locationTypeID = array_search('Billing', $locations['values']);
 
   if (empty($params['contact_id'])) {
     $config = CRM_Core_Config::singleton();

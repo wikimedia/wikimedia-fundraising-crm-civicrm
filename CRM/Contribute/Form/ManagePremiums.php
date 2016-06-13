@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,23 +28,33 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for Premiums.
+ * This class generates form components for Premiums
+ *
  */
 class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
 
   /**
-   * Pre process the form.
+   * Pre  process the form.
+   *
+   *
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. Manage Premiums that in edit/view mode
+   * the default values are retrieved from the database
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $defaults = parent::setDefaultValues();
@@ -76,6 +86,8 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     parent::buildQuickForm();
@@ -264,6 +276,9 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
 
   /**
    * Process the form submission.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
 

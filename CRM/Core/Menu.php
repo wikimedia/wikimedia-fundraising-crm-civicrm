@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,13 +29,15 @@
  * This file contains the various menus of the CiviCRM module
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 require_once 'CRM/Core/I18n.php';
 
 /**
- * Class CRM_Core_Menu.
+ * Class CRM_Core_Menu
  */
 class CRM_Core_Menu {
 
@@ -67,7 +69,7 @@ class CRM_Core_Menu {
   /**
    * This function fetches the menu items from xml and xmlMenu hooks.
    *
-   * @param bool $fetchFromXML
+   * @param boolen $fetchFromXML
    *   Fetch the menu items from xml and not from cache.
    *
    * @return array
@@ -100,10 +102,8 @@ class CRM_Core_Menu {
   }
 
   /**
-   * Read menu.
-   *
    * @param string $name
-   * @param string $menu
+   * @param $menu
    *
    * @throws Exception
    */
@@ -164,7 +164,7 @@ class CRM_Core_Menu {
   /**
    * This function defines information for various menu items.
    *
-   * @param bool $fetchFromXML
+   * @param boolen $fetchFromXML
    *   Fetch the menu items from xml and not from cache.
    *
    * @return array
@@ -174,9 +174,7 @@ class CRM_Core_Menu {
   }
 
   /**
-   * Is array true (whatever that means!).
-   *
-   * @param array $values
+   * @param $values
    *
    * @return bool
    */
@@ -190,10 +188,8 @@ class CRM_Core_Menu {
   }
 
   /**
-   * Fill menu values.
-   *
-   * @param array $menu
-   * @param string $path
+   * @param $menu
+   * @param $path
    *
    * @throws Exception
    */
@@ -248,8 +244,6 @@ class CRM_Core_Menu {
    * 2. Compute local tasks value if any
    * 3. Propagate access argument, access callback, page callback to the menu item
    * 4. Build the global navigation block
-   *
-   * @param array $menu
    */
   public static function build(&$menu) {
     foreach ($menu as $path => $menuItems) {
@@ -269,13 +263,12 @@ class CRM_Core_Menu {
 
   /**
    * This function recomputes menu from xml and populates civicrm_menu.
-   *
    * @param bool $truncate
    */
   public static function store($truncate = TRUE) {
     // first clean up the db
     if ($truncate) {
-      $query = 'TRUNCATE civicrm_menu';
+      $query = 'DELETE FROM civicrm_menu';
       CRM_Core_DAO::executeQuery($query);
     }
     $menuArray = self::items($truncate);
@@ -309,9 +302,7 @@ class CRM_Core_Menu {
   }
 
   /**
-   * Build admin links.
-   *
-   * @param array $menu
+   * @param $menu
    */
   public static function buildAdminLinks(&$menu) {
     $values = array();
@@ -335,12 +326,11 @@ class CRM_Core_Menu {
           )
         ),
         'url' => CRM_Utils_System::url($path, $query,
-          FALSE,
-          NULL,
-          TRUE,
-          FALSE,
-          // forceBackend; CRM-14439 work-around; acceptable for now because we don't display breadcrumbs on frontend
-          TRUE
+          FALSE, // absolute
+          NULL, // fragment
+          TRUE, // htmlize
+          FALSE, // frontend
+          TRUE // forceBackend; CRM-14439 work-around; acceptable for now because we don't display breadcrumbs on frontend
         ),
         'icon' => CRM_Utils_Array::value('icon', $item),
         'extra' => CRM_Utils_Array::value('extra', $item),
@@ -363,8 +353,6 @@ class CRM_Core_Menu {
   }
 
   /**
-   * Get navigation.
-   *
    * @param bool $all
    *
    * @return mixed
@@ -477,8 +465,6 @@ class CRM_Core_Menu {
   }
 
   /**
-   * Get admin links.
-   *
    * @return null
    */
   public static function &getAdminLinks() {
@@ -504,6 +490,7 @@ class CRM_Core_Menu {
    *
    * @return array
    *   The breadcrumb for this path
+   *
    */
   public static function buildBreadcrumb(&$menu, $path) {
     $crumbs = array();
@@ -515,7 +502,7 @@ class CRM_Core_Menu {
     while ($newPath = array_shift($pathElements)) {
       $currentPath = $currentPath ? ($currentPath . '/' . $newPath) : $newPath;
 
-      // when we come across breadcrumb which involves ids,
+      // when we come accross breadcrumb which involves ids,
       // we should skip now and later on append dynamically.
       if (isset($menu[$currentPath]['skipBreadcrumb'])) {
         continue;

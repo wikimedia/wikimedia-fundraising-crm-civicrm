@@ -1,8 +1,8 @@
 /**
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -36,11 +36,8 @@
  *      Draggable
  *      UI Core
  *
- * NOTE: This file is viewed as "legacy" and shouldn't be used to
- * develop new functionality. Its lint problems are grandfathered
- * (although if someone wants to cleanup+test, please feel welcome).
  */
-/* jshint ignore:start */
+
 (function($) { // Create closure.
   // Constructor for dashboard object.
   $.fn.dashboard = function(options) {
@@ -81,19 +78,19 @@
       var params = {};
 
       // For each column...
-      for (var c2 in dashboard.columns) {
+      for (var c in dashboard.columns) {
 
         // IDs of the sortable elements in this column.
-        var ids = (typeof dashboard.columns[c2] == 'object') ? dashboard.columns[c2].element.sortable('toArray') : undefined;
+        if( typeof dashboard.columns[c] == 'object' ) var ids = dashboard.columns[c].element.sortable('toArray');
 
         // For each id...
         for (var w in ids) {
           // Chop 'widget-' off of the front so that we have the real widget id.
-          var id = (typeof ids[w] == 'string') ? ids[w].substring('widget-'.length) : undefined;
+          if( typeof ids[w] == 'string' ) var id = ids[w].substring('widget-'.length);
 
           // Add one flat property to the params object that will look like an array element to the PHP server.
           // Unfortunately jQuery doesn't do this for us.
-          if ( typeof dashboard.widgets[id] == 'object' ) params['columns[' + c2 + '][' + id + ']'] = (dashboard.widgets[id].minimized ? '1' : '0');
+          if ( typeof dashboard.widgets[id] == 'object' ) params['columns[' + c + '][' + id + ']'] = (dashboard.widgets[id].minimized ? '1' : '0');
         }
       }
 
@@ -269,7 +266,7 @@
     // Callback for when a user starts resorting a list.  Hides all the empty placeholders.
     function hideEmptyPlaceholders(e, ui) {
         for (var c in dashboard.columns) {
-            if( (typeof dashboard.columns[c]) == 'object' ) dashboard.columns[c].emptyPlaceholder.hide();
+            if( typeof dashboard.columns[c] == 'object ' ) dashboard.columns[c].emptyPlaceholder.hide();
         }
     }
 
@@ -309,14 +306,14 @@
       };
       widget.minimize = function() {
         $('.widget-content', widget.element).slideUp(opts.animationSpeed);
-        $(widget.controls.minimize.element).addClass( 'fa-caret-right' );
-        $(widget.controls.minimize.element).removeClass( 'fa-caret-down' );
+        $(widget.controls.minimize.element).addClass( 'maximize-icon' );
+        $(widget.controls.minimize.element).removeClass( 'minimize-icon' );
         widget.minimized = true;
       };
       widget.maximize = function() {
         $('.widget-content', widget.element).slideDown(opts.animationSpeed);
-        $(widget.controls.minimize.element).removeClass( 'fa-caret-right' );
-        $(widget.controls.minimize.element).addClass( 'fa-caret-down' );
+        $(widget.controls.minimize.element).removeClass( 'maximize-icon' );
+        $(widget.controls.minimize.element).addClass( 'minimize-icon' );
         widget.minimized = false;
       };
 
@@ -425,7 +422,7 @@
 
       // Adds controls to a widget.  id is for internal use and image file name in images/dashboard/ (a .gif).
       widget.addControl = function(id, control) {
-          var markup = '<a class="crm-i ' + control.icon + '" alt="' + control.description + '" title="' + control.description + '"></a>';
+          var markup = '<a class="widget-icon ' + id + '-icon" alt="' + control.description + '" title="' + control.description + '"></a>';
           control.element = $(markup).prependTo($('.widget-controls', widget.element)).click(control.callback);
       };
 
@@ -456,23 +453,19 @@
       widget.controls = {
         settings: {
           description: ts('Configure this dashlet'),
-          callback: widget.toggleSettings,
-          icon: 'fa-wrench'
+          callback: widget.toggleSettings
         },
         minimize: {
           description: ts('Collapse or expand'),
-          callback: widget.toggleMinimize,
-          icon: 'fa-caret-down',
+          callback: widget.toggleMinimize
         },
         fullscreen: {
           description: ts('View fullscreen'),
-          callback: widget.enterFullscreen,
-          icon: 'fa-expand',
+          callback: widget.enterFullscreen
         },
         close: {
           description: ts('Remove from dashboard'),
-          callback: widget.remove,
-          icon: 'fa-times'
+          callback: widget.remove
         }
       };
       // End public properties of widget.

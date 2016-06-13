@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -24,10 +24,13 @@
  +--------------------------------------------------------------------+
 *}
 
+{if $cdType }
+   {include file="CRM/Custom/Form/CustomData.tpl"}
+{else}
 <div class="crm-block crm-form-block crm-campaign-survey-main-form-block">
 <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="top"}</div>
   {if $action  eq 1}
-    <div class="help">
+    <div id="help">
       {ts}Use this form to Add new Survey. You can create a new Activity type, specific to this Survey or select an existing activity type for this Survey.{/ts}
     </div>
   {/if}
@@ -83,18 +86,6 @@
        </td>
    </tr>
   </table>
-  <div id="customData"></div>
-  {*include custom data js file*}
-  {include file="CRM/common/customData.tpl"}
-  {literal}
-    <script type="text/javascript">
-      CRM.$(function($) {
-        {/literal}
-        CRM.buildCustomData( 'Survey' );
-        {literal}
-      });
-    </script>
-  {/literal}
 <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
 </div>
 
@@ -116,6 +107,8 @@
     });
 </script>
 {/literal}
+{* editor has already been included in TabHeader.tpl so set flag true *}
+{include file="CRM/common/customData.tpl" includeWysiwygEditor=true}
 {literal}
   <script type="text/javascript">
     CRM.$(function($) {
@@ -125,3 +118,5 @@
     });
   </script>
 {/literal}
+
+{/if}

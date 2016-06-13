@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,7 +26,8 @@
  */
 
 /**
- * This class generates form components generic to useradd.
+ * This class generates form components generic to useradd
+ *
  */
 class CRM_Contact_Form_Task_Useradd extends CRM_Core_Form {
 
@@ -63,7 +64,11 @@ class CRM_Contact_Form_Task_Useradd extends CRM_Core_Form {
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. Note that in edit/view mode
+   * the default values are retrieved from the database
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -78,6 +83,8 @@ class CRM_Contact_Form_Task_Useradd extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     $element = $this->add('text', 'name', ts('Full Name'), array('class' => 'huge'));
@@ -111,7 +118,8 @@ class CRM_Contact_Form_Task_Useradd extends CRM_Core_Form {
   }
 
   /**
-   * Post process function.
+   *
+   * @return void
    */
   public function postProcess() {
     // store the submitted values in an array
@@ -124,9 +132,6 @@ class CRM_Contact_Form_Task_Useradd extends CRM_Core_Form {
   /**
    * Validation Rule.
    *
-   * @param array $params
-   *
-   * @return array|bool
    */
   public static function usernameRule($params) {
     $config = CRM_Core_Config::singleton();

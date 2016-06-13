@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * UF group BAO class.
+ *
  */
 class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
   const PUBLIC_VISIBILITY = 1,
@@ -273,11 +275,8 @@ class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
    * @param string $orderBy
    * @param null $orderProfiles
    *
-   * @param bool $eventProfile
-   *
    * @return array
-   *   The fields that belong to this ufgroup(s)
-   * @throws \Exception
+   *   the fields that belong to this ufgroup(s)
    */
   public static function getFields(
     $id,
@@ -953,6 +952,8 @@ class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
    * @param bool $absolute
    *   Return urls in absolute form (useful when sending an email).
    * @param null $additionalWhereClause
+   *
+   * @return void
    */
   public static function getValues(
     $cid, &$fields, &$values,
@@ -973,6 +974,7 @@ class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
     }
 
     $query = new CRM_Contact_BAO_Query($params, $returnProperties, $fields);
+    $options = &$query->_options;
 
     $details = $query->searchQuery(0, 0, NULL, FALSE, FALSE,
       FALSE, FALSE, FALSE, $additionalWhereClause);
@@ -1165,7 +1167,10 @@ class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
                 }
 
                 $params[$index] = $customVal;
-                $values[$index] = CRM_Core_BAO_CustomField::displayValue($customVal, $cfID);
+                $values[$index] = CRM_Core_BAO_CustomField::getDisplayValue($customVal,
+                  $cfID,
+                  $options
+                );
                 if ($field['data_type'] == 'ContactReference') {
                   $params[$index] = $values[$index];
                 }
@@ -1489,6 +1494,8 @@ class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
    *   (reference) an assoc array of name/value pairs.
    * @param int $ufGroupId
    *   Ufgroup id.
+   *
+   * @return void
    */
   public static function createUFJoin(&$params, $ufGroupId) {
     $groupTypes = CRM_Utils_Array::value('uf_group_type', $params);
@@ -1620,6 +1627,8 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    *
    * @param array $params
    *   (reference) an assoc array of name/value pairs.
+   *
+   * @return void
    */
   public static function delUFJoin(&$params) {
     $ufJoin = new CRM_Core_DAO_UFJoin();
@@ -2089,8 +2098,16 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       );
     }
     elseif (substr($fieldName, 0, 4) === 'url-') {
-      $form->add('text', $name, $title, CRM_Core_DAO::getAttribute('CRM_Core_DAO_Website', 'url'), $required);
-      $form->addRule($name, ts('Enter a valid web address beginning with \'http://\' or \'https://\'.'), 'url');
+      $form->add('text', $name, $title,
+        array_merge(CRM_Core_DAO::getAttribute('CRM_Core_DAO_Website', 'url'),
+          array(
+            'onfocus' => "if (!this.value) {  this.value='http://';} else return false",
+            'onblur' => "if ( this.value == 'http://') {  this.value='';} else return false",
+          )
+        ), $required
+      );
+
+      $form->addRule($name, ts('Enter a valid Website.'), 'url');
     }
     // Note should be rendered as textarea
     elseif (substr($fieldName, -4) == 'note') {
@@ -2099,14 +2116,14 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
     elseif (substr($fieldName, 0, 6) === 'custom') {
       $customFieldID = CRM_Core_BAO_CustomField::getKeyID($fieldName);
       if ($customFieldID) {
-        CRM_Core_BAO_CustomField::addQuickFormElement($form, $name, $customFieldID, $required, $search, $title);
+        CRM_Core_BAO_CustomField::addQuickFormElement($form, $name, $customFieldID, FALSE, $required, $search, $title);
       }
     }
     elseif (substr($fieldName, 0, 14) === 'address_custom') {
       list($fName, $locTypeId) = CRM_Utils_System::explode('-', $fieldName, 2);
       $customFieldID = CRM_Core_BAO_CustomField::getKeyID(substr($fName, 8));
       if ($customFieldID) {
-        CRM_Core_BAO_CustomField::addQuickFormElement($form, $name, $customFieldID, $required, $search, $title);
+        CRM_Core_BAO_CustomField::addQuickFormElement($form, $name, $customFieldID, FALSE, $required, $search, $title);
       }
     }
     elseif (in_array($fieldName, array(
@@ -2175,9 +2192,6 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       }
       $form->addElement('hidden', 'sct_default_id', $SCTDefaultValue, array('id' => 'sct_default_id'));
     }
-    elseif ($fieldName == 'contribution_soft_credit_pcp_id') {
-      CRM_Contribute_Form_SoftCredit::addPCPFields($form, "[$rowNumber]");
-    }
     elseif ($fieldName == 'currency') {
       $form->addCurrency($name, $title, $required);
     }
@@ -2235,7 +2249,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       $form->add('select', $name, $title, CRM_Core_PseudoConstant::worldRegion(), $required, $selectAttributes);
     }
     elseif ($fieldName == 'signature_html') {
-      $form->add('wysiwyg', $name, $title, CRM_Core_DAO::getAttribute('CRM_Core_DAO_Email', $fieldName));
+      $form->addWysiwyg($name, $title, CRM_Core_DAO::getAttribute('CRM_Core_DAO_Email', $fieldName));
     }
     elseif ($fieldName == 'signature_text') {
       $form->add('textarea', $name, $title, CRM_Core_DAO::getAttribute('CRM_Core_DAO_Email', $fieldName));
@@ -2253,7 +2267,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       }
     }
     elseif ($fieldName == 'activity_details') {
-      $form->add('wysiwyg', $fieldName, $title, array('rows' => 4, 'cols' => 60), $required);
+      $form->addWysiwyg($fieldName, $title, array('rows' => 4, 'cols' => 60), $required);
     }
     elseif ($fieldName == 'activity_duration') {
       $form->add('text', $name, $title, $attributes, $required);
@@ -2315,7 +2329,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    * @param array $defaults
    *   Defaults array.
    * @param bool $singleProfile
-   *   True for single profile else false(Update multiple items).
+   *   True for single profile else false(batch update).
    * @param int $componentId
    *   Id for specific components like contribute, event etc.
    * @param null $component
@@ -2337,7 +2351,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
           continue;
         }
 
-        //set the field name depending upon the profile mode(single/multiple)
+        //set the field name depending upon the profile mode(single/batch)
         if ($singleProfile) {
           $fldName = $name;
         }
@@ -2699,19 +2713,10 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    * @param int $id
    *   The profile id to copy.
    *
-   * @return \CRM_Core_DAO
+   * @return void
    */
   public static function copy($id) {
-    $maxId = CRM_Core_DAO::singleValueQuery("SELECT max(id) FROM civicrm_uf_group");
-
-    $title = ts('[Copy id %1]', array(1 => $maxId + 1));
-    $fieldsFix = array(
-      'suffix' => array(
-        'title' => ' ' . $title,
-        'name' => '__Copy_id_' . ($maxId + 1) . '_',
-      ),
-    );
-
+    $fieldsFix = array('prefix' => array('title' => ts('Copy of ')));
     $copy = &CRM_Core_DAO::copyGeneric('CRM_Core_DAO_UFGroup',
       array('id' => $id),
       NULL,
@@ -2767,6 +2772,8 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    *   Contact id.
    * @param array $values
    *   Associative array of name/value pair.
+   *
+   * @return void
    */
   public static function commonSendMail($contactID, &$values) {
     if (!$contactID || !$values) {
@@ -2860,8 +2867,10 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    *   Group id.
    * @param array $values
    * @param CRM_Core_Smarty $template
+   *
+   * @return void
    */
-  static public function profileDisplay($gid, $values, $template) {
+  public function profileDisplay($gid, $values, $template) {
     $groupTitle = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_UFGroup', $gid, 'title');
     $template->assign('grouptitle', $groupTitle);
     if (count($values)) {
@@ -2877,7 +2886,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    * @param int $contactId
    *
    * @return array
-   *   associated formatted array
+   *   assoicated formatted array
    */
   public static function formatFields($params, $contactId = NULL) {
     if ($contactId) {
@@ -3203,6 +3212,8 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    *   An array of default values.
    *
    * @param bool $isStandalone
+   *
+   * @return void
    */
   public static function setComponentDefaults(&$fields, $componentId, $component, &$defaults, $isStandalone = FALSE) {
     if (!$componentId ||
@@ -3616,7 +3627,9 @@ SELECT  group_id
     // check for double optin
     $config = CRM_Core_Config::singleton();
     if (in_array('CiviMail', $config->enableComponents)) {
-      return Civi::settings()->get('profile_double_optin');
+      return CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MAILING_PREFERENCES_NAME,
+        'profile_double_optin', NULL, FALSE
+      );
     }
     return FALSE;
   }
@@ -3628,7 +3641,9 @@ SELECT  group_id
     // check for add to group double optin
     $config = CRM_Core_Config::singleton();
     if (in_array('CiviMail', $config->enableComponents)) {
-      return Civi::settings()->get('profile_add_to_group_double_optin');
+      return CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MAILING_PREFERENCES_NAME,
+        'profile_add_to_group_double_optin', NULL, FALSE
+      );
     }
     return FALSE;
   }

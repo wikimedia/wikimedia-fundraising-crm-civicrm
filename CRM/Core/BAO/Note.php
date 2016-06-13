@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * BAO object for crm_note table.
+ * BAO object for crm_note table
  */
 class CRM_Core_BAO_Note extends CRM_Core_DAO_Note {
 
@@ -43,7 +45,7 @@ class CRM_Core_BAO_Note extends CRM_Core_DAO_Note {
   const MAX_NOTES = 3;
 
   /**
-   * Given a note id, retrieve the note text.
+   * Given a note id, retrieve the note text
    *
    * @param int $id
    *   Id of the note to retrieve.
@@ -137,7 +139,7 @@ class CRM_Core_BAO_Note extends CRM_Core_DAO_Note {
    * @return object
    *   $note CRM_Core_BAO_Note object
    */
-  public static function add(&$params, $ids = array()) {
+  public static function &add(&$params, $ids = array()) {
     $dataExists = self::dataExists($params);
     if (!$dataExists) {
       return CRM_Core_DAO::$_nullObject;
@@ -334,6 +336,9 @@ class CRM_Core_BAO_Note extends CRM_Core_DAO_Note {
    *
    * @param int $id
    *   ID of the contact for which note needs to be deleted.
+   *
+   * @return void
+   *
    */
   public static function deleteContact($id) {
     // need to delete for both entity_id
@@ -547,6 +552,8 @@ ORDER BY  modified_date desc";
    *
    * @param int $contactID
    *   Contact id whose notes to be deleted.
+   *
+   * @return void
    */
   public static function cleanContactNotes($contactID) {
     $params = array(1 => array($contactID, 'Integer'));
@@ -572,21 +579,6 @@ WHERE participant.contact_id = %1 AND  note.entity_table = 'civicrm_participant'
     while ($contactNoteId->fetch()) {
       self::del($contactNoteId->id, FALSE);
     }
-  }
-
-  /**
-   * Whitelist of possible values for the entity_table field
-   * @return array
-   */
-  public static function entityTables() {
-    $tables = array(
-      'civicrm_relationship',
-      'civicrm_contact',
-      'civicrm_participant',
-      'civicrm_contribution',
-    );
-    // Identical keys & values
-    return array_combine($tables, $tables);
   }
 
 }

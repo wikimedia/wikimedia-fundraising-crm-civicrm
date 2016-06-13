@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.7                                                |
+  | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2016                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
+ */
+
+/**
+ *
  */
 class CRM_Mailing_Form_Approve extends CRM_Core_Form {
 
@@ -39,6 +45,8 @@ class CRM_Mailing_Form_Approve extends CRM_Core_Form {
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
     if (CRM_Mailing_Info::workflowEnabled()) {
@@ -73,6 +81,9 @@ class CRM_Mailing_Form_Approve extends CRM_Core_Form {
 
   /**
    * Set default values for the form.
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -85,7 +96,11 @@ class CRM_Mailing_Form_Approve extends CRM_Core_Form {
   }
 
   /**
-   * Build the form object for the approval/rejection mailing.
+   * Build the form object for the approval/rejection mailing
+   *
+   * @param
+   *
+   * @return void
    */
   public function buildQuickform() {
     $title = ts('Approve/Reject Mailing') . " - {$this->_mailing->name}";
@@ -143,6 +158,10 @@ class CRM_Mailing_Form_Approve extends CRM_Core_Form {
 
   /**
    * Process the posted form values.  Approve /reject a mailing.
+   *
+   * @param
+   *
+   * @return void
    */
   public function postProcess() {
     // get the submitted form values.

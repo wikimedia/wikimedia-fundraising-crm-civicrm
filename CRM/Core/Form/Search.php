@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -105,7 +105,14 @@ class CRM_Core_Form_Search extends CRM_Core_Form {
    * Common buildForm tasks required by all searches.
    */
   public function buildQuickform() {
-    CRM_Core_Resources::singleton()
+    $resources = CRM_Core_Resources::singleton();
+
+    if ($resources->ajaxPopupsEnabled) {
+      // Script needed by some popups
+      $this->assign('includeWysiwygEditor', TRUE);
+    }
+
+    $resources
       ->addScriptFile('civicrm', 'js/crm.searchForm.js', 1, 'html-header')
       ->addStyleFile('civicrm', 'css/searchForm.css', 1, 'html-header');
 
@@ -127,29 +134,22 @@ class CRM_Core_Form_Search extends CRM_Core_Form {
 
   /**
    * Add checkboxes for each row plus a master checkbox.
-   *
-   * @param array $rows
    */
   public function addRowSelectors($rows) {
     $this->addElement('checkbox', 'toggleSelect', NULL, NULL, array('class' => 'select-rows'));
-    if (!empty($rows)) {
-      foreach ($rows as $row) {
-        if (CRM_Utils_Array::value('checkbox', $row)) {
-          $this->addElement('checkbox', $row['checkbox'], NULL, NULL, array('class' => 'select-row'));
-        }
-      }
+    foreach ($rows as $row) {
+      $this->addElement('checkbox', $row['checkbox'], NULL, NULL, array('class' => 'select-row'));
     }
   }
 
   /**
-   * Add actions menu to search results form.
-   *
-   * @param array $tasks
+   * Add actions menu to search results form
+   * @param $tasks
    */
   public function addTaskMenu($tasks) {
     if (is_array($tasks) && !empty($tasks)) {
       $tasks = array('' => ts('Actions')) + $tasks;
-      $this->add('select', 'task', NULL, $tasks, FALSE, array('class' => 'crm-select2 crm-action-menu fa-check-circle-o huge crm-search-result-actions'));
+      $this->add('select', 'task', NULL, $tasks, FALSE, array('class' => 'crm-select2 crm-action-menu huge crm-search-result-actions'));
       $this->add('submit', $this->_actionButtonName, ts('Go'), array('class' => 'hiddenElement crm-search-go-button'));
 
       // Radio to choose "All items" or "Selected items only"
@@ -186,7 +186,7 @@ class CRM_Core_Form_Search extends CRM_Core_Form {
    * @return string
    */
   protected function getSortNameLabelWithEmail() {
-    return ts('Name or Email');
+    return ts('Name or email');
   }
 
   /**
@@ -198,13 +198,6 @@ class CRM_Core_Form_Search extends CRM_Core_Form {
    */
   protected function getSortNameLabelWithOutEmail() {
     return ts('Name');
-  }
-
-  /**
-   * Explicitly declare the form context for addField().
-   */
-  public function getDefaultContext() {
-    return 'search';
   }
 
 }

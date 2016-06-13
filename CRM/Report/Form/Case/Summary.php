@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -37,8 +37,6 @@ class CRM_Report_Form_Case_Summary extends CRM_Report_Form {
   protected $_summary = NULL;
   protected $_relField = FALSE;
   protected $_exposeContactID = FALSE;
-
-  protected $_customGroupExtends = array('Case');
 
   /**
    */
@@ -126,13 +124,12 @@ class CRM_Report_Form_Case_Summary extends CRM_Report_Form {
           'case_type_id' => array(
             'title' => ts('Case Type'),
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Case_BAO_Case::buildOptions('case_type_id', 'search'),
+            'options' => $this->case_types,
           ),
           'status_id' => array(
             'title' => ts('Status'),
-            'type' => CRM_Utils_Type::T_INT,
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Case_BAO_Case::buildOptions('status_id', 'search'),
+            'options' => $this->case_statuses,
           ),
           'is_deleted' => array(
             'title' => ts('Deleted?'),
@@ -162,7 +159,6 @@ class CRM_Report_Form_Case_Summary extends CRM_Report_Form {
         'filters' => array(
           'relationship_type_id' => array(
             'title' => ts('Staff Relationship'),
-            'type' => CRM_Utils_Type::T_INT,
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
             'options' => $this->rel_types,
           ),
@@ -295,13 +291,8 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
             if ($fieldName == 'case_type_id') {
               $value = CRM_Utils_Array::value("{$fieldName}_value", $this->_params);
               if (!empty($value)) {
-                $operator = '';
-                if ($op == 'notin') {
-                  $operator = 'NOT';
-                }
-
-                $regexp = "[[:cntrl:]]*" . implode('[[:>:]]*|[[:<:]]*', $value) . "[[:cntrl:]]*";
-                $clause = "{$field['dbAlias']} {$operator} REGEXP '{$regexp}'";
+                $clause = "( {$field['dbAlias']} REGEXP '[[:<:]]" .
+                  implode('[[:>:]]|[[:<:]]', $value) . "[[:>:]]' )";
               }
               $op = NULL;
             }

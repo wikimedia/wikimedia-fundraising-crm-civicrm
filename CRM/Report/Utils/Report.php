@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -54,7 +54,7 @@ class CRM_Report_Utils_Report {
       array_shift($args);
       array_shift($args);
 
-      // put rest of argument back in the form of url, which is how value
+      // put rest of arguement back in the form of url, which is how value
       // is stored in option value table
       $optionVal = implode('/', $args);
     }
@@ -223,11 +223,11 @@ WHERE  inst.report_id = %1";
    */
   public static function export2csv(&$form, &$rows) {
     //Mark as a CSV file.
-    CRM_Utils_System::setHttpHeader('Content-Type', 'text/csv');
+    header('Content-Type: text/csv');
 
     //Force a download and name the file using the current timestamp.
     $datetime = date('Ymd-Gi', $_SERVER['REQUEST_TIME']);
-    CRM_Utils_System::setHttpHeader('Content-Disposition', 'attachment; filename=Report_' . $datetime . '.csv');
+    header('Content-Disposition: attachment; filename=Report_' . $datetime . '.csv');
     echo self::makeCsv($form, $rows);
     CRM_Utils_System::civiExit();
   }
@@ -235,11 +235,6 @@ WHERE  inst.report_id = %1";
   /**
    * Utility function for export2csv and CRM_Report_Form::endPostProcess
    * - make CSV file content and return as string.
-   *
-   * @param CRM_Core_Form $form
-   * @param array $rows
-   *
-   * @return string
    */
   public static function makeCsv(&$form, &$rows) {
     $config = CRM_Core_Config::singleton();
@@ -285,15 +280,13 @@ WHERE  inst.report_id = %1";
               $value = CRM_Utils_Date::customFormat($value, '%Y-%m-%d');
             }
           }
-          // Note the reference to a specific field does not belong in this generic class & does not work on all reports.
-          // @todo - fix this properly rather than just supressing the en-otice. Repeat transaction report is a good example.
-          elseif (CRM_Utils_Array::value('type', $form->_columnHeaders[$v]) == 1024 && !empty($row['civicrm_contribution_currency'])) {
+          elseif (CRM_Utils_Array::value('type', $form->_columnHeaders[$v]) == 1024) {
             $value = CRM_Utils_Money::format($value, $row['civicrm_contribution_currency']);
           }
           $displayRows[$v] = '"' . $value . '"';
         }
         else {
-          $displayRows[$v] = "";
+          $displayRows[$v] = " ";
         }
       }
       // Add the data row.

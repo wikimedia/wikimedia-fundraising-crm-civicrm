@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,15 +28,15 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contact_Form_Search_Custom_Sample extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
   protected $_aclFrom = NULL;
   protected $_aclWhere = NULL;
   /**
-   * Class constructor.
-   *
-   * @param array $formValues
+   * @param $formValues
    */
   public function __construct(&$formValues) {
     parent::__construct($formValues);
@@ -59,8 +59,6 @@ class CRM_Contact_Form_Search_Custom_Sample extends CRM_Contact_Form_Search_Cust
   }
 
   /**
-   * Build form.
-   *
    * @param CRM_Core_Form $form
    */
   public function buildForm(&$form) {
@@ -213,7 +211,9 @@ LEFT JOIN civicrm_state_province state_province ON state_province.id = address.s
    * @return array
    */
   public function setDefaultValues() {
-    return array_merge(array('household_name' => ''), $this->_formValues);
+    return array(
+      'household_name' => '',
+    );
   }
 
   /**

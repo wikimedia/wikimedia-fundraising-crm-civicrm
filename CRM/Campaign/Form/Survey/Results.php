@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for processing a survey.
+ * This class generates form components for processing a survey
+ *
  */
 class CRM_Campaign_Form_Survey_Results extends CRM_Campaign_Form_Survey {
 
@@ -71,9 +74,8 @@ class CRM_Campaign_Form_Survey_Results extends CRM_Campaign_Form_Survey {
   }
 
   /**
-   * Set default values for the form.
-   *
-   * Note that in edit/view mode the default values are retrieved from the database.
+   * Set default values for the form. Note that in edit/view mode
+   * the default values are retrieved from the database
    *
    * @return array
    *   array of default values
@@ -95,6 +97,8 @@ class CRM_Campaign_Form_Survey_Results extends CRM_Campaign_Form_Survey {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     $optionGroups = CRM_Campaign_BAO_Survey::getResultSets();
@@ -341,6 +345,8 @@ class CRM_Campaign_Form_Survey_Results extends CRM_Campaign_Form_Survey {
 
   /**
    * Process the form.
+   *
+   * @return void
    */
   public function postProcess() {
     // store the submitted values in an array

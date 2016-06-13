@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for OpenCase Activity.
+ * This class generates form components for OpenCase Activity
+ *
  */
 class CRM_Case_Form_Activity_ChangeCaseType {
 
@@ -48,13 +51,13 @@ class CRM_Case_Form_Activity_ChangeCaseType {
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. For edit/view mode
+   * the default values are retrieved from the database
    *
-   * For edit/view mode the default values are retrieved from the database.
    *
    * @param CRM_Core_Form $form
    *
-   * @return array
+   * @return void
    */
   public static function setDefaultValues(&$form) {
     $defaults = array();
@@ -76,7 +79,7 @@ class CRM_Case_Form_Activity_ChangeCaseType {
     $form->removeElement('priority_id');
 
     $caseId = CRM_Utils_Array::first($form->_caseId);
-    $form->_caseType = CRM_Case_BAO_Case::buildOptions('case_type_id', 'create');
+    $form->_caseType = CRM_Case_PseudoConstant::caseType();
     $form->_caseTypeId = CRM_Core_DAO::getFieldValue('CRM_Case_DAO_Case',
       $caseId,
       'case_type_id'
@@ -85,7 +88,9 @@ class CRM_Case_Form_Activity_ChangeCaseType {
       $form->_caseType[$form->_caseTypeId] = CRM_Core_DAO::getFieldValue('CRM_Case_DAO_CaseType', $form->_caseTypeId, 'title');
     }
 
-    $form->addField('case_type_id', array('context' => 'create', 'entity' => 'Case'));
+    $form->add('select', 'case_type_id', ts('New Case Type'),
+      $form->_caseType, TRUE
+    );
 
     // timeline
     $form->addYesNo('is_reset_timeline', ts('Reset Case Timeline?'), NULL, TRUE, array('onclick' => "return showHideByValue('is_reset_timeline','','resetTimeline','table-row','radio',false);"));
@@ -114,6 +119,8 @@ class CRM_Case_Form_Activity_ChangeCaseType {
    *
    * @param CRM_Core_Form $form
    * @param array $params
+   *
+   * @return void
    */
   public static function beginPostProcess(&$form, &$params) {
     if ($form->_context == 'case') {
@@ -136,6 +143,8 @@ class CRM_Case_Form_Activity_ChangeCaseType {
    * @param CRM_Core_Form $form
    * @param array $params
    * @param $activity
+   *
+   * @return void
    */
   public static function endPostProcess(&$form, &$params, $activity) {
     if (!$form->_caseId) {

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,16 +28,21 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class assigns the current case to another client.
+ * This class assigns the current case to another client
+ *
  */
 class CRM_Case_Form_EditClient extends CRM_Core_Form {
 
   /**
    * Build all the data structures needed to build the form.
+   *
+   * @return void
    */
   public function preProcess() {
     $cid = CRM_Utils_Request::retrieve('cid', 'Positive', $this, TRUE);
@@ -73,6 +78,8 @@ class CRM_Case_Form_EditClient extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     $this->addEntityRef('reassign_contact_id', ts('Select Contact'), array('create' => TRUE), TRUE);
@@ -113,6 +120,8 @@ class CRM_Case_Form_EditClient extends CRM_Core_Form {
 
   /**
    * Process the form.
+   *
+   * @return void
    */
   public function postProcess() {
     $params = $this->controller->exportValues($this->_name);

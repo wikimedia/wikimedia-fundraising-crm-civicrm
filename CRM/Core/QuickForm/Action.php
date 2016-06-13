@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,9 @@
  * integrated with the StateMachine, Controller and State objects
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 require_once 'HTML/QuickForm/Action.php';
 
@@ -59,6 +61,8 @@ class CRM_Core_QuickForm_Action extends HTML_QuickForm_Action {
 
   /**
    * Returns the user to the top of the user context stack.
+   *
+   * @return void
    */
   public function popUserContext() {
     $session = CRM_Core_Session::singleton();

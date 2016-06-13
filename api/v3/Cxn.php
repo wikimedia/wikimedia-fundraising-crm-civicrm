@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -91,7 +91,7 @@ function civicrm_api3_cxn_register($params) {
 
   try {
     /** @var \Civi\Cxn\Rpc\RegistrationClient $client */
-    $client = \Civi::service('cxn_reg_client');
+    $client = \Civi\Core\Container::singleton()->get('cxn_reg_client');
     list($cxnId, $result) = $client->register($appMeta);
     CRM_Cxn_BAO_Cxn::updateAppMeta($appMeta);
   }
@@ -103,11 +103,6 @@ function civicrm_api3_cxn_register($params) {
   return $result;
 }
 
-/**
- * Adjust metadata for cxn unregister.
- *
- * @param array $spec
- */
 function _civicrm_api3_cxn_unregister_spec(&$spec) {
   $daoFields = CRM_Cxn_DAO_Cxn::fields();
   $spec['cxn_guid'] = $daoFields['cxn_guid'];
@@ -138,7 +133,7 @@ function civicrm_api3_cxn_unregister($params) {
   $appMeta = CRM_Cxn_BAO_Cxn::getAppMeta($cxnId);
 
   /** @var \Civi\Cxn\Rpc\RegistrationClient $client */
-  $client = \Civi::service('cxn_reg_client');
+  $client = \Civi\Core\Container::singleton()->get('cxn_reg_client');
   list($cxnId, $result) = $client->unregister($appMeta, CRM_Utils_Array::value('force', $params, FALSE));
 
   return $result;
@@ -172,11 +167,6 @@ function _civicrm_api3_cxn_parseCxnId($params) {
   return $cxnId;
 }
 
-/**
- * Adjust metadata for cxn get action.
- *
- * @param array $spec
- */
 function _civicrm_api3_cxn_get_spec(&$spec) {
   // Don't trust AJAX callers or other external code to modify, filter, or return the secret.
   unset($spec['secret']);
@@ -222,14 +212,13 @@ function _civicrm_api3_cxn_getlink_spec(&$spec) {
   $daoFields = CRM_Cxn_DAO_Cxn::fields();
   $spec['app_guid'] = $daoFields['app_guid'];
   $spec['cxn_guid'] = $daoFields['cxn_guid'];
-  $spec['page_name'] = array(
-    'name' => 'page_name',
+  $spec['page'] = array(
+    'name' => 'page',
     'type' => CRM_Utils_Type::T_STRING,
     'title' => ts('Page Type'),
     'description' => 'The type of page (eg "settings")',
     'maxlength' => 63,
     'size' => CRM_Utils_Type::HUGE,
-    'api.aliases' => array('page'),
   );
 }
 
@@ -246,78 +235,13 @@ function civicrm_api3_cxn_getlink($params) {
   $cxnId = _civicrm_api3_cxn_parseCxnId($params);
   $appMeta = CRM_Cxn_BAO_Cxn::getAppMeta($cxnId);
 
-  if (empty($params['page_name']) || !is_string($params['page_name'])) {
+  if (empty($params['page']) || !is_string($params['page'])) {
     throw new API_Exception("Invalid page");
   }
 
   /** @var \Civi\Cxn\Rpc\RegistrationClient $client */
-  $client = \Civi::service('cxn_reg_client');
+  $client = \Civi\Core\Container::singleton()->get('cxn_reg_client');
   return $client->call($appMeta, 'Cxn', 'getlink', array(
-    'page' => $params['page_name'],
+    'page' => $params['page'],
   ));
-}
-
-/**
- *
- * @param array $params
- * @return array
- * @throws Exception
- */
-function civicrm_api3_cxn_getcfg($params) {
-  $result = array(
-    'CIVICRM_CXN_CA' => defined('CIVICRM_CXN_CA') ? CIVICRM_CXN_CA : NULL,
-    'CIVICRM_CXN_VIA' => defined('CIVICRM_CXN_VIA') ? CIVICRM_CXN_VIA : NULL,
-    'CIVICRM_CXN_APPS_URL' => defined('CIVICRM_CXN_APPS_URL') ? CIVICRM_CXN_APPS_URL : NULL,
-    'siteCallbackUrl' => CRM_Cxn_BAO_Cxn::getSiteCallbackUrl(),
-  );
-  return civicrm_api3_create_success($result);
-}
-
-/**
- * Creates or modifies a Cxn row.
- *
- * @param array $params
- *   Array with keys:
- *   - id, cxn_guid OR app_guid: string.
- *   - is_active: boolean.
- *   - options: JSON
- * @return page
- * @throws Exception
- */
-function civicrm_api3_cxn_create($params) {
-  $result = "";
-
-  try {
-    // get the ID
-    if (!empty($params['id'])) {
-      $cxnId = $params['id'];
-    }
-    else {
-      $cxnId = _civicrm_api3_cxn_parseCxnId($params);
-    }
-
-    // see if it's sth to update
-    if (isset($params['options']) || isset($params['is_active'])) {
-
-      $dao = new CRM_Cxn_DAO_Cxn();
-      $dao->id = $cxnId;
-
-      if ($dao->find()) {
-        if (isset($params['is_active'])) {
-          $dao->is_active = (int) $params['is_active'];
-        }
-        if (isset($params['options'])) {
-          $dao->options = $params['options'];
-        }
-
-        $result = $dao->save();
-      }
-
-    }
-    return civicrm_api3_create_success($result, $params, 'Cxn', 'create');
-
-  }
-  catch(Exception $ex){
-    throw $ex;
-  }
 }

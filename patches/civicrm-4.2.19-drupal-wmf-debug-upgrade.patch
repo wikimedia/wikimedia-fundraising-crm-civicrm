@@ -1,0 +1,45 @@
+diff -urN civicrm-4.2.19/CRM/Upgrade/Form.php civicrm-4.2.19-wmf/CRM/Upgrade/Form.php
+
+Status: Agreed Ditch the debug , upstream money rule (CRM-17157).
+
+Recommendation: This adds some debug during upgrade. We could also get this by turning on query logging while upgrading
+or reviewing the upgrade script so not sure it's worth carrying as a patch.
+
+ISSUE: CRM-17157
+There is also a fix to "Correct money rule to accept any decent decimal  We should not reject harmless anomalies such as sub-penny shavings. "
+
+Not sure the reasoning for this - if there is a good case then we could upstream it.
+
+--- civicrm-4.2.19/CRM/Upgrade/Form.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Upgrade/Form.php	2015-03-11 13:31:10.414248473 -0700
+@@ -205,6 +205,7 @@
+   }
+ 
+   function runQuery($query) {
++    error_log($query);
+     return CRM_Core_DAO::executeQuery($query,
+       CRM_Core_DAO::$_nullArray
+     );
+diff -urN civicrm-4.2.19/CRM/Utils/File.php civicrm-4.2.19-wmf/CRM/Utils/File.php
+--- civicrm-4.2.19/CRM/Utils/File.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Utils/File.php	2015-03-11 13:31:10.434248473 -0700
+@@ -283,6 +283,7 @@
+     foreach ($queries as $query) {
+       $query = trim($query);
+       if (!empty($query)) {
++        error_log($query);
+         CRM_Core_Error::debug_query($query);
+         $res = &$db->query($query);
+         if (PEAR::isError($res)) {
+diff -urN civicrm-4.2.19/CRM/Utils/Rule.php civicrm-4.2.19-wmf/CRM/Utils/Rule.php
+--- civicrm-4.2.19/CRM/Utils/Rule.php	2014-09-09 15:40:20.000000000 -0700
++++ civicrm-4.2.19-wmf/CRM/Utils/Rule.php	2015-03-11 13:31:10.438248473 -0700
+@@ -378,7 +378,7 @@
+       return TRUE;
+     }
+ 
+-    return preg_match('/(^-?\d+\.\d?\d?$)|(^-?\.\d\d?$)/', $value) ? TRUE : FALSE;
++    return preg_match('/(^-?\d+\.?\d*$)|(^-?\d*\.\d+$)/', $value) ? TRUE : FALSE;
+   }
+ 
+   static function string($value, $maxLength = 0) {

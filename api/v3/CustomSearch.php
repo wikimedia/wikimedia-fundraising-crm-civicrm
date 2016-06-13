@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -34,10 +34,12 @@
 /**
  * Retrieve custom searches.
  *
+ * FIXME This is a bare-minimum placeholder
+ *
  * @param array $params
  *
  * @return array
- *   API result array
+ *   details of found Option Values
  */
 function civicrm_api3_custom_search_get($params) {
   require_once 'api/v3/OptionValue.php';
@@ -53,7 +55,6 @@ function civicrm_api3_custom_search_get($params) {
  * @param array $params
  *
  * @return array
- *   API result array
  */
 function civicrm_api3_custom_search_create($params) {
   require_once 'api/v3/OptionValue.php';
@@ -85,12 +86,12 @@ function _civicrm_api3_custom_search_create_spec(&$params) {
 }
 
 /**
- * Deletes an existing CustomSearch.
+ * Deletes an existing ReportTemplate.
  *
  * @param array $params
  *
  * @return array
- *   API result array
+ *   Api result
  */
 function civicrm_api3_custom_search_delete($params) {
   require_once 'api/v3/OptionValue.php';

@@ -1,0 +1,9 @@
+== MFT ==
+Wikimedia's process for merging from a new upstream civi:
+
+* git checkout contrib
+* rsync -av --delete --exclude=".git" UNPACKED_UPSTREAM_CIVI/ ./
+* git checkout master
+* git merge -Xignore-all-space contrib
+* resolve conflicts, add and commit
+* git diff contrib > patches/civi-VERS-wmf.patch

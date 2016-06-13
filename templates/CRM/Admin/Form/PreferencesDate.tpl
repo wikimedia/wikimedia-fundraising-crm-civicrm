@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,6 +25,7 @@
 *}
 {* this template is used for adding/editing location type  *}
 <div class="crm-block crm-form-block crm-preferences-date-form-block">
+    <fieldset><legend>{ts}Edit Date Settings{/ts}</legend>
         <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="top"}</div>
         <table class='form-layout-compressed'>
             <tr class="crm-preferences-date-form-block-name">
@@ -49,4 +50,5 @@
             </tr>
         </table>
         <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
+    </fieldset>
 </div>

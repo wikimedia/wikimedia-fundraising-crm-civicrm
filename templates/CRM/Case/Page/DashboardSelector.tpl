@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -43,7 +43,15 @@
 
   <tr id='{$context}-{$list}-rowid-{$row.case_id}' class="crm-case crm-case_{$row.case_id}">
   <td>
-    <a title="{ts}Activities{/ts}" class="crm-expand-row" href="{crmURL p='civicrm/case/details' q="caseId=`$row.case_id`&cid=`$row.contact_id`&type=$list"}"></a>
+        {* &nbsp;{$row.contact_type_icon}<br /> *}
+        <span id="{$context}{$list}{$row.case_id}_show">
+      <a href="#" onclick="{$context}{$list}CaseDetails('{$row.case_id}','{$row.contact_id}', '{$list}', '{$context}');
+                showCaseActivities('{$row.case_id}','{$list}', '{$context}');
+                             return false;"><img src="{$config->resourceBase}i/TreePlus.gif" class="action-icon" alt="{ts}open section{/ts}"/></a>
+  </span>
+  <span id="minus{$context}{$list}{$row.case_id}_hide">
+      <a href="#" onclick="hideCaseActivities('{$row.case_id}','{$list}', '{$context}');
+                             return false;"><img src="{$config->resourceBase}i/TreeMinus.gif" class="action-icon" alt="{ts}open section{/ts}"/></a>
   </td>
 
     <td class="crm-case-phone"><a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=`$row.contact_id`"}">{$row.sort_name}</a>{if $row.phone}<br /><span class="description">{$row.phone}</span>{/if}<br /><span class="description">{ts}Case ID{/ts}: {$row.case_id}</span></td>
@@ -61,7 +69,7 @@
      {/if}
        &nbsp;&nbsp;
      {if $row.case_upcoming_activity_editable}
-       <a class="action-item crm-hover-button" href="{crmURL p="civicrm/case/activity" q="reset=1&cid=`$row.contact_id`&caseid=`$row.case_id`&action=update&id=`$row.case_scheduled_activity_id`"}" title="{ts}Edit activity{/ts}"><i class="crm-i fa-pencil"></i></a>
+       <a class="action-item crm-hover-button" href="{crmURL p="civicrm/case/activity" q="reset=1&cid=`$row.contact_id`&caseid=`$row.case_id`&action=update&id=`$row.case_scheduled_activity_id`"}" title="{ts}Edit activity{/ts}"><span class="icon ui-icon-pencil"></span></a>
      {/if}
      <br />
      {$row.case_scheduled_activity_date|crmDate}
@@ -74,7 +82,7 @@
     {else}
        {$row.case_recent_activity_type}
     {/if}
-    {if $row.case_recent_activity_editable and $row.case_recent_activity_type_name != 'Inbound Email' && $row.case_recent_activity_type_name != 'Email'}&nbsp;&nbsp;<a href="{crmURL p="civicrm/case/activity" q="reset=1&cid=`$row.contact_id`&caseid=`$row.case_id`&action=update&id=`$row.case_recent_activity_id`"}" title="{ts}Edit activity{/ts}" class="crm-hover-button crm-popup"><i class="crm-i fa-pencil"></i></a>
+    {if $row.case_recent_activity_editable and $row.case_recent_activity_type_name != 'Inbound Email' && $row.case_recent_activity_type_name != 'Email'}&nbsp;&nbsp;<a href="{crmURL p="civicrm/case/activity" q="reset=1&cid=`$row.contact_id`&caseid=`$row.case_id`&action=update&id=`$row.case_recent_activity_id`"}" title="{ts}Edit activity{/ts}" class="crm-hover-button crm-popup"><span class="icon ui-icon-pencil"></span></a>
     {/if}<br />
           {$row.case_recent_activity_date|crmDate}
    </td>
@@ -82,6 +90,16 @@
 
     <td>{$row.action}{$row.moreActions}</td>
    </tr>
+   <tr id="{$list}{$row.case_id}_hide" class="crm-case_{$row.case_id}">
+     <td>
+     </td>
+     <td colspan="7" width="99%" class="enclosingNested crm-case_{$row.case_id}">
+        <div id="{$context}-{$list}-casedetails-{$row.case_id}"></div>
+     </td>
+   </tr>
+ <script type="text/javascript">
+     cj('#minus{$context}{$list}{$row.case_id}_hide').hide();
+ </script>
   {/foreach}
 
     {* Dashboard only lists 10 most recent casess. *}
@@ -95,4 +113,26 @@
 
 {/strip}
 
-{crmScript file='js/crm.expandRow.js'}
+{* Build case details*}
+{literal}
+<script type="text/javascript">
+function {/literal}{$context}{$list}{literal}CaseDetails( caseId, contactId, type, context )
+{
+    var dataUrl = CRM.url('civicrm/case/details', {caseId: caseId, cid: contactId, type: type});
+    CRM.loadPage(dataUrl, {target: '#'+ context + '-' + type +'-casedetails-' + caseId});
+}
+
+function showCaseActivities( caseId, type, context ) {
+    cj('#' + context + '-' + type +'-casedetails-'+ caseId).show();
+    cj('#' + context+type+caseId+'_show').hide();
+    cj('#minus'+context+type+caseId+'_hide').show();
+}
+
+function hideCaseActivities( caseId , type, context ) {
+    cj('#' + context + '-' + type +'-casedetails-' + caseId).hide();
+    cj('#' + context+type+caseId+'_show').show();
+    cj('#minus'+context+type+caseId+'_hide').hide();
+}
+
+</script>
+{/literal}

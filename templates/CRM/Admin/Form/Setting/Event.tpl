@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,7 +25,7 @@
 *}
 {capture assign=docLink}{docURL page="CiviEvent Cart Checkout" text="CiviEvent Cart Checkout" resource="wiki"}{/capture}
 <div class="crm-block crm-form-block">
-<div class="help">
+<div id="help">
     {ts 1=$docLink}These settings are used to configure properties for the CiviEvent component. Please read the %1 documentation, and make sure you understand it before modifying default values.{/ts}
 </div>
 <div class="crm-block crm-form-block">

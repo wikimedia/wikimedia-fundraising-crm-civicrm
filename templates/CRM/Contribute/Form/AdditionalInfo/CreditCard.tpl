@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,7 +25,7 @@
 *}
 {* this template is used for adding Credit Cart and billing details *}
 <div id="id-creditCard" class="section-shown">
-    {include file='CRM/Core/BillingBlockWrapper.tpl'}
+    {include file='CRM/Core/BillingBlock.tpl'}
 </div>
 
 {include file="CRM/Contribute/Form/AdditionalInfo/Payment.tpl"}

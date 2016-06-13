@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -92,10 +92,13 @@
  <div class="crm-accordion-body">
    <div class="helpIcon" id="helphtml">
      <input class="crm-token-selector big" data-field="html_message" />
-     {help id="id-token-html" tplFile=$tplFile isAdmin=$isAdmin file="CRM/Contact/Form/Task/Email.hlp"}
+     {help id="id-token-html" tplFile=$tplFile isAdmin=$isAdmin editor=$editor file="CRM/Contact/Form/Task/Email.hlp"}
    </div>
     <div class="clear"></div>
     <div class='html'>
+  {if $editor EQ 'textarea'}
+      <div class="help description">{ts}NOTE: If you are composing HTML-formatted messages, you may want to enable a Rich Text (WYSIWYG) editor (Administer &raquo; Customize Data & Screens &raquo; Display Preferences).{/ts}</div>
+  {/if}
   {$form.html_message.html}<br />
     </div>
 
@@ -127,28 +130,9 @@ CRM.$(function($) {
   });
   // After the pdf downloads, the user has to manually close the dialog (which would be nice to fix)
   // But at least we can trigger the underlying list of activities to refresh
-  $('[name=_qf_PDF_submit]', $form).click(function() {
-    var $dialog = $(this).closest('.ui-dialog-content.crm-ajax-container');
-    if ($dialog.length) {
-      $dialog.on('dialogbeforeclose', function () {
-        $(this).trigger('crmFormSuccess');
-      });
-      $dialog.dialog('option', 'buttons', [{
-        text: {/literal}"{ts escape='js'}Done{/ts}"{literal},
-        icons: {primary: 'fa-times'},
-        click: function() {$(this).dialog('close');}
-      }]);
-    }
+  $form.closest('.ui-dialog-content.crm-ajax-container').on('dialogbeforeclose', function() {
+    $(this).trigger('crmFormSuccess');
   });
-  $('[name^=_qf_PDF_submit]', $form).click(function() {
-    CRM.status({/literal}"{ts escape='js'}Downloading...{/ts}"{literal});
-  });
-  showSaveDetails($('input[name=saveTemplate]', $form)[0]);
-
-  function showSaveTemplate() {
-    $('#updateDetails').toggle(!!$(this).val());
-  }
-  $('[name=template]', $form).each(showSaveTemplate).change(showSaveTemplate);
 });
 
 var currentWidth;
@@ -215,7 +199,7 @@ function selectFormat( val, bind ) {
     cj.post( dataUrl, {formatId: val}, function( data ) {
       fillFormatInfo(data, bind);
       }, 'json');
-  }
+  } 
   else {
     data=JSON.parse(val);
     fillFormatInfo(data, bind);
@@ -310,3 +294,4 @@ function showSaveDetails(chkbox)  {
 
 </script>
 {/literal}
+

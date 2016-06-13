@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -34,10 +34,12 @@
 /**
  * Retrieve a report template.
  *
+ * FIXME This is a bare-minimum placeholder
+ *
  * @param array $params
  *
  * @return array
- *   API result array
+ *   details of found Option Values
  */
 function civicrm_api3_report_template_get($params) {
   require_once 'api/v3/OptionValue.php';
@@ -55,7 +57,6 @@ function civicrm_api3_report_template_get($params) {
  * @param array $params
  *
  * @return array
- *   API result array
  */
 function civicrm_api3_report_template_create($params) {
   require_once 'api/v3/OptionValue.php';
@@ -94,7 +95,7 @@ function _civicrm_api3_report_template_create_spec(&$params) {
  * @param array $params
  *
  * @return array
- *   API result array
+ *   Api result
  */
 function civicrm_api3_report_template_delete($params) {
   require_once 'api/v3/OptionValue.php';
@@ -108,7 +109,7 @@ function civicrm_api3_report_template_delete($params) {
  *   Input parameters.
  *
  * @return array
- *   API result array
+ *   details of found instances
  */
 function civicrm_api3_report_template_getrows($params) {
   civicrm_api3_verify_one_mandatory($params, NULL, array('report_id', 'instance_id'));
@@ -148,7 +149,6 @@ function _civicrm_api3_report_template_getrows($params) {
   $reportInstance->setParams(array_merge($reportInstance->getDefaultValues(), $params));
   $options = _civicrm_api3_get_options_from_params($params, TRUE, 'ReportTemplate', 'get');
   $reportInstance->setLimitValue($options['limit']);
-  $reportInstance->setAddPaging(FALSE);
   $reportInstance->setOffsetValue($options['offset']);
   $reportInstance->beginPostProcessCommon();
   $sql = $reportInstance->buildQuery();
@@ -181,7 +181,6 @@ function _civicrm_api3_report_template_getrows($params) {
  * @param array $params
  *
  * @return array
- *   API result array
  */
 function civicrm_api3_report_template_getstatistics($params) {
   list($rows, $reportInstance, $metadata) = _civicrm_api3_report_template_getrows($params);

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class provides the functionality to add contact(s) to Organization.
+ * This class provides the functionality to add contact(s) to Organization
  */
 class CRM_Contact_Form_Task_AddToOrganization extends CRM_Contact_Form_Task_AddToParentClass {
 
@@ -101,7 +103,7 @@ class CRM_Contact_Form_Task_AddToOrganization extends CRM_Contact_Form_Task_AddT
 
     $this->set('searchDone', 0);
     if (!empty($_POST['_qf_AddToOrganization_refresh'])) {
-      $searchParams['contact_type'] = 'Organization';
+      $searchParams['contact_type'] = array('Organization' => 'Organization');
       $searchParams['rel_contact'] = $this->params['name'];
       $this->search($this, $searchParams);
       $this->set('searchDone', 1);

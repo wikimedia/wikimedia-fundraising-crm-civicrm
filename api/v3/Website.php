@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -37,12 +37,12 @@
  * @param array $params
  *
  * @return array
- *   API result array
+ *   API result array.
  * @todo convert to using basic create - BAO function non-std
  */
 function civicrm_api3_website_create($params) {
   //DO NOT USE THIS FUNCTION AS THE BASIS FOR A NEW API http://wiki.civicrm.org/confluence/display/CRM/API+Architecture+Standards
-  _civicrm_api3_check_edit_permissions('CRM_Core_BAO_Website', $params);
+
   $websiteBAO = CRM_Core_BAO_Website::add($params);
   $values = array();
   _civicrm_api3_object_to_array($websiteBAO, $values[$websiteBAO->id]);
@@ -69,15 +69,15 @@ function _civicrm_api3_website_create_spec(&$params) {
  * @param array $params
  *
  * @return array
- *   API result array
+ *   API result
  * @throws \API_Exception
  */
 function civicrm_api3_website_delete($params) {
   //DO NOT USE THIS FUNCTION AS THE BASIS FOR A NEW API http://wiki.civicrm.org/confluence/display/CRM/API+Architecture+Standards
-  civicrm_api3_verify_mandatory($params, NULL, array('id'));
-  _civicrm_api3_check_edit_permissions('CRM_Core_BAO_Website', array('id' => $params['id']));
+  $websiteID = CRM_Utils_Array::value('id', $params);
+
   $websiteDAO = new CRM_Core_DAO_Website();
-  $websiteDAO->id = $params['id'];
+  $websiteDAO->id = $websiteID;
   if ($websiteDAO->find()) {
     while ($websiteDAO->fetch()) {
       $websiteDAO->delete();
@@ -85,7 +85,7 @@ function civicrm_api3_website_delete($params) {
     }
   }
   else {
-    throw new API_Exception('Could not delete Website with id ' . $params['id']);
+    throw new API_Exception('Could not delete Website with id ' . $websiteID);
   }
 }
 
@@ -95,7 +95,7 @@ function civicrm_api3_website_delete($params) {
  * @param array $params
  *
  * @return array
- *   API result array
+ *   details of found websites
  */
 function civicrm_api3_website_get($params) {
   return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params, TRUE, 'Website');

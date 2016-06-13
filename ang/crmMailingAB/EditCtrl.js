@@ -23,26 +23,22 @@
         // TODO review fields exposed in UI and make sure the sync rules match
         switch (abtest.ab.testing_criteria) {
           case 'subject':
-            var exclude_subject = [
+            crmMailingMgr.mergeInto(abtest.mailings.b, abtest.mailings.a, [
               'name',
               'recipients',
               'subject'
-            ];
-            crmMailingMgr.mergeInto(abtest.mailings.b, abtest.mailings.a, exclude_subject);
-            crmMailingMgr.mergeInto(abtest.mailings.c, abtest.mailings.a, exclude_subject);
+            ]);
             break;
           case 'from':
-            var exclude_from = [
+            crmMailingMgr.mergeInto(abtest.mailings.b, abtest.mailings.a, [
               'name',
               'recipients',
               'from_name',
               'from_email'
-            ];
-            crmMailingMgr.mergeInto(abtest.mailings.b, abtest.mailings.a, exclude_from);
-            crmMailingMgr.mergeInto(abtest.mailings.c, abtest.mailings.a, exclude_from);
+            ]);
             break;
           case 'full_email':
-            var exclude_full_email = [
+            crmMailingMgr.mergeInto(abtest.mailings.b, abtest.mailings.a, [
               'name',
               'recipients',
               'subject',
@@ -52,14 +48,13 @@
               'override_verp', // keep override_verp and replyto_Email linked
               'body_html',
               'body_text'
-            ];
-            crmMailingMgr.mergeInto(abtest.mailings.b, abtest.mailings.a, exclude_full_email);
-            crmMailingMgr.mergeInto(abtest.mailings.c, abtest.mailings.a, exclude_full_email);
+            ]);
             break;
           default:
             throw "Unrecognized testing_criteria";
         }
       }
+      crmMailingMgr.mergeInto(abtest.mailings.c, abtest.mailings.a, ['name']);
       return true;
     };
 

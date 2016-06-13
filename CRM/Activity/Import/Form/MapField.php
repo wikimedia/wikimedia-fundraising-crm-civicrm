@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,17 +28,21 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class gets the name of the file to upload.
+ * This class gets the name of the file to upload
  */
 class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
 
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
     $this->_mapperFields = $this->get('fields');
@@ -55,7 +59,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
     if ($skipColumnHeader) {
       $this->assign('skipColumnHeader', $skipColumnHeader);
       $this->assign('rowDisplayCount', 3);
-      // If we had a column header to skip, stash it for later.
+      /* if we had a column header to skip, stash it for later */
 
       $this->_columnHeaders = $this->_dataValues[0];
     }
@@ -78,9 +82,11 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
-    // To save the current mappings.
+    //to save the current mappings
     if (!$this->get('savedMapping')) {
       $saveDetailsName = ts('Save this field mapping');
       $this->applyFilter('saveMappingName', 'trim');
@@ -89,11 +95,11 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
     }
     else {
       $savedMapping = $this->get('savedMapping');
-      // Mapping is to be loaded from database.
+      //mapping is to be loaded from database
 
       list($mappingName, $mappingContactType, $mappingLocation, $mappingPhoneType, $mappingRelation) = CRM_Core_BAO_Mapping::getMappingFields($savedMapping);
 
-      // Get loaded Mapping Fields.
+      //get loaded Mapping Fields
       $mappingName = CRM_Utils_Array::value('1', $mappingName);
       $mappingContactType = CRM_Utils_Array::value('1', $mappingContactType);
       $mappingLocation = CRM_Utils_Array::value('1', $mappingLocation);
@@ -131,7 +137,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
     $dataPatterns = $this->get('dataPatterns');
     $hasLocationTypes = $this->get('fieldTypes');
 
-    // Initialize all field usages to false.
+    /* Initialize all field usages to false */
 
     foreach ($mapperKeys as $key) {
       $this->_fieldUsed[$key] = FALSE;
@@ -144,7 +150,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
     $js = "<script type='text/javascript'>\n";
     $formName = 'document.forms.' . $this->_name;
 
-    // Used to warn for mismatch column count or mismatch mapping.
+    //used to warn for mismatch column count or mismatch mapping
     $warning = 0;
 
     for ($i = 0; $i < $this->_columnCount; $i++) {
@@ -196,7 +202,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
             $defaults["mapper[$i]"] = array($this->defaultFromData($dataPatterns, $i));
           }
         }
-        // End of load mapping.
+        //end of load mapping
       }
       else {
         $js .= "swapOptions($formName, 'mapper[$i]', 0, 3, 'hs_mapper_" . $i . "_');\n";
@@ -206,6 +212,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
             $this->defaultFromHeader($this->_columnHeaders[$i],
               $headerPatterns
             ),
+            //                     $defaultLocationType->id
             0,
           );
         }
@@ -213,6 +220,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
           // Otherwise guess the default from the form of the data
           $defaults["mapper[$i]"] = array(
             $this->defaultFromData($dataPatterns, $i),
+            //                     $defaultLocationType->id
             0,
           );
         }
@@ -223,7 +231,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
     $js .= "</script>\n";
     $this->assign('initHideBoxes', $js);
 
-    // Set warning if mismatch in more than.
+    //set warning if mismatch in more than
     if (isset($mappingName)) {
       if (($this->_columnCount != count($mappingName))) {
         $warning++;
@@ -363,12 +371,13 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
 
   /**
    * Process the mapped fields and map it into the uploaded file.
+   * preview the file and extract some summary statistics
    *
-   * Preview the file and extract some summary statistics
+   * @return void
    */
   public function postProcess() {
     $params = $this->controller->exportValues('MapField');
-    // Reload the mapfield if load mapping is pressed.
+    //reload the mapfield if load mapping is pressed
     if (!empty($params['savedMapping'])) {
       $this->set('savedMapping', $params['savedMapping']);
       $this->controller->resetPage($this->_name);
@@ -413,7 +422,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
       $this->set('loadMappingId', $params['mappingId']);
     }
 
-    // Updating Mapping Records.
+    //Updating Mapping Records
     if (!empty($params['updateMapping'])) {
 
       $mappingFields = new CRM_Core_DAO_MappingField();
@@ -438,7 +447,7 @@ class CRM_Activity_Import_Form_MapField extends CRM_Import_Form_MapField {
       }
     }
 
-    // Saving Mapping Details and Records.
+    //Saving Mapping Details and Records
     if (!empty($params['saveMapping'])) {
       $mappingParams = array(
         'name' => $params['saveMappingName'],

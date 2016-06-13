@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for groupContact.
+ * This class generates form components for groupContact
+ *
  */
 class CRM_Contact_Form_GroupContact extends CRM_Core_Form {
 
@@ -50,23 +53,6 @@ class CRM_Contact_Form_GroupContact extends CRM_Core_Form {
    */
   protected $_contactId;
 
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'GroupContact';
-  }
-
-  /**
-   * Explicitly declare the form context.
-   */
-  public function getDefaultContext() {
-    return 'create';
-  }
-
-  /**
-   * Pre process form.
-   */
   public function preProcess() {
     $this->_contactId = $this->get('contactId');
     $this->_groupContactId = $this->get('groupContactId');
@@ -75,6 +61,8 @@ class CRM_Contact_Form_GroupContact extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     // get the list of all the groups
@@ -113,7 +101,10 @@ class CRM_Contact_Form_GroupContact extends CRM_Core_Form {
         $msg = ts('Add to a group');
       }
 
-      $this->addField('group_id', array('class' => 'crm-action-menu fa-plus', 'placeholder' => $msg, 'options' => $groupSelect));
+      $this->add('select', 'group_id', '', $groupSelect, TRUE, array(
+          'class' => 'crm-select2 crm-action-menu action-icon-plus',
+          'placeholder' => $msg,
+        ));
 
       $this->addButtons(array(
           array(
@@ -127,7 +118,8 @@ class CRM_Contact_Form_GroupContact extends CRM_Core_Form {
   }
 
   /**
-   * Post process form.
+   *
+   * @return void
    */
   public function postProcess() {
     $contactID = array($this->_contactId);

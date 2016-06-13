@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,20 +28,25 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class summarizes the import results.
+ * This class summarizes the import results
  */
 class CRM_Activity_Import_Form_Summary extends CRM_Import_Form_Summary {
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
+
     // set the error message path to display
-    $this->assign('errorFile', $this->get('errorFile'));
+    $errorFile = $this->assign('errorFile', $this->get('errorFile'));
 
     $totalRowCount = $this->get('totalRowCount');
     $relatedCount = $this->get('relatedCount');
@@ -75,13 +80,13 @@ class CRM_Activity_Import_Form_Summary extends CRM_Import_Form_Summary {
       $dupeActionString = ts('These records have been filled in with the imported data.');
     }
     else {
-      // Skip by default.
+      /* Skip by default */
 
       $dupeActionString = ts('These records have not been imported.');
 
       $this->assign('dupeError', TRUE);
 
-      // Only subtract dupes from successful import if we're skipping.
+      /* only subtract dupes from successful import if we're skipping */
 
       $this->set('validRowCount', $totalRowCount - $invalidRowCount -
         $conflictRowCount - $duplicateRowCount - $mismatchCount

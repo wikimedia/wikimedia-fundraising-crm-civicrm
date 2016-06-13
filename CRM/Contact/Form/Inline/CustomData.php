@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Form helper class for custom data section.
+ * form helper class for custom data section
  */
 class CRM_Contact_Form_Inline_CustomData extends CRM_Contact_Form_Inline {
 
@@ -67,6 +69,8 @@ class CRM_Contact_Form_Inline_CustomData extends CRM_Contact_Form_Inline {
 
   /**
    * Build the form object elements for custom data.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     parent::buildQuickForm();
@@ -84,12 +88,15 @@ class CRM_Contact_Form_Inline_CustomData extends CRM_Contact_Form_Inline {
 
   /**
    * Process the form.
+   *
+   * @return void
    */
   public function postProcess() {
     // Process / save custom data
     // Get the form values and groupTree
     $params = $this->controller->exportValues($this->_name);
     CRM_Core_BAO_CustomValueTable::postProcess($params,
+      $this->_groupTree[$this->_groupID]['fields'],
       'civicrm_contact',
       $this->_contactId,
       $this->_entityType
@@ -97,7 +104,8 @@ class CRM_Contact_Form_Inline_CustomData extends CRM_Contact_Form_Inline {
 
     $this->log();
 
-    CRM_Contact_BAO_GroupContactCache::opportunisticCacheFlush();
+    // reset the group contact cache for this group
+    CRM_Contact_BAO_GroupContactCache::remove();
 
     $this->response();
   }

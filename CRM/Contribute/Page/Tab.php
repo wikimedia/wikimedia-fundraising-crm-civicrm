@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contribute_Page_Tab extends CRM_Core_Page {
 
@@ -80,12 +82,11 @@ class CRM_Contribute_Page_Tab extends CRM_Core_Page {
 
     if ($recurID) {
       $paymentProcessorObj = CRM_Financial_BAO_PaymentProcessor::getProcessorForEntity($recurID, 'recur', 'obj');
-      if (is_object($paymentProcessorObj) && $paymentProcessorObj->supports('cancelRecurring')) {
+      if (is_object($paymentProcessorObj) && $paymentProcessorObj->isSupported('cancelSubscription')) {
         unset(self::$_links[CRM_Core_Action::DISABLE]['extra'], self::$_links[CRM_Core_Action::DISABLE]['ref']);
         self::$_links[CRM_Core_Action::DISABLE]['url'] = "civicrm/contribute/unsubscribe";
         self::$_links[CRM_Core_Action::DISABLE]['qs'] = "reset=1&crid=%%crid%%&cid=%%cid%%&context={$context}";
       }
-
       if (is_object($paymentProcessorObj) && $paymentProcessorObj->isSupported('updateSubscriptionBillingInfo')) {
         self::$_links[CRM_Core_Action::RENEW] = array(
           'name' => ts('Change Billing Details'),
@@ -180,8 +181,7 @@ class CRM_Contribute_Page_Tab extends CRM_Core_Page {
 
       list($softCreditTotals['amount'],
         $softCreditTotals['avg'],
-        $softCreditTotals['currency'],
-        $softCreditTotals['cancelAmount'] //to get cancel amount
+        $softCreditTotals['currency']
         ) = CRM_Contribute_BAO_ContributionSoft::getSoftContributionTotals($this->_contactId, $isTest);
 
       $this->assign('softCredit', TRUE);

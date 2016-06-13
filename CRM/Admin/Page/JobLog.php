@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Page for displaying list of jobs.
+ * Page for displaying list of jobs
  */
 class CRM_Admin_Page_JobLog extends CRM_Core_Page_Basic {
 
@@ -69,6 +71,8 @@ class CRM_Admin_Page_JobLog extends CRM_Core_Page_Basic {
    * This method is called after the page is created. It checks for the
    * type of action and executes that action.
    * Finally it calls the parent's run method.
+   *
+   * @return void
    */
   public function run() {
     // set title and breadcrumb
@@ -89,6 +93,8 @@ class CRM_Admin_Page_JobLog extends CRM_Core_Page_Basic {
    * Browse all jobs.
    *
    * @param null $action
+   *
+   * @return void
    */
   public function browse($action = NULL) {
 

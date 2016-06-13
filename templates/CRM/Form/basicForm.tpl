@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,29 +25,13 @@
 *}
 <div class="crm-block crm-form-block crm-{$formName}-block">
     <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="top"}</div>
-    {if $formName == "Contribute_Preferences"}
-      <table class = "form-layout">
-        <tr class="crm-miscellaneous-form-block-cvv-backoffice-required">
-          <td class="label">{$form.cvv_backoffice_required.label}</td>
+    {if $formName == "Contribute_Preferences" }
+      <table class="form-layout">
+        <tr class="crm-preferences-form-block-invoicing">
           <td>
-            {$form.cvv_backoffice_required.html}<br />
-            <p class="description">{ts}{$cvv_backoffice_required_description}{/ts}</p>
+            {$form.invoicing.html} {$form.invoicing.label}
           </td>
         </tr>
-        <tr class="crm-preferences-form-block-acl_financial_type">
-          <td class="label">{$form.acl_financial_type.label}&nbsp;{help id="acl_financial_type"}</td>
-          <td>
-            {$form.acl_financial_type.html}
-          </td>
-        </tr>
-        {if $formName == "Contribute_Preferences" }
-          <tr class="crm-preferences-form-block-invoicing">
-            <td class="label">{$form.invoicing.label}</td>
-            <td>
-              {$form.invoicing.html}
-            </td>
-          </tr>
-        {/if}
       </table>
     {/if}
     <table class="form-layout" id="invoicing_blocks">

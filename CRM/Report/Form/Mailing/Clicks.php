@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -134,6 +134,7 @@ class CRM_Report_Form_Mailing_Clicks extends CRM_Report_Form {
         'email' => array(
           'title' => ts('Email'),
           'no_repeat' => TRUE,
+          'required' => TRUE,
         ),
       ),
       'grouping' => 'contact-fields',
@@ -150,16 +151,6 @@ class CRM_Report_Form_Mailing_Clicks extends CRM_Report_Form {
       'fields' => array(
         'url' => array(
           'title' => ts('Click through URL'),
-        ),
-      ),
-      // To do this filter should really be like mailing id filter a multi select, However
-      // Not clear on how to make filter dependant on selected mailings at this stage so have set a
-      // text filter which works for now
-      'filters' => array(
-        'url' => array(
-          'title' => ts('URL'),
-          'type' => CRM_Utils_Type::T_STRING,
-          'operator' => 'like',
         ),
       ),
       'order_bys' => array(
@@ -230,7 +221,7 @@ class CRM_Report_Form_Mailing_Clicks extends CRM_Report_Form {
     $this->_from .= "
         INNER JOIN civicrm_mailing_event_queue
           ON civicrm_mailing_event_queue.contact_id = {$this->_aliases['civicrm_contact']}.id
-        LEFT JOIN civicrm_email {$this->_aliases['civicrm_email']}
+        INNER JOIN civicrm_email {$this->_aliases['civicrm_email']}
           ON civicrm_mailing_event_queue.email_id = {$this->_aliases['civicrm_email']}.id
         INNER JOIN civicrm_mailing_event_trackable_url_open
           ON civicrm_mailing_event_trackable_url_open.event_queue_id = civicrm_mailing_event_queue.id
@@ -292,7 +283,7 @@ class CRM_Report_Form_Mailing_Clicks extends CRM_Report_Form {
     }
 
     $chartInfo = array(
-      'legend' => ts('Mail Click-Through Report'),
+      'legend' => ts('Mail Clickthrough Report'),
       'xname' => ts('Mailing'),
       'yname' => ts('Clicks'),
       'xLabelAngle' => 20,
@@ -319,15 +310,6 @@ class CRM_Report_Form_Mailing_Clicks extends CRM_Report_Form {
   public function alterDisplay(&$rows) {
     $entryFound = FALSE;
     foreach ($rows as $rowNum => $row) {
-
-      // If the email address has been deleted
-      if (array_key_exists('civicrm_email_email', $row)) {
-        if (empty($rows[$rowNum]['civicrm_email_email'])) {
-          $rows[$rowNum]['civicrm_email_email'] = '<del>Email address deleted</del>';
-        }
-        $entryFound = TRUE;
-      }
-
       // make count columns point to detail report
       // convert display name to links
       if (array_key_exists('civicrm_contact_sort_name', $row) &&

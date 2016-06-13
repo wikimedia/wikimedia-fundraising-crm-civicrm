@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Case_XMLProcessor_Process extends CRM_Case_XMLProcessor {
   /**
-   * Run.
-   *
-   * @param string $caseType
+   * @param $caseType
    * @param array $params
    *
    * @return bool
@@ -497,7 +497,7 @@ AND        a.is_deleted = 0
 
       // Add parameters for attachments
 
-      $numAttachments = Civi::settings()->get('max_attachments');
+      $numAttachments = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'max_attachments');
       for ($i = 1; $i <= $numAttachments; $i++) {
         $attachName = "attachFile_$i";
         if (isset($params[$attachName]) && !empty($params[$attachName])) {

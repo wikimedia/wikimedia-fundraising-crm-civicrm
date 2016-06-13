@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
+ */
+
+/**
+ * Files required
  */
 
 /**
@@ -150,7 +156,7 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
    *
    * @var array
    */
-  protected $entityReferenceFields = array('event_id', 'membership_type_id');
+  protected $entityReferenceFields = array('membership_type_id');
 
   /**
    * Name of the selector to use.
@@ -160,13 +166,6 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
   protected $_customSearchClass = NULL;
 
   protected $_openedPanes = array();
-
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Contact';
-  }
 
   /**
    * Define the set of valid contexts that the search form operates on.
@@ -333,10 +332,9 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
         $this->_taskList += CRM_Contact_Task::permissionedTaskTitles($permission,
           CRM_Utils_Array::value('deleted_contacts', $this->_formValues)
         );
-      }
-      else {
+      } else {
         $className = $this->_modeValue['taskClassName'];
-        $this->_taskList += $className::permissionedTaskTitles($permission, FALSE);
+        $this->_taskList += $className::permissionedTaskTitles($permission, false);
       }
 
       // Only offer the "Update Smart Group" task if a smart group/saved search is already in play
@@ -345,12 +343,13 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
       }
     }
 
-    asort($this->_taskList);
     return $this->_taskList;
   }
 
   /**
    * Build the common elements between the search/advanced form.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     parent::buildQuickForm();
@@ -494,6 +493,8 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
 
   /**
    * Processing needed for buildForm and later.
+   *
+   * @return void
    */
   public function preProcess() {
     // set the various class variables
@@ -678,7 +679,7 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
     if (!isset($this->_componentMode)) {
       $this->_componentMode = CRM_Contact_BAO_Query::MODE_CONTACTS;
     }
-    self::setModeValues();
+    $modeValues = self::getModeValue($this->_componentMode);
 
     self::$_selectorName = $this->_modeValue['selectorName'];
 
@@ -753,6 +754,8 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
 
   /**
    * Common post processing.
+   *
+   * @return void
    */
   public function postProcess() {
     /*

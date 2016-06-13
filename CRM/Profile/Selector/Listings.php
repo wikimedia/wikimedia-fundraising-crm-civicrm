@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -42,7 +42,7 @@
 class CRM_Profile_Selector_Listings extends CRM_Core_Selector_Base implements CRM_Core_Selector_API {
 
   /**
-   * Array of supported links, currently view and edit
+   * Array of supported links, currenly view and edit
    *
    * @var array
    */
@@ -384,7 +384,7 @@ class CRM_Profile_Selector_Listings extends CRM_Core_Selector_Base implements CR
   /**
    * Returns total number of rows for the query.
    *
-   * @param int $action
+   * @param
    *
    * @return int
    *   Total number of rows
@@ -437,8 +437,6 @@ class CRM_Profile_Selector_Listings extends CRM_Core_Selector_Base implements CR
    *   The sql string that describes the sort order.
    * @param string $output
    *   What should the result set include (web/email/csv).
-   *
-   * @param string $extraWhereClause
    *
    * @return int
    *   the total number of rows for this action
@@ -612,8 +610,9 @@ class CRM_Profile_Selector_Listings extends CRM_Core_Selector_Base implements CR
 
       foreach ($names as $name) {
         if ($cfID = CRM_Core_BAO_CustomField::getKeyID($name)) {
-          $row[] = CRM_Core_BAO_CustomField::displayValue($result->$name,
+          $row[] = CRM_Core_BAO_CustomField::getDisplayValue($result->$name,
             $cfID,
+            $this->_options,
             $result->contact_id
           );
         }
@@ -744,11 +743,8 @@ class CRM_Profile_Selector_Listings extends CRM_Core_Selector_Base implements CR
   }
 
   /**
-   *  Set the _multiRecordTableName to display the result set.
-   *
-   *  (according to multi record custom field values).
-   *
-   * @param array $fields
+   *  set the _multiRecordTableName to display the result set.
+   *  according to multi record custom field values
    */
   public function setMultiRecordTableName($fields) {
     $customGroupId = $multiRecordTableName = NULL;
@@ -776,7 +772,7 @@ class CRM_Profile_Selector_Listings extends CRM_Core_Selector_Base implements CR
             $this->_multiRecordTableName
               = $multiRecordTableName = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $customGroupId, 'table_name');
             if ($multiRecordTableName) {
-              return;
+              return NULL;
             }
           }
 
@@ -788,7 +784,7 @@ class CRM_Profile_Selector_Listings extends CRM_Core_Selector_Base implements CR
     }
 
     if (!isset($customGroupId) || !$customGroupId) {
-      return;
+      return NULL;
     }
 
     //if the field is in selector and not a searchable field

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for processing a petition signature.
+ * This class generates form components for processing a petition signature
+ *
  */
 class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
   const EMAIL_THANK = 1, EMAIL_CONFIRM = 2, MODE_CREATE = 4;
@@ -130,6 +133,8 @@ class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
   protected $_sendEmailMode;
 
   protected $_image_URL;
+
+  protected $_defaults = NULL;
 
   /**
    */
@@ -229,6 +234,9 @@ class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
 
   /**
    * Set default values for the form.
+   *
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $this->_defaults = array();
@@ -298,7 +306,7 @@ class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
     // add buttons
     $this->addButtons(array(
         array(
-          'type' => 'upload',
+          'type' => 'next',
           'name' => ts('Sign the Petition'),
           'isDefault' => TRUE,
         ),
@@ -314,8 +322,8 @@ class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
    * @param $files
    * @param $errors
    *
+   * @return void
    * @see valid_date
-   * @return array|bool
    */
   public static function formRule($fields, $files, $errors) {
     $errors = array();
@@ -325,9 +333,14 @@ class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
 
   /**
    * Form submission of petition signature.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
-    $tag_name = Civi::settings()->get('tag_unconfirmed');
+    $tag_name = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::CAMPAIGN_PREFERENCES_NAME,
+      'tag_unconfirmed'
+    );
 
     if ($tag_name) {
       // Check if contact 'email confirmed' tag exists, else create one
@@ -482,12 +495,7 @@ class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
 
     $transaction = new CRM_Core_Transaction();
 
-    // CRM-17029 - get the add_to_group_id from the _contactProfileFields array.
-    // There's a much more elegant solution with
-    // array_values($this->_contactProfileFields)[0] but it's PHP 5.4+ only.
-    $slice = array_slice($this->_contactProfileFields, 0, 1);
-    $firstField = array_shift($slice);
-    $addToGroupID = isset($firstField['add_to_group_id']) ? $firstField['add_to_group_id'] : NULL;
+    $addToGroupID = isset($this->_addToGroupID) ? $this->_addToGroupID : NULL;
     $this->_contactId = CRM_Contact_BAO_Contact::createProfileContact($params, $this->_contactProfileFields,
       $this->_contactId, $addToGroupID,
       $this->_contactProfileId, $this->_ctype,
@@ -507,6 +515,7 @@ class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
     );
 
     $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+      $customActivityFields,
       NULL,
       'Activity'
     );
@@ -571,6 +580,8 @@ class CRM_Campaign_Form_Petition_Signature extends CRM_Core_Form {
    * @param int $id
    * @param string $name
    * @param bool $viewOnly
+   *
+   * @return void
    */
   public function buildCustom($id, $name, $viewOnly = FALSE) {
     if ($id) {

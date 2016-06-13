@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contact_Form_Search_Custom_ContributionAggregate extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
 
@@ -38,9 +40,7 @@ class CRM_Contact_Form_Search_Custom_ContributionAggregate extends CRM_Contact_F
   public $_permissionedComponent;
 
   /**
-   * Class constructor.
-   *
-   * @param array $formValues
+   * @param $formValues
    */
   public function __construct(&$formValues) {
     $this->_formValues = $formValues;
@@ -58,8 +58,6 @@ class CRM_Contact_Form_Search_Custom_ContributionAggregate extends CRM_Contact_F
   }
 
   /**
-   * Build form.
-   *
    * @param CRM_Core_Form $form
    */
   public function buildForm(&$form) {
@@ -202,15 +200,12 @@ civicrm_contact AS contact_a {$this->_aclFrom}
     $clauses[] = "contrib.contact_id = contact_a.id";
     $clauses[] = "contrib.is_test = 0";
 
-    $startTime = !empty($this->_formValues['start_date_time']) ? $this->_formValues['start_date_time'] : '00:00:00';
-    $endTime = !empty($this->_formValues['end_date_time']) ? $this->_formValues['end_date_time'] : '23:59:59';
-
-    $startDate = CRM_Utils_Date::processDate($this->_formValues['start_date'], $startTime);
+    $startDate = CRM_Utils_Date::processDate($this->_formValues['start_date']);
     if ($startDate) {
       $clauses[] = "contrib.receive_date >= $startDate";
     }
 
-    $endDate = CRM_Utils_Date::processDate($this->_formValues['end_date'], $endTime);
+    $endDate = CRM_Utils_Date::processDate($this->_formValues['end_date']);
     if ($endDate) {
       $clauses[] = "contrib.receive_date <= $endDate";
     }

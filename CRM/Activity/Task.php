@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,12 +26,15 @@
  */
 
 /**
+ *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
  */
 
 /**
- * Class to represent the actions that can be performed on a group of contacts used by the search forms.
+ * Class to represent the actions that can be performed on a group of contacts
+ * used by the search forms.
  */
 class CRM_Activity_Task {
   const
@@ -57,8 +60,8 @@ class CRM_Activity_Task {
   static $_optionalTasks = NULL;
 
   /**
-   * These tasks are the core set of tasks that the user can perform
-   * on a contact / group of contacts.
+   * These tasks are the core set of tasks that the user can perform.
+   * on a contact / group of contacts
    *
    * @return array
    *   the set of tasks for a group of contacts
@@ -67,17 +70,17 @@ class CRM_Activity_Task {
     if (!(self::$_tasks)) {
       self::$_tasks = array(
         1 => array(
-          'title' => ts('Delete activities'),
+          'title' => ts('Delete Activities'),
           'class' => 'CRM_Activity_Form_Task_Delete',
           'result' => FALSE,
         ),
         2 => array(
-          'title' => ts('Print selected rows'),
+          'title' => ts('Print Selected Rows'),
           'class' => 'CRM_Activity_Form_Task_Print',
           'result' => FALSE,
         ),
         3 => array(
-          'title' => ts('Export activities'),
+          'title' => ts('Export Activities'),
           'class' => array(
             'CRM_Export_Form_Select',
             'CRM_Export_Form_Map',
@@ -85,7 +88,7 @@ class CRM_Activity_Task {
           'result' => FALSE,
         ),
         4 => array(
-          'title' => ts('Update multiple activities'),
+          'title' => ts('Batch Update Activities Via Profile'),
           'class' => array(
             'CRM_Activity_Form_Task_PickProfile',
             'CRM_Activity_Form_Task_Batch',
@@ -93,7 +96,7 @@ class CRM_Activity_Task {
           'result' => FALSE,
         ),
         5 => array(
-          'title' => ts('Email - send now'),
+          'title' => ts('Send Email to Contacts'),
           'class' => array(
             'CRM_Activity_Form_Task_PickOption',
             'CRM_Activity_Form_Task_Email',
@@ -101,17 +104,17 @@ class CRM_Activity_Task {
           'result' => FALSE,
         ),
         6 => array(
-          'title' => ts('SMS - send reply'),
+          'title' => ts('Send Reply SMS To Contacts'),
           'class' => 'CRM_Activity_Form_Task_SMS',
           'result' => FALSE,
         ),
         7 => array(
-          'title' => ts('Tag - add to activities'),
+          'title' => ts('Tag Activities (assign tags)'),
           'class' => 'CRM_Activity_Form_Task_AddToTag',
           'result' => FALSE,
         ),
         8 => array(
-          'title' => ts('Tag - remove from activities'),
+          'title' => ts('Untag Activities (remove tags)'),
           'class' => 'CRM_Activity_Form_Task_RemoveFromTag',
           'result' => FALSE,
         ),
@@ -123,14 +126,14 @@ class CRM_Activity_Task {
           CRM_Core_Permission::check('access my cases and activities')
         ) {
           self::$_tasks[6] = array(
-            'title' => ts('File on case'),
+            'title' => ts('File on Case'),
             'class' => 'CRM_Activity_Form_Task_FileOnCase',
             'result' => FALSE,
           );
         }
       }
 
-      // CRM-4418, check for delete
+      //CRM-4418, check for delete
       if (!CRM_Core_Permission::check('delete activities')) {
         unset(self::$_tasks[1]);
       }
@@ -141,7 +144,8 @@ class CRM_Activity_Task {
   }
 
   /**
-   * These tasks are the core set of task titles on activity.
+   * These tasks are the core set of task titles.
+   * on activity
    *
    * @return array
    *   the set of task titles
@@ -156,7 +160,8 @@ class CRM_Activity_Task {
   }
 
   /**
-   * Show tasks selectively based on the permission level of the user.
+   * Show tasks selectively based on the permission level.
+   * of the user
    *
    * @param int $permission
    *
@@ -182,7 +187,8 @@ class CRM_Activity_Task {
   }
 
   /**
-   * These tasks are the core set of tasks that the user can perform on activity.
+   * These tasks are the core set of tasks that the user can perform.
+   * on activity
    *
    * @param int $value
    *

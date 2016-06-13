@@ -23,8 +23,6 @@ use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 use Symfony\Component\DependencyInjection\Exception\ServiceCircularReferenceException;
 use Symfony\Component\DependencyInjection\LazyProxy\PhpDumper\DumperInterface as ProxyDumper;
 use Symfony\Component\DependencyInjection\LazyProxy\PhpDumper\NullDumper;
-use Symfony\Component\DependencyInjection\ExpressionLanguage;
-use Symfony\Component\ExpressionLanguage\Expression;
 
 /**
  * PhpDumper dumps a service container as a PHP class.
@@ -37,15 +35,13 @@ use Symfony\Component\ExpressionLanguage\Expression;
 class PhpDumper extends Dumper
 {
     /**
-     * Characters that might appear in the generated variable name as first character.
-     *
+     * Characters that might appear in the generated variable name as first character
      * @var string
      */
     const FIRST_CHARS = 'abcdefghijklmnopqrstuvwxyz';
 
     /**
-     * Characters that might appear in the generated variable name as any but the first character.
-     *
+     * Characters that might appear in the generated variable name as any but the first character
      * @var string
      */
     const NON_FIRST_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789_';
@@ -55,7 +51,6 @@ class PhpDumper extends Dumper
     private $referenceVariables;
     private $variableCount;
     private $reservedVariables = array('instance', 'class');
-    private $expressionLanguage;
     private $targetDirRegex;
     private $targetDirMaxMatches;
 
@@ -93,7 +88,6 @@ class PhpDumper extends Dumper
      *
      *  * class:      The class name
      *  * base_class: The base class name
-     *  * namespace:  The class namespace
      *
      * @param array $options An array of options
      *
@@ -107,23 +101,20 @@ class PhpDumper extends Dumper
         $options = array_merge(array(
             'class' => 'ProjectServiceContainer',
             'base_class' => 'Container',
-            'namespace' => '',
         ), $options);
 
         if (!empty($options['file']) && is_dir($dir = dirname($options['file']))) {
-            // Build a regexp where the first root dirs are mandatory,
+            // Build a regexp where the first two root dirs are mandatory,
             // but every other sub-dir is optional up to the full path in $dir
-            // Mandate at least 2 root dirs and not more that 5 optional dirs.
 
             $dir = explode(DIRECTORY_SEPARATOR, realpath($dir));
             $i = count($dir);
 
             if (3 <= $i) {
                 $regex = '';
-                $lastOptionalDir = $i > 8 ? $i - 5 : 3;
-                $this->targetDirMaxMatches = $i - $lastOptionalDir;
+                $this->targetDirMaxMatches = $i - 3;
 
-                while (--$i >= $lastOptionalDir) {
+                while (2 < --$i) {
                     $regex = sprintf('(%s%s)?', preg_quote(DIRECTORY_SEPARATOR.$dir[$i], '#'), $regex);
                 }
 
@@ -135,7 +126,7 @@ class PhpDumper extends Dumper
             }
         }
 
-        $code = $this->startClass($options['class'], $options['base_class'], $options['namespace']);
+        $code = $this->startClass($options['class'], $options['base_class']);
 
         if ($this->container->isFrozen()) {
             $code .= $this->addFrozenConstructor();
@@ -190,7 +181,6 @@ class PhpDumper extends Dumper
             $this->getServiceCallsFromArguments($iDefinition->getArguments(), $calls, $behavior);
             $this->getServiceCallsFromArguments($iDefinition->getMethodCalls(), $calls, $behavior);
             $this->getServiceCallsFromArguments($iDefinition->getProperties(), $calls, $behavior);
-            $this->getServiceCallsFromArguments(array($iDefinition->getConfigurator()), $calls, $behavior);
         }
 
         $code = '';
@@ -219,7 +209,7 @@ class PhpDumper extends Dumper
     }
 
     /**
-     * Generates code for the proxies to be attached after the container class.
+     * Generates code for the proxies to be attached after the container class
      *
      * @return string
      */
@@ -501,7 +491,7 @@ class PhpDumper extends Dumper
     }
 
     /**
-     * Adds configurator definition.
+     * Adds configurator definition
      *
      * @param string     $id
      * @param Definition $definition
@@ -516,15 +506,8 @@ class PhpDumper extends Dumper
         }
 
         if (is_array($callable)) {
-            if ($callable[0] instanceof Reference
-                || ($callable[0] instanceof Definition && $this->definitionVariables->contains($callable[0]))) {
-                return sprintf("        %s->%s(\$%s);\n", $this->dumpValue($callable[0]), $callable[1], $variableName);
-            }
-
-            $class = $this->dumpValue($callable[0]);
-            // If the class is a string we can optimize call_user_func away
-            if (strpos($class, "'") === 0) {
-                return sprintf("        %s::%s(\$%s);\n", $this->dumpLiteralClass($class), $callable[1], $variableName);
+            if ($callable[0] instanceof Reference) {
+                return sprintf("        %s->%s(\$%s);\n", $this->getServiceCall((string) $callable[0]), $callable[1], $variableName);
             }
 
             return sprintf("        call_user_func(array(%s, '%s'), \$%s);\n", $this->dumpValue($callable[0]), $callable[1], $variableName);
@@ -534,7 +517,7 @@ class PhpDumper extends Dumper
     }
 
     /**
-     * Adds a service.
+     * Adds a service
      *
      * @param string     $id
      * @param Definition $definition
@@ -647,7 +630,7 @@ EOF;
     }
 
     /**
-     * Adds multiple services.
+     * Adds multiple services
      *
      * @return string
      */
@@ -733,13 +716,6 @@ EOF;
 
         if (null !== $definition->getFactoryMethod()) {
             if (null !== $definition->getFactoryClass()) {
-                $class = $this->dumpValue($definition->getFactoryClass());
-
-                // If the class is a string we can optimize call_user_func away
-                if (strpos($class, "'") === 0) {
-                    return sprintf("        $return{$instantiation}%s::%s(%s);\n", $this->dumpLiteralClass($class), $definition->getFactoryMethod(), $arguments ? implode(', ', $arguments) : '');
-                }
-
                 return sprintf("        $return{$instantiation}call_user_func(array(%s, '%s')%s);\n", $this->dumpValue($definition->getFactoryClass()), $definition->getFactoryMethod(), $arguments ? ', '.implode(', ', $arguments) : '');
             }
 
@@ -754,7 +730,7 @@ EOF;
             return sprintf("        \$class = %s;\n\n        $return{$instantiation}new \$class(%s);\n", $class, implode(', ', $arguments));
         }
 
-        return sprintf("        $return{$instantiation}new %s(%s);\n", $this->dumpLiteralClass($class), implode(', ', $arguments));
+        return sprintf("        $return{$instantiation}new \\%s(%s);\n", substr(str_replace('\\\\', '\\', $class), 1, -1), implode(', ', $arguments));
     }
 
     /**
@@ -762,18 +738,16 @@ EOF;
      *
      * @param string $class     Class name
      * @param string $baseClass The name of the base class
-     * @param string $namespace The class namespace
      *
      * @return string
      */
-    private function startClass($class, $baseClass, $namespace)
+    private function startClass($class, $baseClass)
     {
         $bagClass = $this->container->isFrozen() ? 'use Symfony\Component\DependencyInjection\ParameterBag\FrozenParameterBag;' : 'use Symfony\Component\DependencyInjection\ParameterBag\\ParameterBag;';
-        $namespaceLine = $namespace ? "namespace $namespace;\n" : '';
 
         return <<<EOF
 <?php
-$namespaceLine
+
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\Exception\InactiveScopeException;
@@ -790,9 +764,6 @@ $bagClass
  */
 class $class extends $baseClass
 {
-    private \$parameters;
-    private \$targetDirs = array();
-
 EOF;
     }
 
@@ -803,7 +774,6 @@ EOF;
      */
     private function addConstructor()
     {
-        $targetDirs = $this->exportTargetDirs();
         $arguments = $this->container->getParameterBag()->all() ? 'new ParameterBag($this->getDefaultParameters())' : null;
 
         $code = <<<EOF
@@ -812,7 +782,7 @@ EOF;
      * Constructor.
      */
     public function __construct()
-    {{$targetDirs}
+    {
         parent::__construct($arguments);
 
 EOF;
@@ -841,15 +811,13 @@ EOF;
      */
     private function addFrozenConstructor()
     {
-        $targetDirs = $this->exportTargetDirs();
-
         $code = <<<EOF
 
     /**
      * Constructor.
      */
     public function __construct()
-    {{$targetDirs}
+    {
 EOF;
 
         if ($this->container->getParameterBag()->all()) {
@@ -887,7 +855,7 @@ EOF;
     }
 
     /**
-     * Adds the methodMap property definition.
+     * Adds the methodMap property definition
      *
      * @return string
      */
@@ -907,7 +875,7 @@ EOF;
     }
 
     /**
-     * Adds the aliases property definition.
+     * Adds the aliases property definition
      *
      * @return string
      */
@@ -1037,8 +1005,6 @@ EOF;
                 throw new InvalidArgumentException(sprintf('You cannot dump a container with parameters that contain service definitions. Definition for "%s" found in "%s".', $value->getClass(), $path.'/'.$key));
             } elseif ($value instanceof Reference) {
                 throw new InvalidArgumentException(sprintf('You cannot dump a container with parameters that contain references to other services (reference to service "%s" found in "%s").', $value, $path.'/'.$key));
-            } elseif ($value instanceof Expression) {
-                throw new InvalidArgumentException(sprintf('You cannot dump a container with parameters that contain expressions. Expression "%s" found in "%s".', $value, $path.'/'.$key));
             } else {
                 $value = $this->export($value);
             }
@@ -1129,8 +1095,7 @@ EOF;
             $definitions = array_merge(
                 $this->getDefinitionsFromArguments($definition->getArguments()),
                 $this->getDefinitionsFromArguments($definition->getMethodCalls()),
-                $this->getDefinitionsFromArguments($definition->getProperties()),
-                $this->getDefinitionsFromArguments(array($definition->getConfigurator()))
+                $this->getDefinitionsFromArguments($definition->getProperties())
             );
 
             $this->inlinedDefinitions->offsetSet($definition, $definitions);
@@ -1176,7 +1141,7 @@ EOF;
      *
      * @return bool
      */
-    private function hasReference($id, array $arguments, $deep = false, array $visited = array())
+    private function hasReference($id, array $arguments, $deep = false, $visited = array())
     {
         foreach ($arguments as $argument) {
             if (is_array($argument)) {
@@ -1184,15 +1149,14 @@ EOF;
                     return true;
                 }
             } elseif ($argument instanceof Reference) {
-                $argumentId = (string) $argument;
-                if ($id === $argumentId) {
+                if ($id === (string) $argument) {
                     return true;
                 }
 
-                if ($deep && !isset($visited[$argumentId])) {
-                    $visited[$argumentId] = true;
+                if ($deep && !isset($visited[(string) $argument])) {
+                    $visited[(string) $argument] = true;
 
-                    $service = $this->container->getDefinition($argumentId);
+                    $service = $this->container->getDefinition((string) $argument);
                     $arguments = array_merge($service->getMethodCalls(), $service->getArguments(), $service->getProperties());
 
                     if ($this->hasReference($id, $arguments, $deep, $visited)) {
@@ -1264,8 +1228,6 @@ EOF;
             }
 
             return $this->getServiceCall((string) $value, $value);
-        } elseif ($value instanceof Expression) {
-            return $this->getExpressionLanguage()->compile((string) $value, array('this' => 'container'));
         } elseif ($value instanceof Parameter) {
             return $this->dumpParameter($value);
         } elseif (true === $interpolate && is_string($value)) {
@@ -1291,19 +1253,7 @@ EOF;
     }
 
     /**
-     * Dumps a string to a literal (aka PHP Code) class value.
-     *
-     * @param string $class
-     *
-     * @return string
-     */
-    private function dumpLiteralClass($class)
-    {
-        return '\\'.substr(str_replace('\\\\', '\\', $class), 1, -1);
-    }
-
-    /**
-     * Dumps a parameter.
+     * Dumps a parameter
      *
      * @param string $name
      *
@@ -1319,7 +1269,7 @@ EOF;
     }
 
     /**
-     * Gets a service call.
+     * Gets a service call
      *
      * @param string    $id
      * @param Reference $reference
@@ -1364,7 +1314,7 @@ EOF;
     }
 
     /**
-     * Returns the next name to use.
+     * Returns the next name to use
      *
      * @return string
      */
@@ -1401,29 +1351,6 @@ EOF;
         }
     }
 
-    private function getExpressionLanguage()
-    {
-        if (null === $this->expressionLanguage) {
-            if (!class_exists('Symfony\Component\ExpressionLanguage\ExpressionLanguage')) {
-                throw new RuntimeException('Unable to use expressions as the Symfony ExpressionLanguage component is not installed.');
-            }
-            $this->expressionLanguage = new ExpressionLanguage();
-        }
-
-        return $this->expressionLanguage;
-    }
-
-    private function exportTargetDirs()
-    {
-        return null === $this->targetDirRegex ? '' : <<<EOF
-
-        \$dir = __DIR__;
-        for (\$i = 1; \$i <= {$this->targetDirMaxMatches}; ++\$i) {
-            \$this->targetDirs[\$i] = \$dir = dirname(\$dir);
-        }
-EOF;
-    }
-
     private function export($value)
     {
         if (null !== $this->targetDirRegex && is_string($value) && preg_match($this->targetDirRegex, $value, $matches, PREG_OFFSET_CAPTURE)) {
@@ -1432,8 +1359,8 @@ EOF;
             $suffix = isset($value[$suffix]) ? '.'.var_export(substr($value, $suffix), true) : '';
             $dirname = '__DIR__';
 
-            if (0 < $offset = 1 + $this->targetDirMaxMatches - count($matches)) {
-                $dirname = sprintf('$this->targetDirs[%d]', $offset);
+            for ($i = $this->targetDirMaxMatches - count($matches); 0 <= $i; --$i) {
+                $dirname = sprintf('dirname(%s)', $dirname);
             }
 
             if ($prefix || $suffix) {

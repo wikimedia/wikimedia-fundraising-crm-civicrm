@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class provides the functionality to add contacts for voter reservation.
+ * This class provides the functionality to add contacts for
+ * voter reservation.
  */
 class CRM_Campaign_Form_Task_Release extends CRM_Campaign_Form_Task {
 
@@ -61,6 +64,8 @@ class CRM_Campaign_Form_Task_Release extends CRM_Campaign_Form_Task {
 
   /**
    * Build all the data structures needed to build the form.
+   *
+   * @return void
    */
   public function preProcess() {
     $this->_interviewToRelease = $this->get('interviewToRelease');
@@ -132,6 +137,9 @@ class CRM_Campaign_Form_Task_Release extends CRM_Campaign_Form_Task {
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
 
@@ -146,7 +154,7 @@ class CRM_Campaign_Form_Task_Release extends CRM_Campaign_Form_Task {
       }
     }
 
-    //set survey activities as deleted = true.
+    //set survey activites as deleted = true.
     if (!empty($deleteActivityIds)) {
       $query = 'UPDATE civicrm_activity SET is_deleted = 1 WHERE id IN ( ' . implode(', ', $deleteActivityIds) . ' )';
       CRM_Core_DAO::executeQuery($query);

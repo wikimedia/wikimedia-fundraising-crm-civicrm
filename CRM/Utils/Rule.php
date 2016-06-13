@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 require_once 'HTML/QuickForm/Rule/Email.php';
@@ -79,7 +81,7 @@ class CRM_Utils_Rule {
       return FALSE;
     }
 
-    // make sure it includes valid characters, alpha numeric and underscores
+    // make sure it include valid characters, alpha numeric and underscores
     if (!preg_match('/^[\w]+$/i', $str)) {
       return FALSE;
     }
@@ -88,22 +90,20 @@ class CRM_Utils_Rule {
   }
 
   /**
-   * Validate that a string is a valid MySQL column name or alias.
+   * Validate an acceptable column name for sorting results.
    *
    * @param $str
    *
    * @return bool
    */
-  public static function mysqlColumnNameOrAlias($str) {
+  public static function mysqlColumnName($str) {
     // Check not empty.
     if (empty($str)) {
       return FALSE;
     }
 
-    // Ensure the string contains only valid characters:
-    // For column names: alphanumeric and underscores
-    // For aliases: backticks, alphanumeric hyphens and underscores.
-    if (!preg_match('/^((`[\w-]{1,64}`|[\w-]{1,64})\.)?(`[\w-]{1,64}`|[\w-]{1,64})$/i', $str)) {
+    // Ensure it only contains valid characters (alphanumeric and underscores).
+    if (!preg_match('/^\w{1,64}(\.\w{1,64})?$/i', $str)) {
       return FALSE;
     }
 
@@ -127,25 +127,6 @@ class CRM_Utils_Rule {
   }
 
   /**
-   * Validate that a string is valid order by clause.
-   *
-   * @param $str
-   * @return bool
-   */
-  public static function mysqlOrderBy($str) {
-    // Making a regex for a comma separated list is quite hard and not readable
-    // at all, so we split and loop over.
-    $parts = explode(',', $str);
-    foreach ($parts as $part) {
-      if (!preg_match('/^((`[\w-]{1,64}`|[\w-]{1,64})\.)?(`[\w-]{1,64}`|[\w-]{1,64})( (asc|desc))?$/i', trim($part))) {
-        return FALSE;
-      }
-    }
-
-    return TRUE;
-  }
-
-  /**
    * @param $str
    *
    * @return bool
@@ -157,7 +138,7 @@ class CRM_Utils_Rule {
       return FALSE;
     }
 
-    // make sure it includes valid characters, alpha numeric and underscores
+    // make sure it include valid characters, alpha numeric and underscores
     // added (. and ,) option (CRM-1336)
     if (!preg_match('/^[\w\s\.\,]+$/i', $str)) {
       return FALSE;
@@ -177,7 +158,7 @@ class CRM_Utils_Rule {
       return FALSE;
     }
 
-    // make sure it includes valid characters, (, \s and numeric
+    // make sure it include valid characters, (, \s and numeric
     if (preg_match('/^[\d\(\)\-\.\s]+$/', $phone)) {
       return TRUE;
     }
@@ -195,7 +176,7 @@ class CRM_Utils_Rule {
       return FALSE;
     }
 
-    // make sure it includes valid characters, alpha numeric and underscores
+    // make sure it include valid characters, alpha numeric and underscores
     if (!preg_match('/^[\w\s\%\'\&\,\$\#]+$/i', $query)) {
       return FALSE;
     }
@@ -213,19 +194,6 @@ class CRM_Utils_Rule {
       // allow relative URL's (CRM-15598)
       $url = 'http://' . $_SERVER['HTTP_HOST'] . $url;
     }
-    return (bool) filter_var($url, FILTER_VALIDATE_URL);
-  }
-
-  /**
-   * @param $url
-   *
-   * @return bool
-   */
-  public static function urlish($url) {
-    if (empty($url)) {
-      return TRUE;
-    }
-    $url = Civi::paths()->getUrl($url, 'absolute');
     return (bool) filter_var($url, FILTER_VALIDATE_URL);
   }
 
@@ -537,11 +505,11 @@ class CRM_Utils_Rule {
   public static function money($value) {
     $config = CRM_Core_Config::singleton();
 
-    // only edge case when we have a decimal point in the input money
-    // field and not defined in the decimal Point in config settings
+    //only edge case when we have a decimal point in the input money
+    //field and not defined in the decimal Point in config settings
     if ($config->monetaryDecimalPoint &&
       $config->monetaryDecimalPoint != '.' &&
-      // CRM-7122 also check for Thousands Separator in config settings
+      /* CRM-7122 also check for Thousands Separator in config settings */
       $config->monetaryThousandSeparator != '.' &&
       substr_count($value, '.')
     ) {
@@ -554,7 +522,7 @@ class CRM_Utils_Rule {
       return TRUE;
     }
 
-    return preg_match('/(^-?\d+\.\d?\d?$)|(^-?\.\d\d?$)/', $value) ? TRUE : FALSE;
+    return preg_match('/(^-?\d+\.?\d*$)|(^-?\d*\.\d+$)/', $value) ? TRUE : FALSE;
   }
 
   /**
@@ -627,10 +595,8 @@ class CRM_Utils_Rule {
    * See how file rules are written in HTML/QuickForm/file.php
    * Checks to make sure the uploaded file is ascii
    *
-   * @param string $elementValue
-   *
    * @return bool
-   *   True if file has been uploaded, false otherwise
+   *   true if file has been uploaded, false otherwise
    */
   public static function asciiFile($elementValue) {
     if ((isset($elementValue['error']) && $elementValue['error'] == 0) ||
@@ -644,10 +610,8 @@ class CRM_Utils_Rule {
   /**
    * Checks to make sure the uploaded file is in UTF-8, recodes if it's not
    *
-   * @param array $elementValue
-   *
    * @return bool
-   *   Whether file has been uploaded properly and is now in UTF-8.
+   *   whether file has been uploaded properly and is now in UTF-8
    */
   public static function utf8File($elementValue) {
     $success = FALSE;
@@ -674,10 +638,8 @@ class CRM_Utils_Rule {
    * See how file rules are written in HTML/QuickForm/file.php
    * Checks to make sure the uploaded file is html
    *
-   * @param array $elementValue
-   *
    * @return bool
-   *   True if file has been uploaded, false otherwise
+   *   true if file has been uploaded, false otherwise
    */
   public static function htmlFile($elementValue) {
     if ((isset($elementValue['error']) && $elementValue['error'] == 0) ||
@@ -783,16 +745,20 @@ class CRM_Utils_Rule {
   }
 
   /**
-   * Determine whether the value contains a valid reference to a directory.
+   * @param $value
+   * @param $options
    *
-   * Paths stored in the setting system may be absolute -- or may be
-   * relative to the default data directory.
-   *
-   * @param string $path
    * @return bool
    */
-  public static function settingPath($path) {
-    return is_dir(Civi::paths()->getPath($path));
+  public static function autocomplete($value, $options) {
+    if ($value) {
+      $selectOption = CRM_Core_BAO_CustomOption::valuesByID($options['fieldID'], $options['optionGroupID']);
+
+      if (!in_array($value, $selectOption)) {
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   /**
@@ -868,27 +834,6 @@ class CRM_Utils_Rule {
    */
   public static function qfKey($key) {
     return ($key) ? CRM_Core_Key::valid($key) : FALSE;
-  }
-
-  /**
-   * Check if the values in the date range are in correct chronological order.
-   *
-   * @param array $fields
-   *  Fields of the form.
-   * @param $fieldName
-   *  Name of date range field.
-   * @param $errors
-   *  The error array.
-   * @param $title
-   *  Title of the date range to be displayed in the error message.
-   */
-  public static function validDateRange($fields, $fieldName, &$errors, $title) {
-    $lowDate = strtotime($fields[$fieldName . '_low']);
-    $highDate = strtotime($fields[$fieldName . '_high']);
-
-    if ($lowDate > $highDate) {
-      $errors[$fieldName . '_range_error'] = ts('%1: Please check that your date range is in correct chronological order.', array(1 => $title));
-    }
   }
 
 }

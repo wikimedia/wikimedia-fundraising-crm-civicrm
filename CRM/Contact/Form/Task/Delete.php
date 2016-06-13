@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,15 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class provides the functionality to delete a group of contacts.
- *
- * This class provides functionality for the actual deletion.
+ * This class provides the functionality to delete a group of
+ * contacts. This class provides functionality for the actual
+ * deletion.
  */
 class CRM_Contact_Form_Task_Delete extends CRM_Contact_Form_Task {
 
@@ -53,6 +55,8 @@ class CRM_Contact_Form_Task_Delete extends CRM_Contact_Form_Task {
 
   /**
    * Build all the data structures needed to build the form.
+   *
+   * @return void
    */
   public function preProcess() {
 
@@ -74,7 +78,7 @@ class CRM_Contact_Form_Task_Delete extends CRM_Contact_Form_Task {
       CRM_Core_Error::fatal(ts('You do not have permission to delete this contact.'));
     }
 
-    $this->assign('trash', Civi::settings()->get('contact_undelete') and !$this->_skipUndelete);
+    $this->assign('trash', CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'contact_undelete', NULL) and !$this->_skipUndelete);
     $this->assign('restore', $this->_restore);
 
     if ($this->_restore) {
@@ -144,6 +148,9 @@ class CRM_Contact_Form_Task_Delete extends CRM_Contact_Form_Task {
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
     $label = $this->_restore ? ts('Restore Contact(s)') : ts('Delete Contact(s)');
@@ -195,6 +202,9 @@ class CRM_Contact_Form_Task_Delete extends CRM_Contact_Form_Task {
 
   /**
    * Process the form after the input has been submitted and validated.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     $session = CRM_Core_Session::singleton();

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,12 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
  */
 
 /**
- * Form helper class for a phone object.
+ * form helper class for a phone object
  */
 class CRM_Contact_Form_Edit_Phone {
 
@@ -58,21 +59,23 @@ class CRM_Contact_Form_Edit_Phone {
     $form->applyFilter('__ALL__', 'trim');
 
     //phone type select
-    $form->addField("phone[$blockId][phone_type_id]", array(
-      'entity' => 'phone',
-      'class' => 'eight',
-      'placeholder' => NULL,
-    ));
+    $form->addSelect("phone[$blockId][phone_type_id]", array(
+        'entity' => 'phone',
+        'class' => 'eight',
+        'placeholder' => NULL,
+      ));
+
     //main phone number with crm_phone class
-    $form->addField("phone[$blockId][phone]", array('entity' => 'phone', 'class' => 'crm_phone twelve'));
-    $form->addField("phone[$blockId][phone_ext]", array('entity' => 'phone'));
+    $form->add('text', "phone[$blockId][phone]", ts('Phone'), array_merge(CRM_Core_DAO::getAttribute('CRM_Core_DAO_Phone', 'phone'), array('class' => 'crm_phone twelve')));
+    // phone extension
+    $form->addElement('text', "phone[$blockId][phone_ext]", ts('Extension'), CRM_Core_DAO::getAttribute('CRM_Core_DAO_Phone', 'phone_ext'));
+
     if (isset($form->_contactType) || $blockEdit) {
       //Block type select
-      $form->addField("phone[$blockId][location_type_id]", array(
-        'entity' => 'phone',
+      $form->addSelect("phone[$blockId][location_type_id]", array(
+          'entity' => 'phone',
           'class' => 'eight',
           'placeholder' => NULL,
-          'option_url' => NULL,
         ));
 
       //is_Primary radio

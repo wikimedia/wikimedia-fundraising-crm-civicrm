@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -189,7 +189,7 @@ class CRM_Core_Page_AJAX {
 
     // CRM-11831 @see http://www.malsup.com/jquery/form/#file-upload
     if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
-      CRM_Utils_System::setHttpHeader('Content-Type', 'application/json');
+      header('Content-Type: application/json');
     }
     else {
       $output = "<textarea>$output</textarea>";
@@ -209,22 +209,18 @@ class CRM_Core_Page_AJAX {
       // Encourage browsers to cache for a long time - 1 year
       $ttl = 60 * 60 * 24 * 364;
     }
-    CRM_Utils_System::setHttpHeader('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + $ttl));
-    CRM_Utils_System::setHttpHeader('Content-Type', 'application/javascript');
-    CRM_Utils_System::setHttpHeader('Cache-Control', "max-age=$ttl, public");
+    header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + $ttl));
+    header('Content-Type:	application/javascript');
+    header("Cache-Control: max-age=$ttl, public");
   }
 
   public static function defaultSortAndPagerParams($defaultOffset = 0, $defaultRowCount = 25, $defaultSort = NULL, $defaultsortOrder = 'asc') {
-    $params = array(
-      '_raw_values' => array(),
-    );
+    $params = array();
 
     $sortMapper = array();
-    if (isset($_GET['columns'])) {
-      foreach ($_GET['columns'] as $key => $value) {
-        $sortMapper[$key] = CRM_Utils_Type::validate($value['data'], 'MysqlColumnNameOrAlias');
-      };
-    }
+    foreach ($_GET['columns'] as $key => $value) {
+      $sortMapper[$key] = CRM_Utils_Type::validate($value['data'], 'MysqlColumnName');
+    };
 
     $offset = isset($_GET['start']) ? CRM_Utils_Type::validate($_GET['start'], 'Integer') : $defaultOffset;
     $rowCount = isset($_GET['length']) ? CRM_Utils_Type::validate($_GET['length'], 'Integer') : $defaultRowCount;
@@ -234,33 +230,12 @@ class CRM_Core_Page_AJAX {
 
     if ($sort) {
       $params['sortBy'] = "{$sort} {$sortOrder}";
-
-      $params['_raw_values']['sort'][0] = $sort;
-      $params['_raw_values']['order'][0] = $sortOrder;
     }
 
-    $params['offset'] = $offset;
-    $params['rp'] = $rowCount;
     $params['page'] = ($offset / $rowCount) + 1;
+    $params['rp'] = $rowCount;
 
     return $params;
-  }
-
-  public static function validateParams($requiredParams = array(), $optionalParams = array()) {
-    $params = array();
-
-    foreach ($requiredParams as $param => $type) {
-      $params[$param] = CRM_Utils_Type::validate(CRM_Utils_Array::value($param, $_GET), $type);
-    }
-
-    foreach ($optionalParams as $param => $type) {
-      if (CRM_Utils_Array::value($param, $_GET)) {
-        $params[$param] = CRM_Utils_Type::validate(CRM_Utils_Array::value($param, $_GET), $type);
-      }
-    }
-
-    return $params;
-
   }
 
 }

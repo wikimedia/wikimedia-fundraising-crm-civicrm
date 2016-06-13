@@ -6,6 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    $vendorDir . '/tecnickcom',
     $vendorDir . '/phpseclib/phpseclib/phpseclib',
 );

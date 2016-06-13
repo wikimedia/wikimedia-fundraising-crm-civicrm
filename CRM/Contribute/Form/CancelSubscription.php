@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class provides support for canceling recurring subscriptions.
+ * This class provides support for canceling recurring subscriptions
+ *
  */
 class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
   protected $_paymentProcessorObj = NULL;
@@ -51,6 +54,8 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
     $this->_mid = CRM_Utils_Request::retrieve('mid', 'Integer', $this, FALSE);
@@ -127,10 +132,12 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     // Determine if we can cancel recurring contribution via API with this processor
-    $cancelSupported = $this->_paymentProcessorObj->supports('CancelRecurring');
+    $cancelSupported = $this->_paymentProcessorObj->isSupported('cancelSubscription');
     if ($cancelSupported) {
       $searchRange = array();
       $searchRange[] = $this->createElement('radio', NULL, NULL, ts('Yes'), '1');
@@ -176,20 +183,22 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. Note that in edit/view mode
+   * the default values are retrieved from the database
    *
    * @return array
    *   array of default values
    */
   public function setDefaultValues() {
-    return array(
-      'is_notify' => 1,
-      'send_cancel_request' => 1,
-    );
+    $defaults = array('is_notify' => 1);
+    return $defaults;
   }
 
   /**
    * Process the form submission.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     $status = $message = NULL;
@@ -198,7 +207,7 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
 
     if ($this->_selfService) {
       // for self service force sending-request & notify
-      if ($this->_paymentProcessorObj->supports('cancelRecurring')) {
+      if ($this->_paymentProcessorObj->isSupported('cancelSubscription')) {
         $params['send_cancel_request'] = 1;
       }
 

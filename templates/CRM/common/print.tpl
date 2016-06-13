@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -53,11 +53,7 @@
 {/crmRegion}
 
 
-{crmRegion name='page-footer' allowCmsOverride=0}
-  <script type="text/javascript">
-    window.print();
-  </script>
-{/crmRegion}
+{crmRegion name='page-footer' allowCmsOverride=0}{/crmRegion}
 </div> {* end crm-container div *}
 </body>
 </html>

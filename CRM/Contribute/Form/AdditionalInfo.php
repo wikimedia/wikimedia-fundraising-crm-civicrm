@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.7                                                |
+  | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2016                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,20 +28,19 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contribute_Form_AdditionalInfo {
 
   /**
    * Build the form object for Premium Information.
    *
-   * Called from the CRM_Contribute_Form_Contribute function and seemingly nowhere else.
-   *
-   * Probably this should be on the form that uses it since it is not used on multiple forms.
-   *
-   * Putting it on this class doesn't seem to reduce complexity.
    *
    * @param CRM_Core_Form $form
+   *
+   * @return void
    */
   public static function buildPremium(&$form) {
     //premium section
@@ -88,7 +87,10 @@ class CRM_Contribute_Form_AdditionalInfo {
   /**
    * Build the form object for Additional Details.
    *
+   *
    * @param CRM_Core_Form $form
+   *
+   * @return void
    */
   public static function buildAdditionalDetail(&$form) {
     //Additional information section
@@ -172,7 +174,10 @@ class CRM_Contribute_Form_AdditionalInfo {
    *
    * Build the form object for PaymentReminders Information.
    *
+   *
    * @param CRM_Core_Form $form
+   *
+   * @return void
    */
   public static function buildPaymentReminders(&$form) {
     //PaymentReminders section
@@ -188,59 +193,59 @@ class CRM_Contribute_Form_AdditionalInfo {
   /**
    * Process the Premium Information.
    *
+   *
    * @param array $params
    * @param int $contributionID
    * @param int $premiumID
-   * @param array $options
+   * @param NULL $options
+   * @return void
    */
-  public static function processPremium($params, $contributionID, $premiumID = NULL, $options = array()) {
-    $selectedProductID = $params['product_name'][0];
-    $selectedProductOptionID = CRM_Utils_Array::value(1, $params['product_name']);
-
+  public static function processPremium(&$params, $contributionID, $premiumID = NULL, &$options = NULL) {
     $dao = new CRM_Contribute_DAO_ContributionProduct();
     $dao->contribution_id = $contributionID;
-    $dao->product_id = $selectedProductID;
+    $dao->product_id = $params['product_name'][0];
     $dao->fulfilled_date = CRM_Utils_Date::processDate($params['fulfilled_date'], NULL, TRUE);
     $isDeleted = FALSE;
-
     //CRM-11106
     $premiumParams = array(
-      'id' => $selectedProductID,
+      'id' => $params['product_name'][0],
     );
-
     $productDetails = array();
     CRM_Contribute_BAO_ManagePremiums::retrieve($premiumParams, $productDetails);
     $dao->financial_type_id = CRM_Utils_Array::value('financial_type_id', $productDetails);
-    if (!empty($options[$selectedProductID])) {
-      $dao->product_option = $options[$selectedProductID][$selectedProductOptionID];
+    if (!empty($options[$params['product_name'][0]])) {
+      $dao->product_option = $options[$params['product_name'][0]][$params['product_name'][1]];
     }
     if ($premiumID) {
-      $ContributionProduct = new CRM_Contribute_DAO_ContributionProduct();
-      $ContributionProduct->id = $premiumID;
-      $ContributionProduct->find(TRUE);
-      if ($ContributionProduct->product_id == $selectedProductID) {
+      $premoumDAO = new CRM_Contribute_DAO_ContributionProduct();
+      $premoumDAO->id = $premiumID;
+      $premoumDAO->find(TRUE);
+      if ($premoumDAO->product_id == $params['product_name'][0]) {
         $dao->id = $premiumID;
+        $premium = $dao->save();
       }
       else {
-        $ContributionProduct->delete();
+        $premoumDAO->delete();
         $isDeleted = TRUE;
+        $premium = $dao->save();
       }
     }
-
-    $dao->save();
+    else {
+      $premium = $dao->save();
+    }
     //CRM-11106
     if ($premiumID == NULL || $isDeleted) {
-      $premiumParams = array(
+      $params = array(
         'cost' => CRM_Utils_Array::value('cost', $productDetails),
         'currency' => CRM_Utils_Array::value('currency', $productDetails),
         'financial_type_id' => CRM_Utils_Array::value('financial_type_id', $productDetails),
         'contributionId' => $contributionID,
       );
       if ($isDeleted) {
-        $premiumParams['oldPremium']['product_id'] = $ContributionProduct->product_id;
-        $premiumParams['oldPremium']['contribution_id'] = $ContributionProduct->contribution_id;
+        $params['oldPremium']['product_id'] = $premoumDAO->product_id;
+        $params['oldPremium']['contribution_id'] = $premoumDAO->contribution_id;
       }
-      CRM_Core_BAO_FinancialTrxn::createPremiumTrxn($premiumParams);
+      CRM_Core_BAO_FinancialTrxn::createPremiumTrxn($params);
     }
   }
 
@@ -252,8 +257,10 @@ class CRM_Contribute_Form_AdditionalInfo {
    * @param int $contactID
    * @param int $contributionID
    * @param int $contributionNoteID
+   *
+   * @return void
    */
-  public static function processNote($params, $contactID, $contributionID, $contributionNoteID = NULL) {
+  public static function processNote(&$params, $contactID, $contributionID, $contributionNoteID = NULL) {
     //process note
     $noteParams = array(
       'entity_table' => 'civicrm_contribution',
@@ -272,9 +279,11 @@ class CRM_Contribute_Form_AdditionalInfo {
   /**
    * Process the Common data.
    *
+   *
    * @param array $params
-   * @param array $formatted
+   * @param $formatted
    * @param CRM_Core_Form $form
+   * @return void
    */
   public static function postProcessCommon(&$params, &$formatted, &$form) {
     $fields = array(
@@ -312,6 +321,7 @@ class CRM_Contribute_Form_AdditionalInfo {
       )
     );
     $formatted['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+      $customFields,
       CRM_Utils_Array::value('id', $params, NULL),
       'Contribution'
     );
@@ -337,9 +347,6 @@ class CRM_Contribute_Form_AdditionalInfo {
     if (!empty($params['payment_instrument_id'])) {
       $paymentInstrument = CRM_Contribute_PseudoConstant::paymentInstrument();
       $params['paidBy'] = $paymentInstrument[$params['payment_instrument_id']];
-      if ($params['paidBy'] != 'Check' && isset($params['check_number'])) {
-        unset($params['check_number']);
-      }
     }
 
     // retrieve individual prefix value for honoree
@@ -365,13 +372,12 @@ class CRM_Contribute_Form_AdditionalInfo {
       ) {
         $productDAO = new CRM_Contribute_DAO_Product();
         $productDAO->id = $params['product_name'][0];
-        $productOptionID = $params['product_name'][1];
         $productDAO->find(TRUE);
         $params['product_name'] = $productDAO->name;
         $params['product_sku'] = $productDAO->sku;
 
-        if (empty($params['product_option']) && !empty($form->_options[$productDAO->id])) {
-          $params['product_option'] = $form->_options[$productDAO->id][$productOptionID];
+        if (empty($params['product_option']) && !empty($form->_options[$params['product_name'][0]])) {
+          $params['product_option'] = $form->_options[$params['product_name'][0]][$params['product_name'][1]];
         }
       }
 
@@ -476,7 +482,7 @@ class CRM_Contribute_Form_AdditionalInfo {
     $template = CRM_Core_Smarty::singleton();
     $taxAmt = $template->get_template_vars('dataArray');
     $eventTaxAmt = $template->get_template_vars('totalTaxAmount');
-    $prefixValue = Civi::settings()->get('contribution_invoice_settings');
+    $prefixValue = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME, 'contribution_invoice_settings');
     $invoicing = CRM_Utils_Array::value('invoicing', $prefixValue);
     if ((!empty($taxAmt) || isset($eventTaxAmt)) && (isset($invoicing) && isset($prefixValue['is_email_pdf']))) {
       $isEmailPdf = TRUE;

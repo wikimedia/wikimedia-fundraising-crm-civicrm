@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -44,10 +44,18 @@
       {if $field.is_search_range}
         {assign var=from value=$field.name|cat:'_from'}
         {assign var=to value=$field.name|cat:'_to'}
+        {if $field.data_type neq 'Date'}
           <tr>
             <td class="label">{$form.$from.label}</td>
             <td class="description">{$form.$from.html}&nbsp;&nbsp;{$form.$to.label}&nbsp;&nbsp;{$form.$to.html}</td>
           </tr>
+        {else}
+          <tr>
+            <td class="label">{$form.$from.label}</td>
+            <td class="description">{include file="CRM/common/jcalendar.tpl" elementName=$from}
+              &nbsp;&nbsp;{$form.$to.label}&nbsp;&nbsp;{include file="CRM/common/jcalendar.tpl" elementName=$to}</td>
+          </tr>
+        {/if}
       {else}
         <tr>
           <td class="label">
@@ -65,7 +73,8 @@
             </td>
           {else}
             <td class="description">
-              {if ( $n eq 'birth_date' ) or ( $n eq 'deceased_date' ) }
+              {if ( $field.data_type eq 'Date' or
+              ( ( ( $n eq 'birth_date' ) or ( $n eq 'deceased_date' ) ) ) ) }
                 {include file="CRM/common/jcalendar.tpl" elementName=$n}
               {elseif $n|substr:0:5 eq 'phone'}
                 {assign var="phone_ext_field" value=$n|replace:'phone':'phone_ext'}

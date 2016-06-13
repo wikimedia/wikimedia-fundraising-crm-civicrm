@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -37,22 +39,20 @@
 class CRM_Admin_Page_APIExplorer extends CRM_Core_Page {
 
   /**
-   * Run page.
-   *
    * @return string
    */
   public function run() {
     CRM_Core_Resources::singleton()
       ->addScriptFile('civicrm', 'templates/CRM/Admin/Page/APIExplorer.js')
       ->addScriptFile('civicrm', 'bower_components/google-code-prettify/bin/prettify.min.js', 99)
-      ->addStyleFile('civicrm', 'bower_components/google-code-prettify/bin/prettify.min.css', 99)
-      ->addVars('explorer', array('max_joins' => \Civi\API\SelectQuery::MAX_JOINS));
+      ->addStyleFile('civicrm', 'bower_components/google-code-prettify/bin/prettify.min.css', 99);
 
     $this->assign('operators', CRM_Core_DAO::acceptedSQLOperators());
 
     // List example directories
+    global $civicrm_root;
     $examples = array();
-    foreach (scandir(\Civi::paths()->getPath('[civicrm.root]/api/v3/examples')) as $item) {
+    foreach (scandir(CRM_Utils_file::addTrailingSlash($civicrm_root, '/') . 'api/v3/examples') as $item) {
       if ($item && strpos($item, '.') === FALSE) {
         $examples[] = $item;
       }
@@ -73,12 +73,14 @@ class CRM_Admin_Page_APIExplorer extends CRM_Core_Page {
   }
 
   /**
-   * AJAX callback to fetch examples.
+   * AJAX callback to fetch examples
    */
   public static function getExampleFile() {
+    global $civicrm_root;
+    $basePath = CRM_Utils_file::addTrailingSlash($civicrm_root, '/');
     if (!empty($_GET['entity']) && strpos($_GET['entity'], '.') === FALSE) {
       $examples = array();
-      foreach (scandir(\Civi::paths()->getPath("[civicrm.root]/api/v3/examples/{$_GET['entity']}")) as $item) {
+      foreach (scandir($basePath . 'api/v3/examples/' . $_GET['entity']) as $item) {
         $item = str_replace('.php', '', $item);
         if ($item && strpos($item, '.') === FALSE) {
           $examples[] = array('key' => $item, 'value' => $item);
@@ -87,7 +89,7 @@ class CRM_Admin_Page_APIExplorer extends CRM_Core_Page {
       CRM_Utils_JSON::output($examples);
     }
     if (!empty($_GET['file']) && strpos($_GET['file'], '.') === FALSE) {
-      $fileName = \Civi::paths()->getPath("[civicrm.root]/api/v3/examples/{$_GET['file']}.php");
+      $fileName = $basePath . 'api/v3/examples/' . $_GET['file'] . '.php';
       if (file_exists($fileName)) {
         echo file_get_contents($fileName);
       }
@@ -100,7 +102,7 @@ class CRM_Admin_Page_APIExplorer extends CRM_Core_Page {
   }
 
   /**
-   * Ajax callback to display code docs.
+   * Ajax callback to display code docs
    */
   public static function getDoc() {
     // Verify the API handler we're talking to is valid.
@@ -124,8 +126,6 @@ class CRM_Admin_Page_APIExplorer extends CRM_Core_Page {
   }
 
   /**
-   * Get documentation block.
-   *
    * @param string $entity
    * @param string|null $action
    * @return array|bool

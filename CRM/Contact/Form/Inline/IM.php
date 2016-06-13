@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Form helper class for an IM object.
+ * form helper class for an IM object
  */
 class CRM_Contact_Form_Inline_IM extends CRM_Contact_Form_Inline {
 
@@ -61,6 +63,8 @@ class CRM_Contact_Form_Inline_IM extends CRM_Contact_Form_Inline {
 
   /**
    * Build the form object elements for im object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     parent::buildQuickForm();
@@ -151,6 +155,8 @@ class CRM_Contact_Form_Inline_IM extends CRM_Contact_Form_Inline {
 
   /**
    * Process the form.
+   *
+   * @return void
    */
   public function postProcess() {
     $params = $this->exportValues();
@@ -158,12 +164,6 @@ class CRM_Contact_Form_Inline_IM extends CRM_Contact_Form_Inline {
     // Process / save IMs
     $params['contact_id'] = $this->_contactId;
     $params['updateBlankLocInfo'] = TRUE;
-    $params['im']['isIdSet'] = TRUE;
-    foreach ($this->_ims as $count => $value) {
-      if (!empty($value['id']) && isset($params['im'][$count])) {
-        $params['im'][$count]['id'] = $value['id'];
-      }
-    }
     CRM_Core_BAO_Block::create('im', $params);
 
     $this->log();

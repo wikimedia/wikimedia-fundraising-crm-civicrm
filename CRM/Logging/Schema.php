@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Logging_Schema {
   private $logs = array();
@@ -44,17 +46,12 @@ class CRM_Logging_Schema {
     'logging/contribute/summary',
   );
 
-  /**
-   * Columns that should never be subject to logging.
-   *
-   * CRM-13028 / NYSS-6933 - table => array (cols) - to be excluded from the update statement
-   *
-   * @var array
-   */
+  //CRM-13028 / NYSS-6933 - table => array (cols) - to be excluded from the update statement
   private $exceptions = array(
     'civicrm_job' => array('last_run'),
     'civicrm_group' => array('cache_date', 'refresh_date'),
   );
+
 
   /**
    * Specifications of all log table including
@@ -138,8 +135,7 @@ AND    TABLE_NAME LIKE 'civicrm_%'
     $this->tables = preg_grep('/_cache$/', $this->tables, PREG_GREP_INVERT);
     $this->tables = preg_grep('/_log/', $this->tables, PREG_GREP_INVERT);
     $this->tables = preg_grep('/^civicrm_queue_/', $this->tables, PREG_GREP_INVERT);
-    //CRM-14672
-    $this->tables = preg_grep('/^civicrm_menu/', $this->tables, PREG_GREP_INVERT);
+    $this->tables = preg_grep('/^civicrm_menu/', $this->tables, PREG_GREP_INVERT); //CRM-14672
     $this->tables = preg_grep('/_temp_/', $this->tables, PREG_GREP_INVERT);
     // CRM-18178
     $this->tables = preg_grep('/_bak$/', $this->tables, PREG_GREP_INVERT);
@@ -190,10 +186,6 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
 
   /**
    * Return custom data tables for specified entity / extends.
-   *
-   * @param string $extends
-   *
-   * @return array
    */
   public function entityCustomDataLogTables($extends) {
     $customGroupTables = array();
@@ -222,12 +214,8 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
 
   /**
    * Drop triggers for all logged tables.
-   *
-   * @param string $tableName
    */
   public function dropTriggers($tableName = NULL) {
-    /** @var \Civi\Core\SqlTriggers $sqlTriggers */
-    $sqlTriggers = Civi::service('sql_triggers');
     $dao = new CRM_Core_DAO();
 
     if ($tableName) {
@@ -241,14 +229,14 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
       $validName = CRM_Core_DAO::shortenSQLName($table, 48, TRUE);
 
       // before triggers
-      $sqlTriggers->enqueueQuery("DROP TRIGGER IF EXISTS {$validName}_before_insert");
-      $sqlTriggers->enqueueQuery("DROP TRIGGER IF EXISTS {$validName}_before_update");
-      $sqlTriggers->enqueueQuery("DROP TRIGGER IF EXISTS {$validName}_before_delete");
+      $dao->executeTriggerQuery("DROP TRIGGER IF EXISTS {$validName}_before_insert");
+      $dao->executeTriggerQuery("DROP TRIGGER IF EXISTS {$validName}_before_update");
+      $dao->executeTriggerQuery("DROP TRIGGER IF EXISTS {$validName}_before_delete");
 
       // after triggers
-      $sqlTriggers->enqueueQuery("DROP TRIGGER IF EXISTS {$validName}_after_insert");
-      $sqlTriggers->enqueueQuery("DROP TRIGGER IF EXISTS {$validName}_after_update");
-      $sqlTriggers->enqueueQuery("DROP TRIGGER IF EXISTS {$validName}_after_delete");
+      $dao->executeTriggerQuery("DROP TRIGGER IF EXISTS {$validName}_after_insert");
+      $dao->executeTriggerQuery("DROP TRIGGER IF EXISTS {$validName}_after_update");
+      $dao->executeTriggerQuery("DROP TRIGGER IF EXISTS {$validName}_after_delete");
     }
 
     // now lets also be safe and drop all triggers that start with
@@ -259,13 +247,17 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
       $triggers = $dao->executeQuery("SHOW TRIGGERS LIKE 'civicrm_%'");
 
       while ($triggers->fetch()) {
-        $sqlTriggers->enqueueQuery("DROP TRIGGER IF EXISTS {$triggers->Trigger}");
+        // note that drop trigger has a wierd syntax and hence we do not
+        // send the trigger name as a string (i.e. its not quoted
+        $dao->executeTriggerQuery("DROP TRIGGER IF EXISTS {$triggers->Trigger}");
       }
     }
   }
 
   /**
-   * Enable site-wide logging.
+   * Enable sitewide logging.
+   *
+   * @return void
    */
   public function enableLogging() {
     $this->fixSchemaDifferences(TRUE);
@@ -276,6 +268,8 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
    * Sync log tables and rebuild triggers.
    *
    * @param bool $enableLogging : Ensure logging is enabled
+   *
+   * @return void
    */
   public function fixSchemaDifferences($enableLogging = FALSE) {
     $config = CRM_Core_Config::singleton();
@@ -375,7 +369,7 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
    * @param bool $rebuildTrigger
    *   should we rebuild the triggers.
    *
-   * @return bool
+   * @return void
    */
   public function fixSchemaDifferencesFor($table, $cols = array(), $rebuildTrigger = FALSE) {
     if (empty($table)) {
@@ -419,9 +413,7 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
   }
 
   /**
-   * Get query table.
-   *
-   * @param string $table
+   * @param $table
    *
    * @return array
    */
@@ -433,10 +425,8 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
   }
 
   /**
-   * Get column query.
-   *
-   * @param string $col
-   * @param bool $createQuery
+   * @param $col
+   * @param $createQuery
    *
    * @return array|mixed|string
    */
@@ -449,8 +439,6 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
   }
 
   /**
-   * Fix schema differences.
-   *
    * @param bool $rebuildTrigger
    */
   public function fixSchemaDifferencesForAll($rebuildTrigger = FALSE) {
@@ -474,13 +462,11 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
   }
 
   /**
-   * Fix timestamp.
-   *
    * Log_civicrm_contact.modified_date for example would always be copied from civicrm_contact.modified_date,
    * so there's no need for a default timestamp and therefore we remove such default timestamps
    * also eliminate the NOT NULL constraint, since we always copy and schema can change down the road)
    *
-   * @param string $query
+   * @param $query
    *
    * @return mixed
    */
@@ -492,9 +478,6 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
     return $query;
   }
 
-  /**
-   * Add reports.
-   */
   private function addReports() {
     $titles = array(
       'logging/contact/detail' => ts('Logging Details'),
@@ -526,11 +509,6 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
 
   /**
    * Get an array of column names of the given table.
-   *
-   * @param string $table
-   * @param bool $force
-   *
-   * @return array
    */
   private function columnsOf($table, $force = FALSE) {
     if ($force || !isset(\Civi::$statics[__CLASS__]['columnsOf'][$table])) {
@@ -550,17 +528,11 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
 
   /**
    * Get an array of columns and their details like DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT for the given table.
-   *
-   * @param string $table
-   *
-   * @return array
    */
   private function columnSpecsOf($table) {
-    static $civiDB = NULL;
-    if (empty(\Civi::$statics[__CLASS__]['columnSpecs'])) {
-      \Civi::$statics[__CLASS__]['columnSpecs'] = array();
-    }
-    if (empty(\Civi::$statics[__CLASS__]['columnSpecs']) || !isset(\Civi::$statics[__CLASS__]['columnSpecs'][$table])) {
+    static $columnSpecs = array(), $civiDB = NULL;
+
+    if (empty($columnSpecs) || !isset($columnSpecs[$table])) {
       if (!$civiDB) {
         $dao = new CRM_Contact_DAO_Contact();
         $civiDB = $dao->_database;
@@ -577,30 +549,26 @@ WHERE  table_schema IN ('{$this->db}', '{$civiDB}')";
         return array();
       }
       while ($dao->fetch()) {
-        if (!array_key_exists($dao->TABLE_NAME, \Civi::$statics[__CLASS__]['columnSpecs'])) {
-          \Civi::$statics[__CLASS__]['columnSpecs'][$dao->TABLE_NAME] = array();
+        if (!array_key_exists($dao->TABLE_NAME, $columnSpecs)) {
+          $columnSpecs[$dao->TABLE_NAME] = array();
         }
-        \Civi::$statics[__CLASS__]['columnSpecs'][$dao->TABLE_NAME][$dao->COLUMN_NAME] = array(
+        $columnSpecs[$dao->TABLE_NAME][$dao->COLUMN_NAME] = array(
           'COLUMN_NAME' => $dao->COLUMN_NAME,
           'DATA_TYPE' => $dao->DATA_TYPE,
           'IS_NULLABLE' => $dao->IS_NULLABLE,
           'COLUMN_DEFAULT' => $dao->COLUMN_DEFAULT,
         );
         if (($first = strpos($dao->COLUMN_TYPE, '(')) != 0) {
-          \Civi::$statics[__CLASS__]['columnSpecs'][$dao->TABLE_NAME][$dao->COLUMN_NAME]['LENGTH'] = substr(
-            $dao->COLUMN_TYPE, $first, strpos($dao->COLUMN_TYPE, ')')
-          );
+          $columnSpecs[$dao->TABLE_NAME][$dao->COLUMN_NAME]['LENGTH'] = substr($dao->COLUMN_TYPE, $first, strpos($dao->COLUMN_TYPE, ')'));
         }
       }
     }
-    return \Civi::$statics[__CLASS__]['columnSpecs'][$table];
+    return $columnSpecs[$table];
   }
 
   /**
-   * Get columns that have changed.
-   *
-   * @param string $civiTable
-   * @param string $logTable
+   * @param $civiTable
+   * @param $logTable
    *
    * @return array
    */
@@ -728,9 +696,6 @@ COLS;
     $this->logs[$table] = "log_$table";
   }
 
-  /**
-   * Delete reports.
-   */
   private function deleteReports() {
     // disable logging templates
     CRM_Core_DAO::executeQuery("
@@ -804,20 +769,25 @@ COLS;
    * Predicate whether the logging triggers are in place.
    */
   private function triggersExist() {
+    if (civicrm_api3('Setting', 'getvalue', array('name' => 'logging_no_trigger_permission', 'group' => 'CiviCRM Preferences'))) {
+      // The mysql user does not have permission to check but since they have gone to the effort
+      // of setting this setting we assume they do.
+      return TRUE;
+    }
     // FIXME: probably should be a bit more thorough…
     // note that the LIKE parameter is TABLE NAME
     return (bool) CRM_Core_DAO::singleValueQuery("SHOW TRIGGERS LIKE 'civicrm_contact'");
   }
 
   /**
-   * Get trigger info.
-   *
-   * @param array $info
+   * @param $info
    * @param null $tableName
    * @param bool $force
    */
   public function triggerInfo(&$info, $tableName = NULL, $force = FALSE) {
-    if (!CRM_Core_Config::singleton()->logging) {
+    // check if we have logging enabled
+    $config =& CRM_Core_Config::singleton();
+    if (!$config->logging) {
       return;
     }
 
@@ -867,7 +837,7 @@ COLS;
         $sqlStmt .= "NEW.$column, ";
         $deleteSQL .= "OLD.$column, ";
       }
-      if (civicrm_api3('Setting', 'getvalue', array('name' => 'logging_uniqueid_date'))) {
+      if (civicrm_api3('Setting', 'getvalue', array('name' => 'logging_uniqueid_date', 'group' => 'CiviCRM Preferences'))) {
         // Note that when connecting directly via mysql @uniqueID may not be set so a fallback is
         // 'c_' to identify a non-CRM connection + timestamp to the hour + connection_id
         // If the connection_id is longer than 6 chars it will be truncated.

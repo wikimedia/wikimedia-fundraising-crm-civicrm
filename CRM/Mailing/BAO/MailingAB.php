@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -115,6 +117,8 @@ class CRM_Mailing_BAO_MailingAB extends CRM_Mailing_DAO_MailingAB {
    *
    * @param int $id
    *   Id of the mail to delete.
+   *
+   * @return void
    */
   public static function del($id) {
     if (empty($id)) {
@@ -147,7 +151,7 @@ class CRM_Mailing_BAO_MailingAB extends CRM_Mailing_DAO_MailingAB {
    * @param CRM_Mailing_DAO_MailingAB $dao
    */
   public static function distributeRecipients(CRM_Mailing_DAO_MailingAB $dao) {
-    CRM_Mailing_BAO_Mailing::getRecipients($dao->mailing_id_a, $dao->mailing_id_a, TRUE);
+    CRM_Mailing_BAO_Mailing::getRecipients($dao->mailing_id_a, $dao->mailing_id_a, NULL, NULL, TRUE);
 
     //calculate total number of random recipients for mail C from group_percentage selected
     $totalCount = CRM_Mailing_BAO_Recipients::mailingSize($dao->mailing_id_a);

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,16 +28,21 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for Mapping.
+ * This class generates form components for Mapping
+ *
  */
 class CRM_Admin_Form_Mapping extends CRM_Admin_Form {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -87,6 +92,9 @@ class CRM_Admin_Form_Mapping extends CRM_Admin_Form {
 
   /**
    * Process the form submission.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     // store the submitted values in an array
@@ -95,7 +103,6 @@ class CRM_Admin_Form_Mapping extends CRM_Admin_Form {
     if ($this->_action == CRM_Core_Action::DELETE) {
       if ($this->_id) {
         CRM_Core_BAO_Mapping::del($this->_id);
-        CRM_Core_Session::setStatus(ts('Selected mapping has been deleted successfully.'), ts('Deleted'), 'success');
       }
     }
     else {

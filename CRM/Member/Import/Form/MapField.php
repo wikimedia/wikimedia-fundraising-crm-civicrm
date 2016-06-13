@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -280,21 +280,22 @@ class CRM_Member_Import_Form_MapField extends CRM_Import_Form_MapField {
     $this->setDefaults($defaults);
 
     $this->addButtons(array(
-      array(
-        'type' => 'back',
-        'name' => ts('Previous'),
-      ),
-      array(
-        'type' => 'next',
-        'name' => ts('Continue'),
-        'spacing' => '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
-        'isDefault' => TRUE,
-      ),
-      array(
-        'type' => 'cancel',
-        'name' => ts('Cancel'),
-      ),
-    ));
+        array(
+          'type' => 'back',
+          'name' => ts('Previous'),
+        ),
+        array(
+          'type' => 'next',
+          'name' => ts('Continue'),
+          'spacing' => '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
+          'isDefault' => TRUE,
+        ),
+        array(
+          'type' => 'cancel',
+          'name' => ts('Cancel'),
+        ),
+      )
+    );
   }
 
   /**
@@ -362,7 +363,7 @@ class CRM_Member_Import_Form_MapField extends CRM_Import_Form_MapField {
               }
               $errors['_qf_default'] .= ts('Missing required contact matching fields.') . " $fieldMessage " . ts('(Sum of all weights should be greater than or equal to threshold: %1).', array(
                 1 => $threshold,
-              )) . ' ' . ts('(OR Membership ID if update mode.)') . '<br />';
+                )) . ' ' . ts('(OR Membership ID if update mode.)') . '<br />';
             }
           }
           else {
@@ -371,7 +372,7 @@ class CRM_Member_Import_Form_MapField extends CRM_Import_Form_MapField {
             }
             $errors['_qf_default'] .= ts('Missing required field: %1', array(
               1 => $title,
-            )) . '<br />';
+              )) . '<br />';
           }
         }
       }

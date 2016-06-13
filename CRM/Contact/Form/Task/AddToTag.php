@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,15 +28,15 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class provides the functionality to delete a group of contacts.
- *
- * This class provides functionality for the actual addition of contacts to groups.
- *
- * Wow is that copy & paste gone wrong or what? What does this class do? Anyone, anyone.
+ * This class provides the functionality to delete a group of
+ * contacts. This class provides functionality for the actual
+ * addition of contacts to groups.
  */
 class CRM_Contact_Form_Task_AddToTag extends CRM_Contact_Form_Task {
 
@@ -56,6 +56,9 @@ class CRM_Contact_Form_Task_AddToTag extends CRM_Contact_Form_Task {
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
     // add select for tag
@@ -91,6 +94,9 @@ class CRM_Contact_Form_Task_AddToTag extends CRM_Contact_Form_Task {
 
   /**
    * Process the form after the input has been submitted and validated.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
     //get the submitted values in an array
@@ -136,8 +142,7 @@ class CRM_Contact_Form_Task_AddToTag extends CRM_Contact_Form_Task {
     foreach ($allTags as $key => $dnc) {
       $this->_name[] = $this->_tags[$key];
 
-      list($total, $added, $notAdded) = CRM_Core_BAO_EntityTag::addEntitiesToTag($this->_contactIds, $key,
-        'civicrm_contact', FALSE);
+      list($total, $added, $notAdded) = CRM_Core_BAO_EntityTag::addEntitiesToTag($this->_contactIds, $key);
 
       $status = array(ts('%count contact tagged', array('count' => $added, 'plural' => '%count contacts tagged')));
       if ($notAdded) {

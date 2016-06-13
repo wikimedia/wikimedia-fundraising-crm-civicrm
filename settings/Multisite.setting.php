@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -43,7 +43,7 @@ return array(
     'name' => 'is_enabled',
     'title' => 'Multisite Is enabled',
     'type' => 'Integer',
-    'default' => '0',
+    'default' => NULL,
     'add' => '4.1',
     'is_domain' => 1,
     'is_contact' => 0,
@@ -56,7 +56,7 @@ return array(
     'name' => 'domain_group_id',
     'title' => 'Multisite Domain Group',
     'type' => 'Integer',
-    'default' => '0',
+    'default' => NULL,
     'add' => '4.1',
     'is_domain' => 1,
     'is_contact' => 0,
@@ -69,7 +69,7 @@ return array(
     'name' => 'event_price_set_domain_id',
     'title' => 'Domain Event Price Set',
     'type' => 'Integer',
-    'default' => '0',
+    'default' => NULL,
     'add' => '4.1',
     'is_domain' => 1,
     'is_contact' => 0,
@@ -82,7 +82,7 @@ return array(
     'name' => 'uniq_email_per_site',
     'type' => 'Integer',
     'title' => 'Unique Email per Domain?',
-    'default' => '0',
+    'default' => NULL,
     'add' => '4.1',
     'is_domain' => 1,
     'is_contact' => 0,

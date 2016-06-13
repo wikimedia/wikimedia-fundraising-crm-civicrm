@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,7 +26,7 @@
 {strip}
   <div class="action-link">
     {if $templateUrl}
-      <a href="{$templateUrl}" class="button"><span><i class="crm-i fa-plus-circle"></i> {$newButton}</span></a>
+      <a href="{$templateUrl}" class="button"><span><div class="icon ui-icon-circle-plus"></div> {$newButton}</span></a>
     {/if}
     {if $reportUrl}
       <a href="{$reportUrl}" class="button"><span>{ts}View All Reports{/ts}</span></a>
@@ -38,7 +38,7 @@
       {foreach from=$list item=rows key=report}
         <div class="crm-accordion-wrapper crm-accordion_{$report}-accordion ">
           <div class="crm-accordion-header">
-            {if $title}{$title}{elseif $report EQ 'Contribute'}{ts}Contribution Reports{/ts}{else}{$report} {ts}Reports{/ts}{/if}</a>
+            {if $title}{$title}{elseif $report EQ 'Contribute'}{ts}Contribution Reports{/ts}{else}{ts}{$report} Reports{/ts}{/if}</a>
           </div><!-- /.crm-accordion-header -->
           <div class="crm-accordion-body">
             <div id="{$report}" class="boxBlock">
@@ -53,7 +53,6 @@
                       <ul class="panel">
                         {foreach from=$row.actions item=action key=action_name}
                           <li><a href="{$action.url}" class="{$action_name} action-item crm-hover-button small-popup"
-                          {if $action.confirm_message}onclick="return window.confirm({$action.confirm_message|json_encode|htmlspecialchars})"{/if}
                           title="{$action.label}">{$action.label}</a></li>
                         {/foreach}
                       </ul>
@@ -70,7 +69,7 @@
 
     <div class="action-link">
       {if $templateUrl}
-        <a href="{$templateUrl}" class="button"><span><i class="crm-i fa-plus-circle"></i> {$newButton}</span></a>
+        <a href="{$templateUrl}" class="button"><span><div class="icon ui-icon-circle-plus"></div> {$newButton}</span></a>
       {/if}
       {if $reportUrl}
         <a href="{$reportUrl}" class="button"><span>{ts}View All Reports{/ts}</span></a>
@@ -81,11 +80,15 @@
     <div class="crm-content-block">
       <div class="messages status no-popup">
         <div class="icon inform-icon"></div>&nbsp;
-        {ts 1=$compName}No %1 reports have been created.{/ts} &nbsp;
-        {if $templateUrl}
-          {ts 1=$templateUrl}You can create reports by selecting from the <a href="%1">list of report templates here.</a>{/ts}
+        {if $myReports}
+          {ts}You do not have any private reports. To add a report to this section, edit the Report Settings for a report and set 'Add to My Reports' to Yes.{/ts} &nbsp;
         {else}
-          {ts}Contact your site administrator for help creating reports.{/ts}
+          {ts 1=$compName}No %1 reports have been created.{/ts} &nbsp;
+          {if $templateUrl}
+            {ts 1=$templateUrl}You can create reports by selecting from the <a href="%1">list of report templates here.</a>{/ts}
+          {else}
+            {ts}Contact your site administrator for help creating reports.{/ts}
+          {/if}
         {/if}
       </div>
     </div>

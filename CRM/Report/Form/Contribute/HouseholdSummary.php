@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -80,9 +80,6 @@ class CRM_Report_Form_Contribute_HouseholdSummary extends CRM_Report_Form {
           'household_name' => array('title' => ts('Household Name')),
         ),
         'grouping' => 'household-fields',
-      ),
-      'civicrm_line_item' => array(
-        'dao' => 'CRM_Price_DAO_LineItem',
       ),
       'civicrm_relationship' => array(
         'dao' => 'CRM_Contact_DAO_Relationship',
@@ -194,7 +191,6 @@ class CRM_Report_Form_Contribute_HouseholdSummary extends CRM_Report_Form {
         'title' => ts('Campaign'),
         'operatorType' => CRM_Report_Form::OP_MULTISELECT,
         'options' => $this->activeCampaigns,
-        'type' => CRM_Utils_Type::T_INT,
       );
     }
     $this->_currencyColumn = 'civicrm_contribution_currency';
@@ -266,7 +262,6 @@ class CRM_Report_Form_Contribute_HouseholdSummary extends CRM_Report_Form {
                       {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_email']}.contact_id AND
                       {$this->_aliases['civicrm_email']}.is_primary = 1\n ";
     }
-    $this->getPermissionedFTQuery($this);
   }
 
   public function where() {
@@ -279,6 +274,7 @@ class CRM_Report_Form_Contribute_HouseholdSummary extends CRM_Report_Form {
             $relative = CRM_Utils_Array::value("{$fieldName}_relative", $this->_params);
             $from = CRM_Utils_Array::value("{$fieldName}_from", $this->_params);
             $to = CRM_Utils_Array::value("{$fieldName}_to", $this->_params);
+
             $clause = $this->dateClause($field['name'], $relative, $from, $to, $field['type']);
           }
           else {

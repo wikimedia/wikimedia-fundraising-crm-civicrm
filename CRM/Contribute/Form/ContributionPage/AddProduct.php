@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -41,7 +43,10 @@ class CRM_Contribute_Form_ContributionPage_AddProduct extends CRM_Contribute_For
   protected $_pid;
 
   /**
-   * Pre process the form.
+   * Pre  process the form.
+   *
+   *
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -63,9 +68,11 @@ class CRM_Contribute_Form_ContributionPage_AddProduct extends CRM_Contribute_For
   }
 
   /**
-   * Set default values for the form.
+   * Set default values for the form. Note that in edit/view mode
+   * the default values are retrieved from the database
    *
-   * Note that in edit/view mode the default values are retrieved from the database.
+   *
+   * @return void
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -105,6 +112,8 @@ class CRM_Contribute_Form_ContributionPage_AddProduct extends CRM_Contribute_For
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
     $urlParams = 'civicrm/admin/contribute/premium';
@@ -186,8 +195,6 @@ class CRM_Contribute_Form_ContributionPage_AddProduct extends CRM_Contribute_For
         unset($financialType[$key]);
       }
     }
-    // Check permissioned financial types
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialType, CRM_Core_Action::ADD);
     if (count($financialType)) {
       $this->assign('financialType', $financialType);
     }
@@ -222,6 +229,8 @@ class CRM_Contribute_Form_ContributionPage_AddProduct extends CRM_Contribute_For
 
   /**
    * Process the form.
+   *
+   * @return void
    */
   public function postProcess() {
     // get the submitted form values.

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -114,6 +114,8 @@ class CRM_Report_Form_Instance {
 
     $form->addElement('checkbox', 'addToDashboard', ts('Available for Dashboard?'), NULL,
       array('onclick' => "return showHideByValue('addToDashboard','','limit_result','table-row','radio',false);"));
+    $form->addElement('checkbox', 'add_to_my_reports', ts('Add to My Reports?'), NULL);
+
     $form->addElement('checkbox', 'is_reserved', ts('Reserved Report?'));
     if (!CRM_Core_Permission::check('administer reserved reports')) {
       $form->freeze('is_reserved');
@@ -227,18 +229,11 @@ class CRM_Report_Form_Instance {
     }
 
     $config = CRM_Core_Config::singleton();
-
-    // Add a special region for the default HTML header of printed reports.  It
-    // won't affect reports with customized headers, just ones with the default.
-    $printHeaderRegion = CRM_Core_Region::instance('default-report-header', FALSE);
-    $htmlHeader = ($printHeaderRegion) ? $printHeaderRegion->render('', FALSE) : '';
-
     $defaults['report_header'] = $report_header = "<html>
   <head>
     <title>CiviCRM Report</title>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
     <style type=\"text/css\">@import url({$config->userFrameworkResourceURL}css/print.css);</style>
-    {$htmlHeader}
   </head>
   <body><div id=\"crm-container\">";
 
@@ -264,11 +259,12 @@ class CRM_Report_Form_Instance {
     if ($instanceID) {
       // this is already retrieved via Form.php
       $defaults['description'] = CRM_Utils_Array::value('description', $defaults);
-      if (!empty($defaults['header'])) {
-        $defaults['report_header'] = $defaults['header'];
-      }
-      if (!empty($defaults['footer'])) {
-        $defaults['report_footer'] = $defaults['footer'];
+      $defaults['report_header'] = CRM_Utils_Array::value('header', $defaults);
+      $defaults['report_footer'] = CRM_Utils_Array::value('footer', $defaults);
+      // CRM-17310 private reports option.
+      $defaults['add_to_my_reports'] = 0;
+      if (CRM_Utils_Array::value('owner_id', $defaults) != NULL) {
+        $defaults['add_to_my_reports'] = 1;
       }
 
       if (!empty($defaults['navigation_id'])) {
@@ -350,10 +346,24 @@ class CRM_Report_Form_Instance {
       'report_header',
       'report_footer',
       'grouprole',
+      'task',
     );
     foreach ($unsetFields as $field) {
       unset($formValues[$field]);
     }
+
+    // CRM-17310 my reports functionality - we should set owner if the checkbox is 1,
+    // it seems to be not set at all if unchecked.
+    if (!empty($formValues['add_to_my_reports'])) {
+      $params['owner_id'] = CRM_Core_Session::singleton()->getLoggedInContactID();
+      $params['permission'] = 'access own private reports';
+      $params['grouprole'] = array();
+    }
+    else {
+      $params['owner_id'] = 'null';
+    }
+    unset($formValues['add_to_my_reports']);
+
     $view_mode = $formValues['view_mode'];
     // pass form_values as string
     $params['form_values'] = serialize($formValues);

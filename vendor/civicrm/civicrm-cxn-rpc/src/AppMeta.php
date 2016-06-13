@@ -82,5 +82,4 @@ class AppMeta {
   public static function validateAppId($appId) {
     return !empty($appId) && preg_match('/^app:[a-zA-Z0-9\.]+$/', $appId);
   }
-
 }

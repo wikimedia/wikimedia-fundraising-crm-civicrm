@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  */
 class CRM_Report_Form_Contribute_Lybunt extends CRM_Report_Form {
 
@@ -227,7 +227,7 @@ class CRM_Report_Form_Contribute_Lybunt extends CRM_Report_Form {
             'title' => ts('Financial Type'),
             'type' => CRM_Utils_Type::T_INT,
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes(),
+            'options' => CRM_Contribute_PseudoConstant::financialType(),
           ),
           'contribution_status_id' => array(
             'title' => ts('Contribution Status'),
@@ -289,7 +289,7 @@ class CRM_Report_Form_Contribute_Lybunt extends CRM_Report_Form {
     }
     if ($fieldName == 'receive_date') {
       return self::fiscalYearOffset($field['dbAlias']) .
-        " as {$tableName}_{$fieldName} ";
+      " as {$tableName}_{$fieldName} ";
     }
     return FALSE;
   }
@@ -609,8 +609,6 @@ class CRM_Report_Form_Contribute_Lybunt extends CRM_Report_Form {
    */
   public function beginPostProcessCommon() {
     $this->buildQuery();
-    // @todo this acl has no test coverage and is very hard to test manually so could be fragile.
-    $this->getPermissionedFTQuery($this);
     $this->resetFormSqlAndWhereHavingClauses();
 
     $this->contactTempTable = 'civicrm_report_temp_lybunt_c_' . date('Ymd_') . uniqid();
@@ -671,7 +669,6 @@ class CRM_Report_Form_Contribute_Lybunt extends CRM_Report_Form {
 
     $this->groupBy();
     $this->orderBy();
-    $this->getPermissionedFTQuery($this);
     $limitFilter = '';
 
     // order_by columns not selected for display need to be included in SELECT

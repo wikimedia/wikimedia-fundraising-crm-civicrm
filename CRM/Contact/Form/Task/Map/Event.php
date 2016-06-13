@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,16 +28,22 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id: Event.php 45499 2013-02-08 12:31:05Z kurund $
+ *
  */
 
 /**
- * This class provides the functionality to map the address for group of contacts.
+ * This class provides the functionality to map
+ * the address for group of
+ * contacts.
  */
 class CRM_Contact_Form_Task_Map_Event extends CRM_Contact_Form_Task_Map {
 
   /**
    * Build all the data structures needed to build the form.
+   *
+   * @return void
    */
   public function preProcess() {
     $ids = CRM_Utils_Request::retrieve('eid', 'Positive',
@@ -55,6 +61,9 @@ class CRM_Contact_Form_Task_Map_Event extends CRM_Contact_Form_Task_Map {
   /**
    * Use the form name to create the tpl file name.
    *
+   * @return string
+   */
+  /**
    * @return string
    */
   public function getTemplateFileName() {

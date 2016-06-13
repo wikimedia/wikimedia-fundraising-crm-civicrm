@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -41,9 +41,7 @@ class CRM_Core_Exception extends PEAR_Exception {
   private $errorData = array();
 
   /**
-   * Class constructor.
-   *
-   * @param string $message
+   * @param $message
    * @param int $error_code
    * @param array $errorData
    * @param null $previous
@@ -54,27 +52,20 @@ class CRM_Core_Exception extends PEAR_Exception {
   }
 
   /**
-   * Custom string representation of object.
-   *
+   * custom string representation of object.
    * @return string
    */
   public function __toString() {
     return __CLASS__ . ": [{$this->errorData['error_code']}: {$this->message}\n";
   }
 
-  /**
-   * Get error code.
-   *
-   * @return mixed
-   */
   public function getErrorCode() {
     return $this->errorData['error_code'];
   }
 
   /**
-   * Return specific error information.
-   *
-   * (Can be used for more detailed error messages or translation.)
+   * Return specific error information that can be used for more detailed
+   * error messages or translation.
    *
    * This method may be overridden in child exception classes in order
    * to add functionality not present in PEAR_Exception and is a placeholder

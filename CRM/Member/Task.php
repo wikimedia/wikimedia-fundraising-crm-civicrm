@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -67,17 +67,17 @@ class CRM_Member_Task {
     if (!(self::$_tasks)) {
       self::$_tasks = array(
         1 => array(
-          'title' => ts('Delete memberships'),
+          'title' => ts('Delete Memberships'),
           'class' => 'CRM_Member_Form_Task_Delete',
           'result' => FALSE,
         ),
         2 => array(
-          'title' => ts('Print selected rows'),
+          'title' => ts('Print Selected Rows'),
           'class' => 'CRM_Member_Form_Task_Print',
           'result' => FALSE,
         ),
         3 => array(
-          'title' => ts('Export members'),
+          'title' => ts('Export Members'),
           'class' => array(
             'CRM_Export_Form_Select',
             'CRM_Export_Form_Map',
@@ -85,12 +85,12 @@ class CRM_Member_Task {
           'result' => FALSE,
         ),
         4 => array(
-          'title' => ts('Email - send now'),
+          'title' => ts('Send Email to Contacts'),
           'class' => 'CRM_Member_Form_Task_Email',
           'result' => TRUE,
         ),
         5 => array(
-          'title' => ts('Update multiple memberships'),
+          'title' => ts('Batch Update Members Via Profile'),
           'class' => array(
             'CRM_Member_Form_Task_PickProfile',
             'CRM_Member_Form_Task_Batch',
@@ -98,14 +98,14 @@ class CRM_Member_Task {
           'result' => TRUE,
         ),
         6 => array(
-          'title' => ts('Mailing labels - print'),
+          'title' => ts('Mailing Labels'),
           'class' => array(
             'CRM_Member_Form_Task_Label',
           ),
           'result' => TRUE,
         ),
         7 => array(
-          'title' => ts('PDF letters - print for memberships'),
+          'title' => ts('Print PDF Letters for Memberships'),
           'class' => 'CRM_Member_Form_Task_PDFLetter',
           'result' => FALSE,
         ),

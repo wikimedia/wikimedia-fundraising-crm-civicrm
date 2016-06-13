@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
  * Main page for viewing contact.
+ *
  */
 class CRM_Contact_Page_View extends CRM_Core_Page {
 
@@ -65,9 +68,10 @@ class CRM_Contact_Page_View extends CRM_Core_Page {
   protected $_permission;
 
   /**
-   * Heart of the viewing process.
+   * Heart of the viewing process. The runner gets all the meta data for
+   * the contact and calls the appropriate type of page to view.
    *
-   * The runner gets all the meta data for the contact and calls the appropriate type of page to view.
+   * @return void
    */
   public function preProcess() {
     // process url params
@@ -135,7 +139,6 @@ class CRM_Contact_Page_View extends CRM_Core_Page {
         $found = TRUE;
       }
 
-      $context = CRM_Utils_Array::value('context', $_GET);
       if (!$found) {
         // seems like we did not find any contacts
         // maybe due to bug CRM-9096
@@ -143,15 +146,6 @@ class CRM_Contact_Page_View extends CRM_Core_Page {
         if (!$pos['foundEntry']) {
           $navContacts['nextPrevError'] = 1;
         }
-      }
-      elseif ($context) {
-        $this->assign('context', $context);
-        CRM_Utils_System::appendBreadCrumb(array(
-          array(
-            'title' => ts('Search Results'),
-            'url' => CRM_Utils_System::url("civicrm/contact/search/$context", array('qfKey' => $qfKey)),
-          ),
-        ));
       }
     }
     $this->assign($navContacts);
@@ -163,7 +157,7 @@ class CRM_Contact_Page_View extends CRM_Core_Page {
       //CRM-7265 --time being fix.
       $config = CRM_Core_Config::singleton();
       $image_URL = str_replace('https://', 'http://', $image_URL);
-      if (Civi::settings()->get('enableSSL')) {
+      if (CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'enableSSL')) {
         $image_URL = str_replace('http://', 'https://', $image_URL);
       }
 
@@ -240,7 +234,10 @@ class CRM_Contact_Page_View extends CRM_Core_Page {
 
     if ($contactType == 'Organization' &&
       CRM_Core_Permission::check('administer Multiple Organizations') &&
-      Civi::settings()->get('is_enabled')) {
+      CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MULTISITE_PREFERENCES_NAME,
+        'is_enabled'
+      )
+    ) {
       //check is any relationship between the organization and groups
       $groupOrg = CRM_Contact_BAO_GroupOrganization::hasGroupAssociated($this->_contactId);
       if ($groupOrg) {

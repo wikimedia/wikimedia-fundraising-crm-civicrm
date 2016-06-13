@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,13 +25,21 @@
 *}
 {* this template is used for adding/editing/deleting contributions and pledge payments *}
 
-{if $priceSetId}
+{if $cdType}
+  {include file="CRM/Custom/Form/CustomData.tpl"}
+{elseif $priceSetId}
   {include file="CRM/Price/Form/PriceSet.tpl" context="standalone" extends="Contribution"}
 {elseif $showAdditionalInfo and $formType }
   {include file="CRM/Contribute/Form/AdditionalInfo/$formType.tpl"}
 {else}
-  {include file="CRM/Contribute/Form/AdditionalInfo/Payment.tpl"}
+
   <div class="crm-block crm-form-block crm-contribution-form-block">
+
+  {if $contributionMode == 'test' }
+    {assign var=contribMode value="TEST"}
+    {elseif $contributionMode == 'live'}
+    {assign var=contribMode value="LIVE"}
+  {/if}
 
   {if !$email and $action neq 8 and $context neq 'standalone'}
   <div class="messages status no-popup">
@@ -39,12 +47,11 @@
   </div>
   {/if}
   {if $contributionMode}
-  <div class="help">
+  <div id="help">
     {if $contactId}
-      {ts 1=$displayName 2=$contributionMode|upper}Use this form to submit a new contribution on behalf of %1. <strong>A
-        %2 transaction will be submitted</strong> using the selected payment processor.{/ts}
+      {ts 1=$displayName 2=$contribMode}Use this form to submit a new contribution on behalf of %1. <strong>A %2 transaction will be submitted</strong> using the selected payment processor.{/ts}
     {else}
-      {ts 1=$displayName 2=$contributionMode|upper}Use this form to submit a new contribution. <strong>A %2 transaction will be submitted</strong> using the selected payment processor.{/ts}
+      {ts 1=$displayName 2=$contribMode}Use this form to submit a new contribution. <strong>A %2 transaction will be submitted</strong> using the selected payment processor.{/ts}
     {/if}
   </div>
   {/if}
@@ -78,7 +85,7 @@
       <td>{$form.contact_id.html}</td>
     {/if}
     {if $contributionMode}
-      <tr class="crm-contribution-form-block-payment_processor_id"><td class="label nowrap">{$form.payment_processor_id.label}<span class="crm-marker"> * </span></td><td>{$form.payment_processor_id.html}</td></tr>
+    <tr class="crm-contribution-form-block-payment_processor_id"><td class="label nowrap">{$form.payment_processor_id.label}<span class="marker"> * </span></td><td>{$form.payment_processor_id.html}</td></tr>
     {/if}
     <tr class="crm-contribution-form-block-contribution_type_id crm-contribution-form-block-financial_type_id">
       <td class="label">{$form.financial_type_id.label}</td><td{$valueStyle}>{$form.financial_type_id.html}&nbsp;
@@ -216,7 +223,19 @@
 
   </table>
 
-  {include file='CRM/Core/BillingBlockWrapper.tpl'}
+  <div class="accordion ui-accordion ui-widget ui-helper-reset">
+    {* Billing Pane is the only billing pane currently *}
+    {foreach from=$billingPanes key=paneName item=paneValue}
+      <div class="crm-accordion-wrapper crm-ajax-accordion crm-{$paneValue.id}-accordion {if $paneValue.open neq 'true'}collapsed{/if}">
+        <div class="crm-accordion-header" id="{$paneValue.id}">
+          {$paneName}
+        </div><!-- /.crm-accordion-header -->
+        <div class="crm-accordion-body">
+          <div class="{$paneValue.id}"></div>
+        </div>
+      </div>
+    {/foreach}
+  </div>
 
     <!-- start of soft credit -->
     <div class="crm-accordion-wrapper crm-accordion_title-accordion crm-accordion-processed {if $noSoftCredit}collapsed{/if}" id="softCredit">
@@ -492,8 +511,7 @@
      });
 
      function showHideCancelInfo(obj) {
-       var cancelInfo_show_ids = [{/literal}{$cancelInfo_show_ids}{literal}];
-       if (cancelInfo_show_ids.indexOf(obj.val()) > -1) {
+       if (obj.find(":selected").text() == 'Refunded' || obj.find(":selected").text() == 'Cancelled' || obj.find(":selected").text() == 'Chargeback') {
          cj('#cancelInfo').show( );
          cj('#total_amount').attr('readonly', true);
        }
@@ -608,14 +626,11 @@ function showStartDate( ) {
 }
 
 {/literal}{/if}{literal}
-var thousandMarker = "{/literal}{$config->monetaryThousandSeparator}{literal}";
-var separator = "{/literal}{$config->monetaryDecimalPoint}{literal}";
-
 cj('#fee_amount').change( function() {
-  var totalAmount = cj('#total_amount').val().replace(thousandMarker,'').replace(separator,'.');
-  var feeAmount = cj('#fee_amount').val().replace(thousandMarker,'').replace(separator,'.');
-  var netAmount = totalAmount - feeAmount;
-  if (totalAmount) {
+  var totalAmount = cj('#total_amount').val();
+  var feeAmount = cj('#fee_amount').val();
+  var netAmount = totalAmount.replace(/,/g, '') - feeAmount.replace(/,/g, '');
+  if (!cj('#net_amount').val() && totalAmount) {
     cj('#net_amount').val(CRM.formatMoney(netAmount, true));
   }
 });
@@ -653,14 +668,16 @@ CRM.$(function($) {
           cj("#totalTaxAmount").show( );
         }
         var totalAmount = $('#total_amount').val();
-        // replace all thousandMarker and change the separator to a dot
-        totalAmount = totalAmount.replace(thousandMarker,'').replace(separator,'.');
+        var thousandMarker = '{/literal}{$config->monetaryThousandSeparator}{literal}';
+        var seperator = '{/literal}{$config->monetaryDecimalPoint}{literal}';
+        // replace all thousandMarker and change the seperator to a dot
+  totalAmount = totalAmount.replace(thousandMarker,'').replace(seperator,'.');
 
         var totalTaxAmount = '{/literal}{$totalTaxAmount}{literal}';
         var taxAmount = (taxRate/100)*totalAmount;
         taxAmount = isNaN (taxAmount) ? 0:taxAmount;
         var totalTaxAmount = taxAmount + Number(totalAmount);
-        totalTaxAmount = formatMoney( totalTaxAmount, 2, separator, thousandMarker );
+        totalTaxAmount = formatMoney( totalTaxAmount, 2, seperator, thousandMarker );
 
         $("#totalTaxAmount" ).html('Amount with tax : <span id="currencySymbolShow">' + currencySymbol + '</span> '+ totalTaxAmount);
       }

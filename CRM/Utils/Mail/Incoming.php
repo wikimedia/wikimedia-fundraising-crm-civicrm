@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Utils_Mail_Incoming {
   const
@@ -282,6 +284,9 @@ class CRM_Utils_Mail_Incoming {
       ));
     }
 
+    require_once 'ezc/Base/src/ezc_bootstrap.php';
+    require_once 'ezc/autoload/mail_autoload.php';
+
     // explode email to digestable format
     $set = new ezcMailFileSet(array($file));
     $parser = new ezcMailParser();
@@ -338,7 +343,7 @@ class CRM_Utils_Mail_Incoming {
 
     // format and move attachments to the civicrm area
     if (!empty($attachments)) {
-      $date = date('YmdHis');
+      $date = date('Ymdhis');
       $config = CRM_Core_Config::singleton();
       for ($i = 0; $i < count($attachments); $i++) {
         $attachNum = $i + 1;
@@ -404,15 +409,7 @@ class CRM_Utils_Mail_Incoming {
 
   /**
    * Retrieve a contact ID and if not present.
-   *
-   * Create one with this email
-   *
-   * @param string $email
-   * @param string $name
-   * @param bool $create
-   * @param string $mail
-   *
-   * @return int|null
+   * create one with this email
    */
   public static function getContactID($email, $name = NULL, $create = TRUE, &$mail) {
     $dao = CRM_Contact_BAO_Contact::matchContactOnEmail($email, 'Individual');

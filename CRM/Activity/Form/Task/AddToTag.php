@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -54,6 +56,9 @@ class CRM_Activity_Form_Task_AddToTag extends CRM_Activity_Form_Task {
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
     // add select for tag
@@ -90,9 +95,12 @@ class CRM_Activity_Form_Task_AddToTag extends CRM_Activity_Form_Task {
 
   /**
    * Process the form after the input has been submitted and validated.
+   *
+   *
+   * @return void
    */
   public function postProcess() {
-    // Get the submitted values in an array.
+    //get the submitted values in an array
     $params = $this->controller->exportValues($this->_name);
     $activityTags = $tagList = array();
 
@@ -135,8 +143,7 @@ class CRM_Activity_Form_Task_AddToTag extends CRM_Activity_Form_Task {
     foreach ($allTags as $key => $dnc) {
       $this->_name[] = $this->_tags[$key];
 
-      list($total, $added, $notAdded) = CRM_Core_BAO_EntityTag::addEntitiesToTag($this->_activityHolderIds, $key,
-        'civicrm_activity', FALSE);
+      list($total, $added, $notAdded) = CRM_Core_BAO_EntityTag::addEntitiesToTag($this->_activityHolderIds, $key, 'civicrm_activity');
 
       $status = array(ts('Activity tagged', array('count' => $added, 'plural' => '%count activities tagged')));
       if ($notAdded) {

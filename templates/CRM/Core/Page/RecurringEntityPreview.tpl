@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,7 +25,7 @@
 *}
 {if !empty($participantData)}
   <div class="messages status no-popup">
-    <i class="crm-i fa-exclamation-triangle"></i>
+    <div class="icon ui-icon-alert"></div>
     {ts}There are participants registered for repeating events being removed from the set. Those with participants will be converted to standalone events, and those without registration will be deleted.{/ts}
   </div>
   <table class="display">

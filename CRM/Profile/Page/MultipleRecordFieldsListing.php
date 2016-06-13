@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -45,13 +45,13 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
 
   protected $_profileId = NULL;
 
-  public $_contactId = NULL;
+  protected $_contactId = NULL;
 
-  public $_customGroupTitle = NULL;
+  protected $_customGroupTitle = NULL;
 
-  public $_pageViewType = NULL;
+  protected $_pageViewType = NULL;
 
-  public $_contactType = NULL;
+  protected $_contactType = NULL;
 
   /**
    * Get BAO Name.
@@ -171,7 +171,7 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
   public function browse() {
     $dateFields = NULL;
     $cgcount = 0;
-    $attributes = $headerAttr = array();
+    $attributes = array();
     $dateFieldsVals = NULL;
     if ($this->_pageViewType == 'profileDataView' && $this->_profileId) {
       $fields = CRM_Core_BAO_UFGroup::getFields($this->_profileId, FALSE, NULL,
@@ -260,11 +260,8 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
         $options[$fieldIDs[$key]]['attributes']['time_format'] = CRM_Utils_Array::value('time_format', $returnValues);
       }
 
-      $DTparams = !empty($this->_DTparams) ? $this->_DTparams : NULL;
       // commonly used for both views i.e profile listing view (profileDataView) and custom data listing view (customDataView)
-      $result = CRM_Core_BAO_CustomValueTable::getEntityValues($this->_contactId, NULL, $fieldIDs, TRUE, $DTparams);
-      $resultCount = !empty($result['count']) ? $result['count'] : count($result);
-      unset($result['count']);
+      $result = CRM_Core_BAO_CustomValueTable::getEntityValues($this->_contactId, NULL, $fieldIDs, TRUE);
 
       if ($this->_pageViewType == 'profileDataView') {
         if (!empty($fieldIDs)) {
@@ -301,18 +298,14 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
         if ($reached) {
           unset($links[CRM_Core_Action::COPY]);
         }
-        $newCgCount = (!$reached) ? $resultCount + 1 : NULL;
-        if (!empty($DTparams)) {
-          $this->_total = $resultCount;
-          $cgcount = $DTparams['offset'] + 1;
-        }
+        $newCgCount = (!$reached) ? count($result) + 1 : NULL;
         foreach ($result as $recId => &$value) {
           foreach ($value as $fieldId => &$val) {
             if (is_numeric($fieldId)) {
               $customValue = &$val;
               if (!empty($dateFields) && array_key_exists($fieldId, $dateFields)) {
-                // formatted date capture value capture
-                $dateFieldsVals[$fieldId][$recId] = CRM_Core_BAO_CustomField::displayValue($customValue, $fieldId);
+                // formated date capture value capture
+                $dateFieldsVals[$fieldId][$recId] = CRM_Core_BAO_CustomField::getDisplayValue($customValue, $fieldId, $options);
 
                 //set date and time format
                 switch ($timeFormat) {
@@ -332,7 +325,11 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
               }
               else {
                 // assign to $result
-                $customValue = CRM_Core_BAO_CustomField::displayValue($customValue, $fieldId);
+                $customValue = CRM_Core_BAO_CustomField::getDisplayValue($customValue, $fieldId, $options);
+              }
+              // FIXME: getDisplayValue should always return a string so why is this necessary?
+              if (!$customValue && $customValue !== '0') {
+                $customValue = "";
               }
 
               // Set field attributes to support crmEditable
@@ -382,14 +379,12 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
                 $op = 'profile.multiValue.row';
               }
               else {
-                $headerAttr[$fieldId]['dataType'] = CRM_Utils_Array::value('data-type', $fieldAttributes);
-                $headerAttr[$fieldId]['dataEmptyOption'] = CRM_Utils_Array::value('data-empty-option', $fieldAttributes);
                 // different set of url params
                 $actionParams['gid'] = $actionParams['groupID'] = $this->_customGroupId;
                 $actionParams['cid'] = $actionParams['entityID'] = $this->_contactId;
                 $actionParams['recId'] = $recId;
                 $actionParams['type'] = $this->_contactType;
-                $actionParams['cgcount'] = empty($DTparams['sort']) ? $cgcount : $recId;
+                $actionParams['cgcount'] = $cgcount;
                 $actionParams['newCgCount'] = $newCgCount;
 
                 // DELETE action links
@@ -415,7 +410,7 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
                 FALSE,
                 $op,
                 'customValue',
-                $fieldId
+                $fieldId // not ideal, but the one thing not sent in $actionParams
               );
             }
           }
@@ -428,21 +423,15 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
     if (!empty($fieldIDs)) {
       foreach ($fieldIDs as $fieldID) {
         $headers[$fieldID] = ($this->_pageViewType == 'profileDataView') ? $customGroupInfo[$fieldID]['fieldLabel'] : $fieldLabels[$fieldID]['label'];
-        $headerAttr[$fieldID]['columnName'] = $fieldLabels[$fieldID]['column_name'];
       }
     }
     $this->assign('dateFields', $dateFields);
     $this->assign('dateFieldsVals', $dateFieldsVals);
     $this->assign('cgcount', $cgcount);
-    $this->assign('contactId', $this->_contactId);
-    $this->assign('contactType', $this->_contactType);
     $this->assign('customGroupTitle', $this->_customGroupTitle);
     $this->assign('headers', $headers);
-    $this->assign('headerAttr', $headerAttr);
     $this->assign('records', $result);
     $this->assign('attributes', $attributes);
-
-    return array($result, $attributes);
   }
 
   /**

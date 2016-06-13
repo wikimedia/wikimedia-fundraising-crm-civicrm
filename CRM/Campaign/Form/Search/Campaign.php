@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Files required.
+ * Files required
  */
 class CRM_Campaign_Form_Search_Campaign extends CRM_Core_Form {
 
@@ -45,6 +47,8 @@ class CRM_Campaign_Form_Search_Campaign extends CRM_Core_Form {
 
   /**
    * Processing needed for buildForm and later.
+   *
+   * @return void
    */
   public function preProcess() {
     $this->_search = CRM_Utils_Array::value('search', $_GET);
@@ -66,6 +70,9 @@ class CRM_Campaign_Form_Search_Campaign extends CRM_Core_Form {
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
     if ($this->_search) {
@@ -104,14 +111,6 @@ class CRM_Campaign_Form_Search_Campaign extends CRM_Core_Form {
     );
     $this->set('campaignStatus', $campaignStatus);
     $this->assign('campaignStatus', json_encode($campaignStatus));
-
-    //active campaigns
-    $this->addElement('select', 'is_active', ts('Is Active?'), array(
-      '' => ts('- select -'),
-      '0' => ts('Yes'),
-      '1' => ts('No'),
-        )
-    );
 
     //build the array of all search params.
     $this->_searchParams = array();

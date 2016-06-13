@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -74,16 +74,6 @@ function civicrm_api3_group_contact_get($params) {
 }
 
 /**
- * Adjust metadata for Create action.
- *
- * @param array $params
- */
-function _civicrm_api3_group_contact_create_spec(&$params) {
-  $params['contact_id']['api.required'] = 1;
-  $params['group_id']['api.required'] = 1;
-}
-
-/**
  * Add contact(s) to group(s).
  *
  * This api has a legacy/nonstandard signature.
@@ -111,13 +101,12 @@ function _civicrm_api3_group_contact_create_spec(&$params) {
  * @endcode
  *
  * @param array $params
- *   Input parameters:
- *   - "contact_id" (required): First contact to add, or array of Contact IDs
- *   - "group_id" (required): First group to add contact(s) to, or array of Group IDs
- *   - "status" (optional): "Added" (default), "Pending" or "Removed"
- *   Legacy input parameters (will be deprecated):
- *   - "contact_id.1" etc. (optional): Additional contact_id to add to group(s)
- *   - "group_id.1" etc. (optional): Additional groups to add contact(s) to
+ *   Input parameters.
+ *   - "contact_id" (required) : first contact to add
+ *   - "group_id" (required): first group to add contact(s) to
+ *   - "contact_id.1" etc. (optional) : another contact to add
+ *   - "group_id.1" etc. (optional) : additional group to add contact(s) to
+ *   - "status" (optional) : one of "Added", "Pending" or "Removed" (default is "Added")
  *
  * @return array
  *   Information about operation results
@@ -132,6 +121,7 @@ function civicrm_api3_group_contact_create($params) {
       $params['contact_id'] = $info['values'][$params['id']]['contact_id'];
     }
   }
+  civicrm_api3_verify_mandatory($params, NULL, array('group_id', 'contact_id'));
   $action = CRM_Utils_Array::value('status', $params, 'Added');
   return _civicrm_api3_group_contact_common($params, $action);
 }
@@ -189,30 +179,21 @@ function _civicrm_api3_group_contact_common($params, $op = 'Added') {
 
   $contactIDs = array();
   $groupIDs = array();
-
-  // CRM-16959: Handle multiple Contact IDs and Group IDs in legacy format
-  // (contact_id.1, contact_id.2) or as an array
   foreach ($params as $n => $v) {
     if (substr($n, 0, 10) == 'contact_id') {
-      if (is_array($v)) {
-        foreach ($v as $arr_v) {
-          $contactIDs[] = $arr_v;
-        }
-      }
-      else {
-        $contactIDs[] = $v;
-      }
+      $contactIDs[] = $v;
     }
     elseif (substr($n, 0, 8) == 'group_id') {
-      if (is_array($v)) {
-        foreach ($v as $arr_v) {
-          $groupIDs[] = $arr_v;
-        }
-      }
-      else {
-        $groupIDs[] = $v;
-      }
+      $groupIDs[] = $v;
     }
+  }
+
+  if (empty($contactIDs)) {
+    return civicrm_api3_create_error('contact_id is a required field');
+  }
+
+  if (empty($groupIDs)) {
+    return civicrm_api3_create_error('group_id is a required field');
   }
 
   $method = CRM_Utils_Array::value('method', $params, 'API');

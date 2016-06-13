@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -35,10 +35,10 @@
     <div class="crm-fb-tweet-buttons">
         {if $emailMode eq true}
             {*use images for email*}
-            <a href="https://twitter.com/share?url={$url|escape:'url'}&amp;text={$title}" id="crm_tweet">
+            <a href="http://twitter.com/share?url={$url}&amp;text={$title}" id="crm_tweet">
                 <img title="Twitter Tweet Button" src="{$config->userFrameworkResourceURL|replace:'https://':'http://'}/i/tweet.png" width="55px" height="20px"  alt="Tweet Button">
             </a>
-            <a href="https://www.facebook.com/plugins/like.php?href={$url}" target="_blank">
+            <a href="http://www.facebook.com/plugins/like.php?href={$url}" target="_blank">
                 <img title="Facebook Like Button" src="{$config->userFrameworkResourceURL|replace:'https://':'http://'}/i/fblike.png" alt="Facebook Button" />
             </a>
         {else}

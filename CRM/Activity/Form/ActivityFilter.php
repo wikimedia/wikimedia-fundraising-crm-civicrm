@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class generates form components for Activity Filter.
+ * This class generates form components for Activity Filter
+ *
  */
 class CRM_Activity_Form_ActivityFilter extends CRM_Core_Form {
   public function buildQuickForm() {
@@ -54,15 +57,30 @@ class CRM_Activity_Form_ActivityFilter extends CRM_Core_Form {
    * @return array
    *   reference to the array of default values
    */
+  /**
+   * This virtual function is used to set the default values of
+   * various form elements
+   *
+   * access        public
+   *
+   * @return array
+   *   reference to the array of default values
+   */
+  /**
+   * @return array
+   */
   public function setDefaultValues() {
     // CRM-11761 retrieve user's activity filter preferences
     $defaults = array();
     $session = CRM_Core_Session::singleton();
     $userID = $session->get('userID');
     if ($userID) {
-      $defaults = Civi::service('settings_manager')
-        ->getBagByContact(NULL, $userID)
-        ->get('activity_tab_filter');
+      $defaults = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::PERSONAL_PREFERENCES_NAME,
+        'activity_tab_filter',
+        NULL,
+        NULL,
+        $userID
+      );
     }
     return $defaults;
   }

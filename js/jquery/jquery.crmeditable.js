@@ -18,7 +18,7 @@
       $row = this.first().closest('.crm-entity');
       ret.entity = $row.data('entity') || $row[0].id.split('-')[0];
       ret.id = $row.data('id') || $row[0].id.split('-')[1];
-      ret.action = $row.data('action') || 'create';
+      ret.action = $row.data('action') || 'setvalue';
 
     if (!ret.entity || !ret.id) {
       return false;
@@ -107,10 +107,10 @@
 
       var settings = {
         tooltip: $i.data('tooltip') || ts('Click to edit'),
-        placeholder: $i.data('placeholder') || '<i class="crm-i fa-pencil crm-editable-placeholder"></i>',
+        placeholder: $i.data('placeholder') || '<span class="crm-editable-placeholder">' + ts('Click to edit') + '</span>',
         onblur: 'cancel',
-        cancel: '<button type="cancel"><i class="crm-i fa-times"></i></button>',
-        submit: '<button type="submit"><i class="crm-i fa-check"></i></button>',
+        cancel: '<button type="cancel"><span class="ui-icon ui-icon-closethick"></span></button>',
+        submit: '<button type="submit"><span class="ui-icon ui-icon-check"></span></button>',
         cssclass: 'crm-editable-form',
         data: getData,
         onreset: restoreContainer
@@ -238,7 +238,7 @@
   };
 
   $(document).on('crmLoad', function(e) {
-    $('.crm-editable', e.target).not('thead *').crmEditable();
+    $('.crm-editable', e.target).crmEditable();
   });
 
 })(jQuery, CRM._);

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -91,6 +93,8 @@ class CRM_Financial_Page_FinancialTypeAccount extends CRM_Core_Page {
    * This method is called after the page is created. It checks for the
    * type of action and executes that action.
    * Finally it calls the parent's run method.
+   *
+   * @return void
    */
   public function run() {
     // get the requested action
@@ -115,6 +119,8 @@ class CRM_Financial_Page_FinancialTypeAccount extends CRM_Core_Page {
 
   /**
    * Browse all Financial Type Account data.
+   *
+   * @return void
    */
   public function browse() {
     // get all Financial Type Account data sorted by weight
@@ -160,7 +166,7 @@ class CRM_Financial_Page_FinancialTypeAccount extends CRM_Core_Page {
         $action = array_sum(array_keys($this->links()));
         $links = self::links();
 
-        // CRM-12492
+        //CRM-12492
         if ($dao->account_relationship == $relationTypeId) {
           unset($links[CRM_Core_Action::DELETE]);
         }
@@ -194,6 +200,8 @@ class CRM_Financial_Page_FinancialTypeAccount extends CRM_Core_Page {
    *
    * @param string $action
    *   The action to be invoked.
+   *
+   * @return void
    */
   public function edit($action) {
     // create a simple controller for editing CiviCRM Profile data

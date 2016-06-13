@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Page for displaying list of message templates.
+ * Page for displaying list of message templates
  */
 class CRM_Admin_Page_MessageTemplates extends CRM_Core_Page_Basic {
 
@@ -239,6 +241,8 @@ class CRM_Admin_Page_MessageTemplates extends CRM_Core_Page_Basic {
 
   /**
    * Browse all entities.
+   *
+   * @return void
    */
   public function browse() {
     $action = func_num_args() ? func_get_arg(0) : NULL;

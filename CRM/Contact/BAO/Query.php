@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -405,7 +407,6 @@ class CRM_Contact_BAO_Query {
    * @param bool $smartGroupCache
    * @param null $displayRelationshipType
    * @param string $operator
-   * @param string $apiEntity
    *
    * @return \CRM_Contact_BAO_Query
    */
@@ -414,10 +415,8 @@ class CRM_Contact_BAO_Query {
     $includeContactIds = FALSE, $strict = FALSE, $mode = 1,
     $skipPermission = FALSE, $searchDescendentGroups = TRUE,
     $smartGroupCache = TRUE, $displayRelationshipType = NULL,
-    $operator = 'AND',
-    $apiEntity = NULL
+    $operator = 'AND'
   ) {
-
     $this->_params = &$params;
     if ($this->_params == NULL) {
       $this->_params = array();
@@ -463,13 +462,15 @@ class CRM_Contact_BAO_Query {
     }
 
     // basically do all the work once, and then reuse it
-    $this->initialize($apiEntity);
+    $this->initialize();
   }
 
   /**
    * Function which actually does all the work for the constructor.
+   *
+   * @return void
    */
-  public function initialize($apiEntity = NULL) {
+  public function initialize() {
     $this->_select = array();
     $this->_element = array();
     $this->_tables = array();
@@ -498,17 +499,8 @@ class CRM_Contact_BAO_Query {
 
     $this->_whereTables = $this->_tables;
 
-    $this->selectClause($apiEntity);
+    $this->selectClause();
     $this->_whereClause = $this->whereClause();
-    if (array_key_exists('civicrm_contribution', $this->_whereTables)) {
-      $component = 'contribution';
-    }
-    if (array_key_exists('civicrm_membership', $this->_whereTables)) {
-      $component = 'membership';
-    }
-    if (isset($component)) {
-      CRM_Financial_BAO_FinancialType::buildPermissionedClause($this->_whereClause, $component);
-    }
 
     $this->_fromClause = self::fromClause($this->_tables, NULL, NULL, $this->_primaryLocation, $this->_mode);
     $this->_simpleFromClause = self::fromClause($this->_whereTables, NULL, NULL, $this->_primaryLocation, $this->_mode);
@@ -534,6 +526,11 @@ class CRM_Contact_BAO_Query {
    * CRM-11971
    */
   public function buildParamsLookup() {
+    // first fix and handle contact deletion nicely
+    // this code is primarily for search builder use case
+    // where different clauses can specify if they want deleted
+    // contacts or not
+    // CRM-11971
     $trashParamExists = FALSE;
     $paramByGroup = array();
     foreach ($this->_params as $k => $param) {
@@ -592,25 +589,17 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * Some composite fields do not appear in the fields array hack to make them part of the query.
+   * Some composite fields do not appear in the fields array
+   * hack to make them part of the query
+   *
+   * @return void
    */
-  public function addSpecialFields($apiEntity) {
+  public function addSpecialFields() {
     static $special = array('contact_type', 'contact_sub_type', 'sort_name', 'display_name');
-    // if get called via Contact.get API having address_id as return parameter
-    if ($apiEntity == 'Contact') {
-      $special[] = 'address_id';
-    }
     foreach ($special as $name) {
       if (!empty($this->_returnProperties[$name])) {
-        if ($name == 'address_id') {
-          $this->_tables['civicrm_address'] = 1;
-          $this->_select['address_id'] = 'civicrm_address.id as address_id';
-          $this->_element['address_id'] = 1;
-        }
-        else {
-          $this->_select[$name] = "contact_a.{$name} as $name";
-          $this->_element[$name] = 1;
-        }
+        $this->_select[$name] = "contact_a.{$name} as $name";
+        $this->_element[$name] = 1;
       }
     }
   }
@@ -621,10 +610,12 @@ class CRM_Contact_BAO_Query {
    * clauses. Note that since the where clause introduces new
    * tables, the initial attempt also retrieves all variables used
    * in the params list
+   *
+   * @return void
    */
-  public function selectClause($apiEntity = NULL) {
+  public function selectClause() {
 
-    $this->addSpecialFields($apiEntity);
+    $this->addSpecialFields();
 
     foreach ($this->_fields as $name => $field) {
       // skip component fields
@@ -847,11 +838,6 @@ class CRM_Contact_BAO_Query {
                 $this->_pseudoConstantsSelect[$tName]['select'] = "{$field['where']} as `$name`";
                 $this->_pseudoConstantsSelect[$tName]['element'] = $name;
               }
-              elseif (strpos($name, 'contribution_soft_credit') !== FALSE) {
-                if (CRM_Contribute_BAO_Query::isSoftCreditOptionEnabled($this->_params)) {
-                  $this->_select[$name] = "{$field['where']} as `$name`";
-                }
-              }
               else {
                 $this->_select[$name] = "{$field['where']} as `$name`";
               }
@@ -960,7 +946,10 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * If the return Properties are set in a hierarchy, traverse the hierarchy to get the return values.
+   * If the return Properties are set in a hierarchy, traverse the hierarchy to get
+   * the return values
+   *
+   * @return void
    */
   public function addHierarchicalElements() {
     if (empty($this->_returnProperties['location'])) {
@@ -1130,7 +1119,9 @@ class CRM_Contact_BAO_Query {
             $this->_element["{$tName}_id"] = 1;
             if (substr($tName, -15) == '-state_province') {
               // FIXME: hack to fix CRM-1900
-              $a = Civi::settings()->get('address_format');
+              $a = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+                'address_format'
+              );
 
               if (substr_count($a, 'state_province_name') > 0) {
                 $this->_pseudoConstantsSelect["{$name}-{$elementFullName}"] = array(
@@ -1289,7 +1280,10 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * If the return Properties are set in a hierarchy, traverse the hierarchy to get the return values.
+   * If the return Properties are set in a hierarchy, traverse the hierarchy to get
+   * the return values
+   *
+   * @return void
    */
   public function addMultipleElements() {
     if (empty($this->_returnProperties['website'])) {
@@ -1361,20 +1355,13 @@ class CRM_Contact_BAO_Query {
     }
     else {
       if (!empty($this->_paramLookup['group'])) {
-
-        list($name, $op, $value, $grouping, $wildcard) = $this->_paramLookup['group'][0];
-
-        if (is_array($value) && in_array(key($value), CRM_Core_DAO::acceptedSQLOperators(), TRUE)) {
-          $this->_paramLookup['group'][0][1] = key($value);
-        }
-
         // make sure there is only one element
         // this is used when we are running under smog and need to know
         // how the contact was added (CRM-1203)
-        $groups = (array) CRM_Utils_Array::value($this->_paramLookup['group'][0][1], $this->_paramLookup['group'][0][2], $this->_paramLookup['group'][0][2]);
         if ((count($this->_paramLookup['group']) == 1) &&
-          (count($groups) == 1)
+          (count($this->_paramLookup['group'][0][2]) == 1)
         ) {
+          $groups = array_keys($this->_paramLookup['group'][0][2]);
           $groupId = $groups[0];
 
           //check if group is saved search
@@ -1382,7 +1369,12 @@ class CRM_Contact_BAO_Query {
           $group->id = $groupId;
           $group->find(TRUE);
 
-          if (!isset($group->saved_search_id)) {
+          // CRM-17254 don't retrieve extra fields if contact_id is specifically requested
+          // as this will add load to an intentionally light query.
+          // ideally this code would be removed as it appears to be to support CRM-1203
+          // and passing in the required returnProperties from the url would
+          // make more sense that globally applying the requirements of one form.
+          if (!isset($group->saved_search_id) && $this->_returnProperties != array('contact_id')) {
             $tbName = "`civicrm_group_contact-{$groupId}`";
             // CRM-17254 don't retrieve extra fields if contact_id is specifically requested
             // as this will add load to an intentionally light query.
@@ -1450,14 +1442,12 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * Get where values from the parameters.
-   *
    * @param string $name
-   * @param mixed $grouping
+   * @param $grouping
    *
-   * @return mixed
+   * @return null
    */
-  public function getWhereValues($name, $grouping) {
+  public function &getWhereValues($name, $grouping) {
     $result = NULL;
     foreach ($this->_params as $values) {
       if ($values[0] == $name && $values[3] == $grouping) {
@@ -1469,11 +1459,9 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * Fix date values.
-   *
-   * @param bool $relative
-   * @param string $from
-   * @param string $to
+   * @param $relative
+   * @param $from
+   * @param $to
    */
   public static function fixDateValues($relative, &$from, &$to) {
     if ($relative) {
@@ -1524,32 +1512,11 @@ class CRM_Contact_BAO_Query {
     self::filterCountryFromValuesIfStateExists($formValues);
 
     foreach ($formValues as $id => $values) {
-
       if (self::isAlreadyProcessedForQueryFormat($values)) {
         $params[] = $values;
         continue;
       }
-
-      self::legacyConvertFormValues($id, $values);
-
-      // The form uses 1 field to represent two db fields
-      if ($id == 'contact_type' && $values && (!is_array($values) || !array_intersect(array_keys($values), CRM_Core_DAO::acceptedSQLOperators()))) {
-        $contactType = array();
-        $subType = array();
-        foreach ((array) $values as $key => $type) {
-          $types = explode('__', is_numeric($type) ? $key : $type);
-          $contactType[$types[0]] = $types[0];
-          // Add sub-type if specified
-          if (!empty($types[1])) {
-            $subType[$types[1]] = $types[1];
-          }
-        }
-        $params[] = array('contact_type', 'IN', $contactType, 0, 0);
-        if ($subType) {
-          $params[] = array('contact_sub_type', 'IN', $subType, 0, 0);
-        }
-      }
-      elseif ($id == 'privacy') {
+      if ($id == 'privacy') {
         if (is_array($formValues['privacy'])) {
           $op = !empty($formValues['privacy']['do_not_toggle']) ? '=' : '!=';
           foreach ($formValues['privacy'] as $key => $value) {
@@ -1565,13 +1532,12 @@ class CRM_Contact_BAO_Query {
         }
       }
       elseif (substr($id, 0, 7) == 'custom_'
-        &&  (
-          substr($id, -9, 9) == '_relative'
-          || substr($id, -5, 5) == '_from'
-          || substr($id, -3, 3) == '_to'
-        )
-      ) {
-        self::convertCustomRelativeFields($formValues, $params, $values, $id);
+          &&  (
+            substr($id, -9, 9) == '_relative'
+            || substr($id, -5, 5) == '_from'
+            || substr($id, -3, 3) == '_to'
+        )) {
+        self::convertCustomDateRelativeFields($formValues, $params, $values, $id);
       }
       elseif (preg_match('/_date_relative$/', $id) ||
         $id == 'event_relative' ||
@@ -1623,33 +1589,8 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * Function to support legacy format for groups and tags.
-   *
-   * @param string $id
-   * @param array|int $values
-   *
-   */
-  public static function legacyConvertFormValues($id, &$values) {
-    $legacyElements = array(
-      'group',
-      'tag',
-      'contact_tags',
-      'contact_type',
-      'membership_type_id',
-      'membership_status_id',
-    );
-    if (in_array($id, $legacyElements) && is_array($values)) {
-      // prior to 4.7, formValues for some attributes (e.g. group, tag) are stored in array(id1 => 1, id2 => 1),
-      // as per the recent Search fixes $values need to be in standard array(id1, id2) format
-      CRM_Utils_Array::formatArrayKeys($values);
-    }
-  }
-
-  /**
-   * Fix values from query from/to something no-one cared enough to document.
-   *
    * @param int $id
-   * @param array $values
+   * @param $values
    * @param int $wildcard
    * @param bool $useEquals
    *
@@ -1657,7 +1598,7 @@ class CRM_Contact_BAO_Query {
    *
    * @return array|null
    */
-  public static function fixWhereValues($id, &$values, $wildcard = 0, $useEquals = FALSE, $apiEntity = NULL) {
+  public static function &fixWhereValues($id, &$values, $wildcard = 0, $useEquals = FALSE, $apiEntity = NULL) {
     // skip a few search variables
     static $skipWhere = NULL;
     static $likeNames = NULL;
@@ -1690,8 +1631,7 @@ class CRM_Contact_BAO_Query {
 
     if ($apiEntity &&
       (substr($id, 0, strlen($apiEntity)) != $apiEntity) &&
-      (substr($id, 0, 10) != 'financial_' && substr($id, 0, 8) != 'payment_') &&
-      (substr($id, 0, 7) != 'custom_')
+      (substr($id, 0, 10) != 'financial_' && substr($id, 0, 8) != 'payment_')
     ) {
       $id = $apiEntity . '_' . $id;
     }
@@ -1700,17 +1640,43 @@ class CRM_Contact_BAO_Query {
       $likeNames = array('sort_name', 'email', 'note', 'display_name');
     }
 
-    // email comes in via advanced search
-    // so use wildcard always
-    if ($id == 'email') {
-      $wildcard = 1;
-    }
-
     if (!$useEquals && in_array($id, $likeNames)) {
       $result = array($id, 'LIKE', $values, 0, 1);
     }
     elseif (is_string($values) && strpos($values, '%') !== FALSE) {
       $result = array($id, 'LIKE', $values, 0, 0);
+    }
+    elseif ($id == 'group') {
+      if (is_array($values)) {
+        foreach ($values as $groupIds => $val) {
+          $matches = array();
+          if (preg_match('/-(\d+)$/', $groupIds, $matches)) {
+            if (strlen($matches[1]) > 0) {
+              $values[$matches[1]] = 1;
+              unset($values[$groupIds]);
+            }
+          }
+        }
+      }
+      else {
+        $groupIds = explode(',', $values);
+        unset($values);
+        foreach ($groupIds as $groupId) {
+          $values[$groupId] = 1;
+        }
+      }
+
+      $result = array($id, 'IN', $values, 0, 0);
+    }
+    elseif ($id == 'contact_tags' || $id == 'tag') {
+      if (!is_array($values)) {
+        $tagIds = explode(',', $values);
+        unset($values);
+        foreach ($tagIds as $tagId) {
+          $values[$tagId] = 1;
+        }
+      }
+      $result = array($id, 'IN', $values, 0, 0);
     }
     elseif ($id == 'contact_type' ||
       (!empty($values) && is_array($values) && !in_array(key($values), CRM_Core_DAO::acceptedSQLOperators(), TRUE))
@@ -1725,9 +1691,7 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * Get the where clause for a single field.
-   *
-   * @param array $values
+   * @param $values
    */
   public function whereClauseSingle(&$values) {
     // do not process custom fields or prefixed contact ids or component params
@@ -1756,6 +1720,10 @@ class CRM_Contact_BAO_Query {
     switch ($values[0]) {
       case 'deleted_contacts':
         $this->deletedContacts($values);
+        return;
+
+      case 'contact_type':
+        $this->contactType($values);
         return;
 
       case 'contact_sub_type':
@@ -1843,13 +1811,10 @@ class CRM_Contact_BAO_Query {
         return;
 
       case 'state_province':
-      case 'state_province_id':
-      case 'state_province_name':
         $this->stateProvince($values);
         return;
 
       case 'country':
-      case 'country_id':
         $this->country($values, FALSE);
         return;
 
@@ -1884,17 +1849,11 @@ class CRM_Contact_BAO_Query {
         CRM_Activity_BAO_Query::whereClauseSingle($values, $this);
         return;
 
-      case 'age_low':
-      case 'age_high':
       case 'birth_date_low':
       case 'birth_date_high':
       case 'deceased_date_low':
       case 'deceased_date_high':
         $this->demographics($values);
-        return;
-
-      case 'age_asof_date':
-        // handled by demographics
         return;
 
       case 'log_date_low':
@@ -1968,7 +1927,8 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * Given a list of conditions in params generate the required where clause.
+   * Given a list of conditions in params generate the required.
+   * where clause
    *
    * @return string
    */
@@ -1997,7 +1957,7 @@ class CRM_Contact_BAO_Query {
     }
 
     if ($this->_customQuery) {
-      // Added following if condition to avoid the wrong value display for 'my account' / any UF info.
+      // Added following if condition to avoid the wrong value diplay for 'myaccount' / any UF info.
       // Hope it wont affect the other part of civicrm.. if it does please remove it.
       if (!empty($this->_customQuery->_where)) {
         $this->_where = CRM_Utils_Array::crmArrayMerge($this->_where, $this->_customQuery->_where);
@@ -2034,9 +1994,7 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
-   * Generate where clause for any parameters not already handled.
-   *
-   * @param array $values
+   * @param $values
    *
    * @throws Exception
    */
@@ -2053,7 +2011,7 @@ class CRM_Contact_BAO_Query {
 
     $multipleFields = array('url');
 
-    //check if the location type exists for fields
+    //check if the location type exits for fields
     $lType = '';
     $locType = explode('-', $name);
 
@@ -2078,31 +2036,37 @@ class CRM_Contact_BAO_Query {
 
     $strtolower = function_exists('mb_strtolower') ? 'mb_strtolower' : 'strtolower';
     $locationType = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id');
-    if (isset($locType[1]) && is_numeric($locType[1])) {
-      $lType = $locationType[$locType[1]];
-    }
-    if ($lType) {
-      $field['title'] .= " ($lType)";
-    }
 
     if (substr($name, 0, 14) === 'state_province') {
       if (isset($locType[1]) && is_numeric($locType[1])) {
         $setTables = FALSE;
-        $aName = "{$lType}-address";
+        $aName = "{$locationType[$locType[1]]}-address";
         $where = "`$aName`.state_province_id";
       }
       else {
         $where = "civicrm_address.state_province_id";
       }
 
-      $this->_where[$grouping][] = self::buildClause($where, $op, $value);
-      list($qillop, $qillVal) = self::buildQillForFieldValue('CRM_Core_DAO_Address', "state_province_id", $value, $op);
-      $this->_qill[$grouping][] = ts("%1 %2 %3", array(1 => $field['title'], 2 => $qillop, 3 => $qillVal));
+      $states = CRM_Core_PseudoConstant::stateProvince();
+      if (is_numeric($value)) {
+        $this->_where[$grouping][] = self::buildClause($where, $op, $value, 'Positive');
+        $value = $states[(int ) $value];
+      }
+      else {
+        $intVal = CRM_Utils_Array::key($value, $states);
+        $this->_where[$grouping][] = self::buildClause($where, $op, $intVal, 'Positive');
+      }
+      if (!$lType) {
+        $this->_qill[$grouping][] = ts('State') . " $op '$value'";
+      }
+      else {
+        $this->_qill[$grouping][] = ts('State') . " ($lType) $op '$value'";
+      }
     }
     elseif (!empty($field['pseudoconstant'])) {
       $this->optionValueQuery(
         $name, $op, $value, $grouping,
-        'CRM_Contact_DAO_Contact',
+        CRM_Core_PseudoConstant::get('CRM_Contact_DAO_Contact', $field['name']),
         $field,
         $field['title'],
         'String',
@@ -2112,26 +2076,65 @@ class CRM_Contact_BAO_Query {
         self::$_openedPanes[ts('Demographics')] = TRUE;
       }
     }
-    elseif (substr($name, 0, 7) === 'country' || substr($name, 0, 6) === 'county') {
-      $name = (substr($name, 0, 7) === 'country') ? "country_id" : "county_id";
+    elseif (substr($name, 0, 7) === 'country') {
       if (isset($locType[1]) && is_numeric($locType[1])) {
         $setTables = FALSE;
-        $aName = "{$lType}-address";
-        $where = "`$aName`.$name";
+        $aName = "{$locationType[$locType[1]]}-address";
+        $where = "`$aName`.country_id";
       }
       else {
-        $where = "civicrm_address.$name";
+        $where = "civicrm_address.country_id";
       }
 
-      $this->_where[$grouping][] = self::buildClause($where, $op, $value, 'Positive');
+      $countries = CRM_Core_PseudoConstant::country();
+      if (is_numeric($value)) {
+        $this->_where[$grouping][] = self::buildClause($where, $op, $value, 'Positive');
+        $value = $countries[(int ) $value];
+      }
+      else {
+        $intVal = CRM_Utils_Array::key($value, $countries);
+        $this->_where[$grouping][] = self::buildClause($where, $op, $intVal, 'Positive');
+      }
 
-      list($qillop, $qillVal) = CRM_Contact_BAO_Query::buildQillForFieldValue(NULL, $name, $value, $op);
-      $this->_qill[$grouping][] = ts("%1 %2 %3", array(1 => $field['title'], 2 => $qillop, 3 => $qillVal));
+      if (!$lType) {
+        $this->_qill[$grouping][] = ts('Country') . " $op '$value'";
+      }
+      else {
+        $this->_qill[$grouping][] = ts('Country') . " ($lType) $op '$value'";
+      }
+    }
+    elseif (substr($name, 0, 6) === 'county') {
+      if (isset($locType[1]) && is_numeric($locType[1])) {
+        $setTables = FALSE;
+        $aName = "{$locationType[$locType[1]]}-address";
+        $where = "`$aName`.county_id";
+      }
+      else {
+        $where = "civicrm_address.county_id";
+      }
+
+      $counties = CRM_Core_PseudoConstant::county();
+      if (is_numeric($value)) {
+        $this->_where[$grouping][] = self::buildClause($where, $op, $value, 'Positive');
+        $value = $counties[(int ) $value];
+      }
+      else {
+        $intVal = CRM_Utils_Array::key($value, $counties);
+        $this->_where[$grouping][] = self::buildClause($where, $op, $intVal, 'Positive');
+      }
+
+      if (!$lType) {
+        $this->_qill[$grouping][] = ts('County') . " $op '$value'";
+      }
+      else {
+        $this->_qill[$grouping][] = ts('County') . " ($lType) $op '$value'";
+      }
     }
     elseif ($name === 'world_region') {
+      $field['where'] = 'civicrm_worldregion.id';
       $this->optionValueQuery(
         $name, $op, $value, $grouping,
-        NULL,
+        CRM_Core_PseudoConstant::worldRegion(),
         $field,
         ts('World Region'),
         'Positive',
@@ -2160,8 +2163,8 @@ class CRM_Contact_BAO_Query {
     elseif ($name === 'name') {
       $value = $strtolower(CRM_Core_DAO::escapeString($value));
       if ($wildcard) {
+        $value = "%$value%";
         $op = 'LIKE';
-        $value = self::getWildCardedValue($wildcard, $op, $value);
       }
       $wc = self::caseImportant($op) ? "LOWER({$field['where']})" : "{$field['where']}";
       $this->_where[$grouping][] = self::buildClause($wc, $op, "'$value'");
@@ -2170,8 +2173,8 @@ class CRM_Contact_BAO_Query {
     elseif ($name === 'current_employer') {
       $value = $strtolower(CRM_Core_DAO::escapeString($value));
       if ($wildcard) {
+        $value = "%$value%";
         $op = 'LIKE';
-        $value = self::getWildCardedValue($wildcard, $op, $value);
       }
       $wc = self::caseImportant($op) ? "LOWER(contact_a.organization_name)" : "contact_a.organization_name";
       $ceWhereClause = self::buildClause($wc, $op,
@@ -2213,8 +2216,8 @@ class CRM_Contact_BAO_Query {
       $this->_whereTables[$tName] = $this->_tables[$tName] = "\nLEFT JOIN civicrm_website ON ( civicrm_website.contact_id = contact_a.id )";
       $value = $strtolower(CRM_Core_DAO::escapeString($value));
       if ($wildcard) {
+        $value = "%$value%";
         $op = 'LIKE';
-        $value = self::getWildCardedValue($wildcard, $op, $value);
       }
 
       $wc = 'civicrm_website.url';
@@ -2223,8 +2226,7 @@ class CRM_Contact_BAO_Query {
     }
     elseif ($name === 'contact_is_deleted') {
       $this->_where[$grouping][] = self::buildClause("contact_a.is_deleted", $op, $value);
-      list($qillop, $qillVal) = CRM_Contact_BAO_Query::buildQillForFieldValue(NULL, $name, $value, $op);
-      $this->_qill[$grouping][] = ts("%1 %2 %3", array(1 => $field['title'], 2 => $qillop, 3 => $qillVal));
+      $this->_qill[$grouping][] = "$field[title] $op \"$value\"";
     }
     elseif (!empty($field['where'])) {
       $type = NULL;
@@ -2263,10 +2265,7 @@ class CRM_Contact_BAO_Query {
       }
 
       list($qillop, $qillVal) = self::buildQillForFieldValue(NULL, $field['title'], $value, $op);
-      $this->_qill[$grouping][] = ts("%1 %2 %3", array(
-        1 => $field['title'],
-        2 => $qillop,
-        3 => (strpos($op, 'NULL') !== FALSE || strpos($op, 'EMPTY') !== FALSE) ? $qillVal : "'$qillVal'"));
+      $this->_qill[$grouping][] = "$field[title] $qillop '$qillVal'";
 
       if (is_array($value)) {
         // traditionally an array being passed has been a fatal error. We can take advantage of this to add support
@@ -2290,12 +2289,12 @@ class CRM_Contact_BAO_Query {
         $this->_where[$grouping][] = CRM_Core_DAO::createSQLFilter($fieldName, $value, $type);
       }
       else {
-        if (!strpos($op, 'IN')) {
+        if ($op != 'IN') {
           $value = $strtolower($value);
         }
         if ($wildcard) {
+          $value = "%$value%";
           $op = 'LIKE';
-          $value = self::getWildCardedValue($wildcard, $op, $value);
         }
 
         $this->_where[$grouping][] = self::buildClause($fieldName, $op, $value, $type);
@@ -2342,9 +2341,6 @@ class CRM_Contact_BAO_Query {
         array(
           'address_name',
           'street_address',
-          'street_name',
-          'street_number_suffix',
-          'street_unit',
           'supplemental_address_1',
           'supplemental_address_2',
           'city',
@@ -2352,27 +2348,13 @@ class CRM_Contact_BAO_Query {
           'postal_code_suffix',
           'geo_code_1',
           'geo_code_2',
-          'master_id',
         )
       )) {
         //fix for search by profile with address fields.
         $tName = "{$locationType[$locType[1]]}-address";
       }
-      elseif (in_array($locType[0],
-          array(
-            'on_hold',
-            'signature_html',
-            'signature_text',
-            'is_bulkmail',
-          )
-        )) {
+      elseif ($locType[0] == 'on_hold') {
         $tName = "{$locationType[$locType[1]]}-email";
-      }
-      elseif ($locType[0] == 'provider_id') {
-        $tName = "{$locationType[$locType[1]]}-im";
-      }
-      elseif ($locType[0] == 'openid') {
-        $tName = "{$locationType[$locType[1]]}-openid";
       }
       else {
         $tName = "{$locationType[$locType[1]]}-{$locType[0]}";
@@ -2509,14 +2491,9 @@ class CRM_Contact_BAO_Query {
       );
     }
 
-    // add group_contact and group_contact_cache table if group table is present
-    if (!empty($tables['civicrm_group'])) {
-      if (empty($tables['civicrm_group_contact'])) {
-        $tables['civicrm_group_contact'] = " LEFT JOIN civicrm_group_contact ON civicrm_group_contact.contact_id = contact_a.id AND civicrm_group_contact.status = 'Added' ";
-      }
-      if (empty($tables['civicrm_group_contact_cache'])) {
-        $tables['civicrm_group_contact_cache'] = " LEFT JOIN civicrm_group_contact_cache ON civicrm_group_contact_cache.contact_id = contact_a.id ";
-      }
+    // add group_contact table if group table is present
+    if (!empty($tables['civicrm_group']) && empty($tables['civicrm_group_contact'])) {
+      $tables['civicrm_group_contact'] = " LEFT JOIN civicrm_group_contact ON civicrm_group_contact.contact_id = contact_a.id AND civicrm_group_contact.status = 'Added'";
     }
 
     // add group_contact and group table is subscription history is present
@@ -2633,15 +2610,11 @@ class CRM_Contact_BAO_Query {
           continue;
 
         case 'civicrm_group':
-          $from .= " $side JOIN civicrm_group ON (civicrm_group.id = civicrm_group_contact.group_id OR civicrm_group.id = civicrm_group_contact_cache.group_id) ";
+          $from .= " $side JOIN civicrm_group ON civicrm_group.id =  civicrm_group_contact.group_id ";
           continue;
 
         case 'civicrm_group_contact':
           $from .= " $side JOIN civicrm_group_contact ON contact_a.id = civicrm_group_contact.contact_id ";
-          continue;
-
-        case 'civicrm_group_contact_cache':
-          $from .= " $side JOIN civicrm_group_contact_cache ON contact_a.id = civicrm_group_contact_cache.contact_id ";
           continue;
 
         case 'civicrm_activity':
@@ -2720,13 +2693,6 @@ class CRM_Contact_BAO_Query {
           elseif (strpos($name, '-email') != 0) {
             $locationTypeName = 'email';
           }
-          elseif (strpos($name, '-im') != 0) {
-            $locationTypeName = 'im';
-          }
-          elseif (strpos($name, '-openid') != 0) {
-            $locationTypeName = 'openid';
-          }
-
           if ($locationTypeName) {
             //we have a join on an location table - possibly in conjunction with search builder - CRM-14263
             $parts = explode('-', $name);
@@ -2747,7 +2713,9 @@ class CRM_Contact_BAO_Query {
   /**
    * WHERE / QILL clause for deleted_contacts
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function deletedContacts($values) {
     list($_, $_, $value, $grouping, $_) = $values;
@@ -2761,6 +2729,8 @@ class CRM_Contact_BAO_Query {
    * Where / qill clause for contact_type
    *
    * @param $values
+   *
+   * @return void
    */
   public function contactType(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -2826,6 +2796,8 @@ class CRM_Contact_BAO_Query {
    * Where / qill clause for contact_sub_type
    *
    * @param $values
+   *
+   * @return void
    */
   public function contactSubType(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -2839,14 +2811,9 @@ class CRM_Contact_BAO_Query {
    */
   public function includeContactSubTypes($value, $grouping, $op = 'LIKE') {
 
-    if (is_array($value) && in_array(key($value), CRM_Core_DAO::acceptedSQLOperators(), TRUE)) {
-      $op = key($value);
-      $value = $value[$op];
-    }
-
     $clause = array();
     $alias = "contact_a.contact_sub_type";
-    $qillOperators = CRM_Core_SelectValues::getSearchBuilderOperators();
+    $qillOperators = array('NOT LIKE' => ts('Not Like')) + CRM_Core_SelectValues::getSearchBuilderOperators();
 
     $op = str_replace('IN', 'LIKE', $op);
     $op = str_replace('=', 'LIKE', $op);
@@ -2858,7 +2825,7 @@ class CRM_Contact_BAO_Query {
     elseif (is_array($value)) {
       foreach ($value as $k => $v) {
         if (!empty($k)) {
-          $clause[$k] = "($alias $op '%" . CRM_Core_DAO::VALUE_SEPARATOR . CRM_Utils_Type::escape($v, 'String') . CRM_Core_DAO::VALUE_SEPARATOR . "%')";
+          $clause[$k] = "($alias $op '%" . CRM_Core_DAO::VALUE_SEPARATOR . CRM_Utils_Type::escape($k, 'String') . CRM_Core_DAO::VALUE_SEPARATOR . "%')";
         }
       }
     }
@@ -2876,106 +2843,120 @@ class CRM_Contact_BAO_Query {
    * Where / qill clause for groups
    *
    * @param $values
+   *
+   * @return void
    */
   public function group(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
 
-    // If the $value is in OK (operator as key) array format we need to extract the key as operator and value first
-    if (is_array($value) && in_array(key($value), CRM_Core_DAO::acceptedSQLOperators(), TRUE)) {
-      $op = key($value);
-      $value = $value[$op];
+    if (count($value) > 1) {
+      $this->_useDistinct = TRUE;
     }
 
     // Replace pseudo operators from search builder
     $op = str_replace('EMPTY', 'NULL', $op);
 
-    if (strpos($op, 'NULL')) {
-      $value = NULL;
-    }
-
-    if (count($value) > 1) {
-      if (strpos($op, 'IN') === FALSE && strpos($op, 'NULL') === FALSE) {
-        CRM_Core_Error::fatal(ts("%1 is not a valid operator", array(1 => $op)));
-      }
-      $this->_useDistinct = TRUE;
-    }
-
-    if (isset($value)) {
-      $value = CRM_Utils_Array::value($op, $value, $value);
-    }
-
-    $groupIds = NULL;
+    $groupNames = CRM_Core_PseudoConstant::group();
+    $groupIds = '';
     $names = array();
-    $isSmart = FALSE;
-    $isNotOp = ($op == 'NOT IN' || $op == '!=');
+
+    if ($value) {
+      $groupIds = implode(',', array_keys($value));
+      foreach ($value as $id => $dontCare) {
+        if (array_key_exists($id, $groupNames) && $dontCare) {
+          $names[] = $groupNames[$id];
+        }
+      }
+    }
 
     $statii = array();
-    $gcsValues = $this->getWhereValues('group_contact_status', $grouping);
+    $in = FALSE;
+    $gcsValues = &$this->getWhereValues('group_contact_status', $grouping);
     if ($gcsValues &&
       is_array($gcsValues[2])
     ) {
       foreach ($gcsValues[2] as $k => $v) {
         if ($v) {
+          if ($k == 'Added') {
+            $in = TRUE;
+          }
           $statii[] = "'" . CRM_Utils_Type::escape($k, 'String') . "'";
         }
       }
     }
     else {
       $statii[] = '"Added"';
+      $in = TRUE;
     }
 
     $skipGroup = FALSE;
-    if (!is_array($value) &&
+    if (count($value) == 1 &&
       count($statii) == 1 &&
-      $statii[0] == '"Added"' &&
-      !$isNotOp
+      $statii[0] == '"Added"'
     ) {
-      if (!empty($value) && CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Group', $value, 'saved_search_id')) {
-        $isSmart = TRUE;
+      // check if smart group, if so we can get rid of that one additional
+      // left join
+      $groupIDs = array_keys($value);
+
+      if (!empty($groupIDs[0]) &&
+        CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Group',
+          $groupIDs[0],
+          'saved_search_id'
+        )
+      ) {
+        $skipGroup = TRUE;
       }
     }
 
-    $ssClause = $this->addGroupContactCache($value, NULL, "contact_a", $op);
-    $isSmart = (!$ssClause) ? FALSE : $isSmart;
-    $groupClause = NULL;
-
-    if (!$isSmart) {
-      $groupIds = implode(',', (array) $value);
+    if (!$skipGroup) {
       $gcTable = "`civicrm_group_contact-{$groupIds}`";
       $joinClause = array("contact_a.id = {$gcTable}.contact_id");
-      if ($statii) {
+      if ($groupIds && ($op == 'IN' || $op == 'NOT IN')) {
+        $joinClause[] = "{$gcTable}.group_id IN ( $groupIds )";
+      }
+      // For NOT IN we join on groups the contact IS in, then exclude them in the where clause
+      if ($statii && $op == 'NOT IN') {
         $joinClause[] = "{$gcTable}.status IN (" . implode(', ', $statii) . ")";
       }
       $this->_tables[$gcTable] = $this->_whereTables[$gcTable] = " LEFT JOIN civicrm_group_contact {$gcTable} ON (" . implode(' AND ', $joinClause) . ")";
-      if (strpos($op, 'IN') !== FALSE) {
-        $groupClause = "{$gcTable}.group_id $op ( $groupIds )";
+    }
+
+    if ($op == 'IN') {
+      $qill = ts('In group');
+    }
+    else {
+      $qill = ts('Groups %1', array(1 => $op));
+    }
+    $qill .= ' ' . implode(' ' . ts('or') . ' ', $names);
+
+    $groupClause = NULL;
+
+    if (!$skipGroup) {
+      $groupClause = "{$gcTable}.group_id $op" . ($groupIds ? " ( $groupIds ) " : '');
+      if (!empty($statii) && $groupIds) {
+        $groupClause .= " AND {$gcTable}.status IN (" . implode(', ', $statii) . ")";
+        $qill .= " " . ($op == 'NOT IN' ? ts('WHERE') : ts('AND')) . " " . ts('Group Status') . ' - ' . implode(' ' . ts('or') . ' ', $statii);
       }
-      elseif ($op == '!=') {
-        $groupClause = "{$gcTable}.contact_id NOT IN (SELECT contact_id FROM civicrm_group_contact cgc WHERE cgc.group_id = $groupIds)";
-      }
-      else {
-        $groupClause = "{$gcTable}.group_id $op $groupIds";
+      // For NOT IN op, params were set in the join
+      if ($op == 'NOT IN') {
+        $groupClause = "{$gcTable}.group_id IS NULL";
       }
     }
 
-    if ($ssClause) {
-      $and = ($op == 'IS NULL') ? 'AND' : 'OR';
-      if ($groupClause) {
-        $groupClause = "( ( $groupClause ) $and ( $ssClause ) )";
-      }
-      else {
-        $groupClause = $ssClause;
+    if ($in) {
+      $ssClause = $this->savedSearch($values);
+      if ($ssClause) {
+        if ($groupClause) {
+          $groupClause = "( ( $groupClause ) OR ( $ssClause ) )";
+        }
+        else {
+          $groupClause = $ssClause;
+        }
       }
     }
 
-    list($qillop, $qillVal) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Contact_DAO_Group', 'id', $value, $op);
-    $this->_qill[$grouping][] = ts("Group(s) %1 %2", array(1 => $qillop, 2 => $qillVal));
-    if (strpos($op, 'NULL') === FALSE) {
-      $this->_qill[$grouping][] = ts("Group Status %1", array(1 => implode(' ' . ts('or') . ' ', $statii)));
-    }
-    if ($groupClause) {
-      $this->_where[$grouping][] = $groupClause;
-    }
+    $this->_where[$grouping][] = $groupClause;
+    $this->_qill[$grouping][] = $qill;
   }
 
   /**
@@ -2994,59 +2975,76 @@ class CRM_Contact_BAO_Query {
   }
 
   /**
+   * Where / qill clause for smart groups
+   *
+   * @param $values
+   *
+   * @return string|NULL
+   */
+  public function savedSearch(&$values) {
+    list($name, $op, $value, $grouping, $wildcard) = $values;
+    return $this->addGroupContactCache(array_keys((array) $value));
+  }
+
+  /**
    * @param array $groups
    * @param string $tableAlias
    * @param string $joinTable
-   * @param string $op
    *
    * @return null|string
    */
-  public function addGroupContactCache($groups, $tableAlias = NULL, $joinTable = "contact_a", $op) {
-    $isNullOp = (strpos($op, 'NULL') !== FALSE);
-    $groupsIds = $groups;
-    if (!$isNullOp && !$groups) {
-      return NULL;
-    }
-    elseif (strpos($op, 'IN') !== FALSE) {
-      $groups = array($op => $groups);
-    }
-    elseif (is_array($groups) && count($groups)) {
-      $groups = array('IN' => $groups);
-    }
+  public function addGroupContactCache($groups, $tableAlias = NULL, $joinTable = "contact_a") {
+    $config = CRM_Core_Config::singleton();
 
     // Find all the groups that are part of a saved search.
-    $smartGroupClause = self::buildClause("id", $op, $groups, 'Int');
+    $groupIDs = implode(',', $groups);
+    if (empty($groupIDs)) {
+      return NULL;
+    }
+
     $sql = "
 SELECT id, cache_date, saved_search_id, children
 FROM   civicrm_group
-WHERE  $smartGroupClause
+WHERE  id IN ( $groupIDs )
   AND  ( saved_search_id != 0
    OR    saved_search_id IS NOT NULL
    OR    children IS NOT NULL )
 ";
 
     $group = CRM_Core_DAO::executeQuery($sql);
+    $groupsFiltered = array();
 
     while ($group->fetch()) {
+      $groupsFiltered[] = $group->id;
+
       $this->_useDistinct = TRUE;
+
       if (!$this->_smartGroupCache || $group->cache_date == NULL) {
         CRM_Contact_BAO_GroupContactCache::load($group);
       }
     }
 
-    if (!$tableAlias) {
-      $tableAlias = "`civicrm_group_contact_cache_";
-      $tableAlias .= ($isNullOp) ? "a`" : implode(',', (array) $groupsIds) . "`";
+    if (count($groupsFiltered)) {
+      $groupIDsFiltered = implode(',', $groupsFiltered);
+
+      if ($tableAlias == NULL) {
+        $tableAlias = "`civicrm_group_contact_cache_{$groupIDsFiltered}`";
+      }
+
+      $this->_tables[$tableAlias] = $this->_whereTables[$tableAlias] = " LEFT JOIN civicrm_group_contact_cache {$tableAlias} ON {$joinTable}.id = {$tableAlias}.contact_id ";
+
+      return "{$tableAlias}.group_id IN (" . $groupIDsFiltered . ")";
     }
 
-    $this->_tables[$tableAlias] = $this->_whereTables[$tableAlias] = " LEFT JOIN civicrm_group_contact_cache {$tableAlias} ON {$joinTable}.id = {$tableAlias}.contact_id ";
-    return self::buildClause("{$tableAlias}.group_id", $op, $groups, 'Int');
+    return NULL;
   }
 
   /**
    * Where / qill clause for cms users
    *
    * @param $values
+   *
+   * @return void
    */
   public function ufUser(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3067,7 +3065,9 @@ WHERE  $smartGroupClause
   /**
    * All tag search specific.
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function tagSearch(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3129,22 +3129,26 @@ WHERE  $smartGroupClause
   /**
    * Where / qill clause for tag
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function tag(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
 
-    list($qillop, $qillVal) = self::buildQillForFieldValue('CRM_Core_DAO_EntityTag', "tag_id", $value, $op, array('onlyActive' => FALSE));
-    // API/Search Builder format array(operator => array(values))
+    $tagNames = CRM_Core_PseudoConstant::get('CRM_Core_DAO_EntityTag', 'tag_id', array('onlyActive' => FALSE));
     if (is_array($value)) {
-      if (in_array(key($value), CRM_Core_DAO::acceptedSQLOperators(), TRUE)) {
-        $op = key($value);
-        $value = $value[$op];
-      }
       if (count($value) > 1) {
         $this->_useDistinct = TRUE;
       }
-      $value = implode(',', (array) $value);
+      foreach ($value as $id => $dontCare) {
+        $names[] = CRM_Utils_Array::value($id, $tagNames);
+      }
+      $names = implode(' ' . ts('or') . ' ', $names);
+      $value = implode(',', array_keys($value));
+    }
+    else {
+      $names = CRM_Utils_Array::value($value, $tagNames);
     }
 
     $useAllTagTypes = $this->getWhereValues('all_tag_types', $grouping);
@@ -3184,6 +3188,7 @@ WHERE  $smartGroupClause
       else {
         $this->_where[$grouping][] = "({$etTable}.tag_id $op (" . $value . ") OR {$etCaseTable}.tag_id $op (" . $value . ") OR {$etActTable}.tag_id $op (" . $value . "))";
       }
+      $this->_qill[$grouping][] = ts('Tag %1 %2', array(1 => $op, 2 => $tagTypesText[2])) . ' ' . $names;
     }
     else {
       $this->_tables[$etTable] = $this->_whereTables[$etTable]
@@ -3195,22 +3200,20 @@ WHERE  $smartGroupClause
         $op = str_replace('EMPTY', 'NULL', $op);
         $this->_where[$grouping][] = "{$etTable}.tag_id $op";
       }
-      // CRM-16941: for tag tried with != operator we don't show contact who don't have given $value AND also in other tag
-      elseif ($op == '!=') {
-        $this->_where[$grouping][] = "{$etTable}.entity_id NOT IN (SELECT entity_id FROM civicrm_entity_tag cet WHERE cet.entity_table = 'civicrm_contact' AND " . self::buildClause("cet.tag_id", '=', $value, 'Int') . ")";
+      else {
+        $this->_where[$grouping][] = "{$etTable}.tag_id $op (" . $value . ')';
       }
-      elseif ($op == '=' || strstr($op, 'IN')) {
-        $op = ($op == '=') ? 'IN' : $op;
-        $this->_where[$grouping][] = "{$etTable}.tag_id $op ( $value )";
-      }
+      $this->_qill[$grouping][] = ts('Tagged %1', array(1 => $op)) . ' ' . $names;
     }
-    $this->_qill[$grouping][] = ts('Tagged %1 %2', array(1 => $qillop, 2 => $qillVal));
+
   }
 
   /**
    * Where/qill clause for notes
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function notes(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3227,7 +3230,7 @@ WHERE  $smartGroupClause
     $strtolower = function_exists('mb_strtolower') ? 'mb_strtolower' : 'strtolower';
     $n = trim($value);
     $value = $strtolower(CRM_Core_DAO::escapeString($n));
-    if ($wildcard) {
+    if ($wildcard || $op == 'LIKE') {
       if (strpos($value, '%') === FALSE) {
         $value = "%$value%";
       }
@@ -3248,8 +3251,7 @@ WHERE  $smartGroupClause
       $label = $label ? ts('Note: Body and Subject') : ts('Note: Subject Only');
     }
     $this->_where[$grouping][] = "( " . implode(' OR ', $clauses) . " )";
-    list($qillOp, $qillVal) = self::buildQillForFieldValue(NULL, $name, $n, $op);
-    $this->_qill[$grouping][] = ts("%1 %2 %3", array(1 => $label, 2 => $qillOp, 3 => $qillVal));
+    $this->_qill[$grouping][] = $label . " $op - '$n'";
   }
 
   /**
@@ -3285,7 +3287,9 @@ WHERE  $smartGroupClause
   /**
    * Where / qill clause for sort_name
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function sortName(&$values) {
     list($fieldName, $op, $value, $grouping, $wildcard) = $values;
@@ -3364,15 +3368,16 @@ WHERE  $smartGroupClause
     list($name, $op, $value, $grouping, $wildcard) = $values;
     $name .= '_display';
 
-    list($qillop, $qillVal) = CRM_Contact_BAO_Query::buildQillForFieldValue(NULL, $name, $value, $op);
-    $this->_qill[$grouping][] = ts('Greeting %1 %2', array(1 => $qillop, 2 => $qillVal));
-    $this->_where[$grouping][] = self::buildClause("contact_a.{$name}", $op, $value, 'String');
+    $this->_qill[$grouping][] = ts('Greeting %1 %2', array(1 => $op, 2 => $value));
+    $this->_where[$grouping][] = self::buildClause("contact_a.{$name}", 'LIKE', "$value", 'String');
   }
 
   /**
    * Where / qill clause for email
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   protected function email(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3403,7 +3408,9 @@ WHERE  $smartGroupClause
   /**
    * Where / qill clause for phone number
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function phone_numeric(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3423,7 +3430,9 @@ WHERE  $smartGroupClause
   /**
    * Where / qill clause for phone type/location
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function phone_option_group($values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3436,9 +3445,11 @@ WHERE  $smartGroupClause
   }
 
   /**
-   * Where / qill clause for street_address.
+   * Where / qill clause for street_address
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function street_address(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3468,9 +3479,11 @@ WHERE  $smartGroupClause
   }
 
   /**
-   * Where / qill clause for street_unit.
+   * Where / qill clause for street_unit
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function street_number(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3500,9 +3513,11 @@ WHERE  $smartGroupClause
   }
 
   /**
-   * Where / qill clause for sorting by character.
+   * Where / qill clause for sorting by character
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function sortByCharacter(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3514,7 +3529,9 @@ WHERE  $smartGroupClause
   }
 
   /**
-   * Where / qill clause for including contact ids.
+   * Where / qill clause for including contact ids
+   *
+   * @return void
    */
   public function includeContactIDs() {
     if (!$this->_includeContactIds || empty($this->_params)) {
@@ -3533,9 +3550,11 @@ WHERE  $smartGroupClause
   }
 
   /**
-   * Where / qill clause for postal code.
+   * Where / qill clause for postal code
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function postalCode(&$values) {
     // skip if the fields dont have anything to do with postal_code
@@ -3547,7 +3566,7 @@ WHERE  $smartGroupClause
 
     // Handle numeric postal code range searches properly by casting the column as numeric
     if (is_numeric($value)) {
-      $field = "IF (civicrm_address.postal_code REGEXP '^[0-9]+$', CAST(civicrm_address.postal_code AS UNSIGNED), 0)";
+      $field = 'ROUND(civicrm_address.postal_code)';
       $val = CRM_Utils_Type::escape($value, 'Integer');
     }
     else {
@@ -3579,12 +3598,12 @@ WHERE  $smartGroupClause
   }
 
   /**
-   * Where / qill clause for location type.
+   * Where / qill clause for location type
    *
-   * @param array $values
+   * @param $values
    * @param null $status
    *
-   * @return string
+   * @return void
    */
   public function locationType(&$values, $status = NULL) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3630,7 +3649,11 @@ WHERE  $smartGroupClause
     }
 
     $countryClause = $countryQill = NULL;
-    if ($values && !empty($value)) {
+    if (
+      $values &&
+      !empty($value)
+    ) {
+
       $this->_tables['civicrm_address'] = 1;
       $this->_whereTables['civicrm_address'] = 1;
 
@@ -3658,12 +3681,12 @@ WHERE  $smartGroupClause
   }
 
   /**
-   * Where / qill clause for county (if present).
+   * Where / qill clause for county (if present)
    *
-   * @param array $values
+   * @param $values
    * @param null $status
    *
-   * @return string
+   * @return void
    */
   public function county(&$values, $status = NULL) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3727,22 +3750,83 @@ WHERE  $smartGroupClause
   }
 
   /**
-   * Where / qill clause for state/province AND country (if present).
+   * Where / qill clause for state/province AND country (if present)
    *
-   * @param array $values
+   * @param $values
    * @param null $status
    *
-   * @return string
+   * @return void
    */
   public function stateProvince(&$values, $status = NULL) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
 
-    $stateClause = self::buildClause('civicrm_address.state_province_id', $op, $value, 'Positive');
+    // quick escape for IS NULL
+    if (in_array($op, array('IS NULL', 'IS NOT NULL', 'IS EMPTY', 'IS NOT EMPTY'))) {
+      $value = NULL;
+    }
+    elseif (!is_array($value)) {
+      // force the state to be an array
+      // check if its in the mapper format!
+      $values = self::parseSearchBuilderString($value);
+      if (is_array($values)) {
+        $value = $values;
+      }
+      else {
+        $value = array($value);
+      }
+    }
+
+    // check if the values are ids OR names of the states
+    $inputFormat = 'id';
+    if ($value) {
+      foreach ($value as $v) {
+        if (!is_numeric($v)) {
+          $inputFormat = 'name';
+          break;
+        }
+      }
+    }
+
+    $names = array();
+    if ($op == '=') {
+      $op = 'IN';
+    }
+    elseif ($op == '!=') {
+      $op = 'NOT IN';
+    }
+    else {
+      // this converts IS (NOT)? EMPTY to IS (NOT)? NULL
+      $op = str_replace('EMPTY', 'NULL', $op);
+    }
+    if (in_array($op, array('IS NULL', 'IS NOT NULL', 'IS EMPTY', 'IS NOT EMPTY'))) {
+      $stateClause = "civicrm_address.state_province_id $op";
+    }
+    elseif ($inputFormat == 'id') {
+      if ($op != 'NOT IN') {
+        $op = 'IN';
+      }
+      $stateClause = "civicrm_address.state_province_id $op (" . implode(',', $value) . ')';
+
+      foreach ($value as $id) {
+        $names[] = CRM_Core_PseudoConstant::stateProvince($id, FALSE);
+      }
+    }
+    else {
+      $inputClause = array();
+      $stateProvince = CRM_Core_PseudoConstant::stateProvince();
+      foreach ($value as $name) {
+        $name = trim($name);
+        $inputClause[] = CRM_Utils_Array::key($name, $stateProvince);
+      }
+      $stateClause = "civicrm_address.state_province_id $op (" . implode(',', $inputClause) . ')';
+      $names = $value;
+    }
     $this->_tables['civicrm_address'] = 1;
     $this->_whereTables['civicrm_address'] = 1;
 
     $countryValues = $this->getWhereValues('country', $grouping);
     list($countryClause, $countryQill) = $this->country($countryValues, TRUE);
+
     if ($countryClause) {
       $clause = "( $stateClause AND $countryClause )";
     }
@@ -3751,19 +3835,20 @@ WHERE  $smartGroupClause
     }
 
     $this->_where[$grouping][] = $clause;
-    list($qillop, $qillVal) = self::buildQillForFieldValue('CRM_Core_DAO_Address', "state_province_id", $value, $op);
     if (!$status) {
-      $this->_qill[$grouping][] = ts("State/Province %1 %2 %3", array(1 => $qillop, 2 => $qillVal, 3 => $countryQill));
+      $this->_qill[$grouping][] = ts('State/Province') . " $op " . implode(' ' . ts('or') . ' ', $names) . $countryQill;
     }
     else {
-      return implode(' ' . ts('or') . ' ', $qillVal) . $countryQill;
+      return implode(' ' . ts('or') . ' ', $names) . $countryQill;
     }
   }
 
   /**
-   * Where / qill clause for change log.
+   * Where / qill clause for change log
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function changeLog(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3810,12 +3895,7 @@ WHERE  $smartGroupClause
   public function demographics(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
 
-    if (($name == 'age_low') || ($name == 'age_high')) {
-      $this->ageRangeQueryBuilder($values,
-        'contact_a', 'age', 'birth_date', ts('Age')
-      );
-    }
-    elseif (($name == 'birth_date_low') || ($name == 'birth_date_high')) {
+    if (($name == 'birth_date_low') || ($name == 'birth_date_high')) {
 
       $this->dateQueryBuilder($values,
         'contact_a', 'birth_date', 'birth_date', ts('Birth Date')
@@ -3846,7 +3926,6 @@ WHERE  $smartGroupClause
       $this->_where[$grouping][] = "contact_a.{$name} $op $value";
     }
     $field = CRM_Utils_Array::value($name, $this->_fields);
-    $op = CRM_Utils_Array::value($op, CRM_Core_SelectValues::getSearchBuilderOperators(), $op);
     $title = $field ? $field['title'] : $name;
     $this->_qill[$grouping][] = "$title $op $value";
   }
@@ -3897,29 +3976,58 @@ WHERE  $smartGroupClause
   public function preferredCommunication(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
 
-    if (!is_array($value)) {
-      $value = str_replace(array('(', ')'), '', explode(",", $value));
+    $pref = array();
+    if (in_array($op, array('IS NULL', 'IS NOT NULL', 'IS EMPTY', 'IS NOT EMPTY'))) {
+      $value = NULL;
     }
-    elseif (in_array(key($value), CRM_Core_DAO::acceptedSQLOperators(), TRUE)) {
-      $op = key($value);
-      $value = $value[$op];
-    }
-    list($qillop, $qillVal) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Contact_DAO_Contact', $name, $value, $op);
+    elseif (!is_array($value)) {
+      $v = array();
+      $value = trim($value, ' ()');
+      if (strpos($value, CRM_Core_DAO::VALUE_SEPARATOR) !== FALSE) {
+        $v = explode(CRM_Core_DAO::VALUE_SEPARATOR, $value);
+      }
+      else {
+        $v = explode(",", $value);
+      }
 
-    if (self::caseImportant($op)) {
-      $value = implode("[[:cntrl:]]|[[:cntrl:]]", (array) $value);
-      $op = (strstr($op, '!') || strstr($op, 'NOT')) ? 'NOT RLIKE' : 'RLIKE';
-      $value = "[[:cntrl:]]" . $value . "[[:cntrl:]]";
+      foreach ($v as $item) {
+        if ($item) {
+          $pref[] = $item;
+        }
+      }
+    }
+    else {
+      foreach ($value as $key => $checked) {
+        if ($checked) {
+          $pref[] = $key;
+        }
+      }
     }
 
-    $this->_where[$grouping][] = self::buildClause("contact_a.preferred_communication_method", $op, $value);
-    $this->_qill[$grouping][] = ts('Preferred Communication Method %1 %2', array(1 => $qillop, 2 => $qillVal));
+    $commPref = CRM_Core_PseudoConstant::get('CRM_Contact_DAO_Contact', 'preferred_communication_method');
+
+    $sqlValue = array();
+    $showValue = array();
+    $sql = "contact_a.preferred_communication_method";
+    if (in_array($op, array('IS NULL', 'IS NOT NULL', 'IS EMPTY', 'IS NOT EMPTY'))) {
+      $sqlValue[] = "{$sql} {$op}";
+    }
+    else {
+      foreach ($pref as $val) {
+        $sqlValue[] = "( $sql like '%" . CRM_Core_DAO::VALUE_SEPARATOR . $val . CRM_Core_DAO::VALUE_SEPARATOR . "%' ) ";
+        $showValue[] = $commPref[$val];
+      }
+    }
+    $this->_where[$grouping][] = "( " . implode(' OR ', $sqlValue) . " )";
+    $this->_qill[$grouping][] = ts('Preferred Communication Method') . " $op " . implode(' ' . ts('or') . ' ', $showValue);
   }
 
   /**
-   * Where / qill clause for relationship.
+   * Where / qill clause for relationship
    *
-   * @param array $values
+   * @param $values
+   *
+   * @return void
    */
   public function relationship(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -3978,7 +4086,12 @@ WHERE  $smartGroupClause
       }
     }
 
-    $allRelationshipType = CRM_Contact_BAO_Relationship::getContactRelationshipType(NULL, 'null', NULL, NULL, TRUE);
+    $relTypeInd = CRM_Contact_BAO_Relationship::getContactRelationshipType(NULL, 'null', NULL, 'Individual');
+    $relTypeOrg = CRM_Contact_BAO_Relationship::getContactRelationshipType(NULL, 'null', NULL, 'Organization');
+    $relTypeHou = CRM_Contact_BAO_Relationship::getContactRelationshipType(NULL, 'null', NULL, 'Household');
+    $allRelationshipType = array();
+    $allRelationshipType = array_merge($relTypeInd, $relTypeOrg);
+    $allRelationshipType = array_merge($allRelationshipType, $relTypeHou);
 
     if ($nameClause || !$targetGroup) {
       if (!empty($relationType)) {
@@ -3998,7 +4111,7 @@ WHERE  $smartGroupClause
         implode(",", $targetGroup[2]) . ") ) ";
 
       //add contacts from saved searches
-      $ssWhere = $this->addGroupContactCache($targetGroup[2], "civicrm_relationship_group_contact_cache", "contact_b", $op);
+      $ssWhere = $this->addGroupContactCache($targetGroup[2], "civicrm_relationship_group_contact_cache", "contact_b");
 
       //set the group where clause
       if ($ssWhere) {
@@ -4277,17 +4390,14 @@ civicrm_relationship.is_permission_a_b = 0
     $smartGroupCache = TRUE,
     $count = FALSE,
     $skipPermissions = TRUE,
-    $mode = 1,
-    $apiEntity = NULL
+    $mode = 1
   ) {
 
     $query = new CRM_Contact_BAO_Query(
       $params, $returnProperties,
       NULL, TRUE, FALSE, $mode,
       $skipPermissions,
-      TRUE, $smartGroupCache,
-      NULL, 'AND',
-      $apiEntity
+      TRUE, $smartGroupCache
     );
 
     //this should add a check for view deleted if permissions are enabled
@@ -4379,7 +4489,7 @@ civicrm_relationship.is_permission_a_b = 0
   }
 
   /**
-   * Convert submitted values for relative custom fields to query object format.
+   * Convert submitted values for relative custom date fields to query object format.
    *
    * The query will support the sqlOperator format so convert to that format.
    *
@@ -4391,8 +4501,10 @@ civicrm_relationship.is_permission_a_b = 0
    *   Submitted value.
    * @param string $fieldName
    *   Submitted field name. (Matches form field not DB field.)
+   *
+   * @return array
    */
-  protected static function convertCustomRelativeFields(&$formValues, &$params, $values, $fieldName) {
+  protected static function convertCustomDateRelativeFields(&$formValues, &$params, $values, $fieldName) {
     if (empty($values)) {
       // e.g we might have relative set & from & to empty. The form flow is a bit funky &
       // this function gets called again after they fields have been converted which can get ugly.
@@ -4409,12 +4521,11 @@ civicrm_relationship.is_permission_a_b = 0
         return;
       }
 
-      $from = CRM_Utils_Array::value($customFieldName . '_from', $formValues, NULL);
-      $to = CRM_Utils_Array::value($customFieldName . '_to', $formValues, NULL);
-
-      if (self::isCustomDateField($customFieldName)) {
-        list($from, $to) = CRM_Utils_Date::getFromTo(NULL, $from, $to);
-      }
+      list($from, $to) = CRM_Utils_Date::getFromTo(
+        NULL,
+        (empty($formValues[$customFieldName . '_from']) ? NULL : $formValues[$customFieldName . '_from']),
+        CRM_Utils_Array::value($customFieldName . '_to', $formValues)
+      );
     }
 
     if ($from) {
@@ -4435,23 +4546,7 @@ civicrm_relationship.is_permission_a_b = 0
       0,
       0,
     );
-  }
-
-  /**
-   * Are we dealing with custom field of type date.
-   *
-   * @param $fieldName
-   *
-   * @return bool
-   */
-  public static function isCustomDateField($fieldName) {
-    if (($customFieldID = CRM_Core_BAO_CustomField::getKeyID($fieldName)) == FALSE) {
-      return FALSE;
-    }
-    if ('Date' == civicrm_api3('CustomField', 'getvalue', array('id' => $customFieldID, 'return' => 'data_type'))) {
-      return TRUE;
-    }
-    return FALSE;
+    return array($formValues, $params);
   }
 
   /**
@@ -4468,7 +4563,7 @@ civicrm_relationship.is_permission_a_b = 0
    *
    * @return bool;
    */
-  public static function isAlreadyProcessedForQueryFormat($values) {
+  protected static function isAlreadyProcessedForQueryFormat($values) {
     if (!is_array($values)) {
       return FALSE;
     }
@@ -4488,15 +4583,18 @@ civicrm_relationship.is_permission_a_b = 0
    *
    * @param array $formValues
    */
-  public static function filterCountryFromValuesIfStateExists(&$formValues) {
-    if (!empty($formValues['country']) && !empty($formValues['state_province'])) {
-      // The use of array map sanitises the data by ensuring we are dealing with integers.
-      $states = implode(', ', array_map('intval', $formValues['state_province']));
-      $countryList = CRM_Core_DAO::singleValueQuery(
-        "SELECT GROUP_CONCAT(country_id) FROM civicrm_state_province WHERE id IN ($states)"
-      );
-      if ($countryList == $formValues['country']) {
-        unset($formValues['country']);
+  public static function filterCountryFromValuesIfStateExists(&$formValues)
+  {
+    if (!empty($formValues['country'])) {
+      if (!empty($formValues['state_province'])) {
+        // The use of array map sanitises the data by ensuring we are dealing with integers.
+        $states = implode(', ', array_map('intval', $formValues['state_province']));
+        $countryList = CRM_Core_DAO::singleValueQuery(
+          "SELECT GROUP_CONCAT(country_id) FROM civicrm_state_province WHERE id IN ($states)"
+        );
+        if ($countryList == $formValues['country']) {
+          unset($formValues['country']);
+        }
       }
     }
   }
@@ -4508,7 +4606,7 @@ civicrm_relationship.is_permission_a_b = 0
    *   The offset for the query.
    * @param int $rowCount
    *   The number of rows to return.
-   * @param string|CRM_Utils_Sort $sort
+   * @param string $sort
    *   The order by string.
    * @param bool $count
    *   Is this a count only query ?.
@@ -4576,7 +4674,84 @@ civicrm_relationship.is_permission_a_b = 0
 
     $order = $orderBy = $limit = '';
     if (!$count) {
-      list($order, $additionalFromClause) = $this->prepareOrderBy($sort, $sortByChar, $sortOrder, $additionalFromClause);
+      $config = CRM_Core_Config::singleton();
+      if ($config->includeOrderByClause ||
+        isset($this->_distinctComponentClause)
+      ) {
+        if ($sort) {
+          if (is_string($sort)) {
+            $orderBy = $sort;
+          }
+          else {
+            $orderBy = trim($sort->orderBy());
+          }
+          if (!empty($orderBy)) {
+            // this is special case while searching for
+            // change log CRM-1718
+            if (preg_match('/sort_name/i', $orderBy)) {
+              $orderBy = str_replace('sort_name', 'contact_a.sort_name', $orderBy);
+            }
+
+            $orderBy = CRM_Utils_Type::escape($orderBy, 'String');
+            $order = " ORDER BY $orderBy";
+
+            if ($sortOrder) {
+              $sortOrder = CRM_Utils_Type::escape($sortOrder, 'String');
+              $order .= " $sortOrder";
+            }
+
+            // always add contact_a.id to the ORDER clause
+            // so the order is deterministic
+            if (strpos('contact_a.id', $order) === FALSE) {
+              $order .= ", contact_a.id";
+            }
+          }
+        }
+        elseif ($sortByChar) {
+          $order = " ORDER BY UPPER(LEFT(contact_a.sort_name, 1)) asc";
+        }
+        else {
+          $order = " ORDER BY contact_a.sort_name asc, contact_a.id";
+        }
+      }
+
+      // hack for order clause
+      if ($order) {
+        $fieldStr = trim(str_replace('ORDER BY', '', $order));
+        $fieldOrder = explode(' ', $fieldStr);
+        $field = $fieldOrder[0];
+
+        if ($field) {
+          switch ($field) {
+            case 'city':
+            case 'postal_code':
+              $this->_whereTables["civicrm_address"] = 1;
+              $order = str_replace($field, "civicrm_address.{$field}", $order);
+              break;
+
+            case 'country':
+            case 'state_province':
+              $this->_whereTables["civicrm_{$field}"] = 1;
+              $order = str_replace($field, "civicrm_{$field}.name", $order);
+              break;
+
+            case 'email':
+              $this->_whereTables["civicrm_email"] = 1;
+              $order = str_replace($field, "civicrm_email.{$field}", $order);
+              break;
+
+            default:
+              //CRM-12565 add "`" around $field if it is a pseudo constant
+              foreach ($this->_pseudoConstantsSelect as $key => $value) {
+                if (!empty($value['element']) && $value['element'] == $field) {
+                  $order = str_replace($field, "`{$field}`", $order);
+                }
+              }
+          }
+          $this->_fromClause = self::fromClause($this->_tables, NULL, NULL, $this->_primaryLocation, $this->_mode);
+          $this->_simpleFromClause = self::fromClause($this->_whereTables, NULL, NULL, $this->_primaryLocation, $this->_mode);
+        }
+      }
 
       if ($rowCount > 0 && $offset >= 0) {
         $offset = CRM_Utils_Type::escape($offset, 'Int');
@@ -4587,9 +4762,6 @@ civicrm_relationship.is_permission_a_b = 0
 
     // CRM-15231
     $this->_sort = $sort;
-
-    //CRM-15967
-    $this->includePseudoFieldsJoin($sort);
 
     list($select, $from, $where, $having) = $this->query($count, $sortByChar, $groupContacts, $onlyDeleted);
 
@@ -4730,23 +4902,12 @@ civicrm_relationship.is_permission_a_b = 0
 SELECT COUNT( conts.total_amount ) as total_count,
        SUM(   conts.total_amount ) as total_amount,
        AVG(   conts.total_amount ) as total_avg,
-       conts.total_amount          as amount,
        conts.currency              as currency";
     if ($this->_permissionWhereClause) {
       $where .= " AND " . $this->_permissionWhereClause;
     }
     if ($context == 'search') {
       $where .= " AND contact_a.is_deleted = 0 ";
-    }
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes);
-    if (!empty($financialTypes)) {
-      $where .= " AND civicrm_contribution.financial_type_id IN (" . implode(',', array_keys($financialTypes)) . ") AND li.id IS NULL";
-      $from .= " LEFT JOIN civicrm_line_item li
-                      ON civicrm_contribution.id = li.contribution_id AND
-                         li.entity_table = 'civicrm_contribution' AND li.financial_type_id NOT IN (" . implode(',', array_keys($financialTypes)) . ") ";
-    }
-    else {
-      $where .= " AND civicrm_contribution.financial_type_id IN (0)";
     }
 
     // make sure contribution is completed - CRM-4989
@@ -4755,10 +4916,10 @@ SELECT COUNT( conts.total_amount ) as total_count,
     $summary = array();
     $summary['total'] = array();
     $summary['total']['count'] = $summary['total']['amount'] = $summary['total']['avg'] = "n/a";
-    $innerQuery = "SELECT civicrm_contribution.total_amount, COUNT(civicrm_contribution.total_amount) as civicrm_contribution_total_amount_count,
-      civicrm_contribution.currency $from $completedWhere";
+
     $query = "$select FROM (
-      $innerQuery GROUP BY civicrm_contribution.id
+      SELECT civicrm_contribution.total_amount, civicrm_contribution.currency $from $completedWhere
+      GROUP BY civicrm_contribution.id
     ) as conts
     GROUP BY currency";
 
@@ -4771,27 +4932,12 @@ SELECT COUNT( conts.total_amount ) as total_count,
       $summary['total']['amount'][] = CRM_Utils_Money::format($dao->total_amount, $dao->currency);
       $summary['total']['avg'][] = CRM_Utils_Money::format($dao->total_avg, $dao->currency);
     }
-
-    $orderBy = 'ORDER BY civicrm_contribution_total_amount_count DESC';
-    $groupBy = 'GROUP BY currency, civicrm_contribution.total_amount';
-    $modeSQL = "$select, conts.civicrm_contribution_total_amount_count as civicrm_contribution_total_amount_count FROM ($innerQuery
-    $groupBy $orderBy) as conts
-    GROUP BY currency";
-
-    $summary['total']['mode'] = CRM_Contribute_BAO_Contribution::computeStats('mode', $modeSQL);
-
-    $medianSQL = "{$from} {$completedWhere}";
-    $summary['total']['median'] = CRM_Contribute_BAO_Contribution::computeStats('median', $medianSQL, 'civicrm_contribution');
-    $summary['total']['currencyCount'] = count($summary['total']['median']);
-
     if (!empty($summary['total']['amount'])) {
       $summary['total']['amount'] = implode(',&nbsp;', $summary['total']['amount']);
       $summary['total']['avg'] = implode(',&nbsp;', $summary['total']['avg']);
-      $summary['total']['mode'] = implode(',&nbsp;', $summary['total']['mode']);
-      $summary['total']['median'] = implode(',&nbsp;', $summary['total']['median']);
     }
     else {
-      $summary['total']['amount'] = $summary['total']['avg'] = $summary['total']['median'] = 0;
+      $summary['total']['amount'] = $summary['total']['avg'] = 0;
     }
 
     // soft credit summary
@@ -4968,13 +5114,11 @@ SELECT COUNT( conts.total_amount ) as cancel_count,
   }
 
   /**
-   * Build query for a date field.
-   *
-   * @param array $values
+   * @param $values
    * @param string $tableName
    * @param string $fieldName
    * @param string $dbFieldName
-   * @param string $fieldTitle
+   * @param $fieldTitle
    * @param bool $appendTimeStamp
    */
   public function dateQueryBuilder(
@@ -5180,113 +5324,6 @@ SELECT COUNT( conts.total_amount ) as cancel_count,
     }
   }
 
-
-  /**
-   * @param $values
-   * @param string $tableName
-   * @param string $fieldName
-   * @param string $dbFieldName
-   * @param $fieldTitle
-   * @param null $options
-   */
-  public function ageRangeQueryBuilder(
-    &$values,
-    $tableName, $fieldName,
-    $dbFieldName, $fieldTitle,
-    $options = NULL
-  ) {
-    list($name, $op, $value, $grouping, $wildcard) = $values;
-
-    $asofDateValues = $this->getWhereValues("{$fieldName}_asof_date", $grouping);
-    $asofDate = NULL;  // will be treated as current day
-    if ($asofDateValues) {
-      $asofDate = CRM_Utils_Date::processDate($asofDateValues[2]);
-      $asofDateFormat = CRM_Utils_Date::customFormat(substr($asofDate, 0, 8));
-      $fieldTitle .= ' ' . ts('as of') . ' ' . $asofDateFormat;
-    }
-
-    if ($name == "{$fieldName}_low" ||
-      $name == "{$fieldName}_high"
-    ) {
-      if (isset($this->_rangeCache[$fieldName])) {
-        return;
-      }
-      $this->_rangeCache[$fieldName] = 1;
-
-      $secondOP = $secondPhrase = $secondValue = NULL;
-
-      if ($name == "{$fieldName}_low") {
-        $firstPhrase = ts('greater than or equal to');
-        // NB: age > X means date of birth < Y
-        $firstOP = '<=';
-        $firstDate = self::calcDateFromAge($asofDate, $value, 'min');
-
-        $secondValues = $this->getWhereValues("{$fieldName}_high", $grouping);
-        if (!empty($secondValues)) {
-          $secondOP = '>=';
-          $secondPhrase = ts('less than or equal to');
-          $secondValue = $secondValues[2];
-          $secondDate = self::calcDateFromAge($asofDate, $secondValue, 'max');
-        }
-      }
-      else {
-        $firstOP = '>=';
-        $firstPhrase = ts('less than or equal to');
-        $firstDate = self::calcDateFromAge($asofDate, $value, 'max');
-
-        $secondValues = $this->getWhereValues("{$fieldName}_low", $grouping);
-        if (!empty($secondValues)) {
-          $secondOP = '<=';
-          $secondPhrase = ts('greater than or equal to');
-          $secondValue = $secondValues[2];
-          $secondDate = self::calcDateFromAge($asofDate, $secondValue, 'min');
-        }
-      }
-
-      if ($secondOP) {
-        $this->_where[$grouping][] = "
-( {$tableName}.{$dbFieldName} $firstOP '$firstDate' ) AND
-( {$tableName}.{$dbFieldName} $secondOP '$secondDate' )
-";
-        $displayValue = $options ? $options[$value] : $value;
-        $secondDisplayValue = $options ? $options[$secondValue] : $secondValue;
-
-        $this->_qill[$grouping][]
-          = "$fieldTitle - $firstPhrase \"$displayValue\" " . ts('AND') . " $secondPhrase \"$secondDisplayValue\"";
-      }
-      else {
-        $this->_where[$grouping][] = "{$tableName}.{$dbFieldName} $firstOP '$firstDate'";
-        $displayValue = $options ? $options[$value] : $value;
-        $this->_qill[$grouping][] = "$fieldTitle - $firstPhrase \"$displayValue\"";
-      }
-      $this->_tables[$tableName] = $this->_whereTables[$tableName] = 1;
-      return;
-    }
-  }
-
-  /**
-   * Calculate date from age.
-   *
-   * @param string $asofDate
-   * @param int $age
-   * @param string $type
-   *
-   * @return string
-   */
-  public static function calcDateFromAge($asofDate, $age, $type) {
-    $date = new DateTime($asofDate);
-    if ($type == "min") {
-      // minimum age is $age: dob <= date - age "235959"
-      $date->sub(new DateInterval("P" . $age . "Y"));
-      return $date->format('Ymd') . "235959";
-    }
-    else {
-      // max age is $age: dob >= date - (age + 1y) + 1d "000000"
-      $date->sub(new DateInterval("P" . ($age + 1) . "Y"))->add(new DateInterval("P1D"));
-      return $date->format('Ymd') . "000000";
-    }
-  }
-
   /**
    * Given the field name, operator, value & its data type
    * builds the where Clause for the query
@@ -5324,8 +5361,8 @@ SELECT COUNT( conts.total_amount ) as cancel_count,
       case 'IN':
       case 'NOT IN':
         // I feel like this would be escaped properly if passed through $queryString = CRM_Core_DAO::createSqlFilter.
-        if (!empty($value) && (!is_array($value) || !array_key_exists($op, $value))) {
-          $value = array($op => (array) $value);
+        if (!empty($value) && is_array($value) && !array_key_exists($op, $value)) {
+          $value = array($op => $value);
         }
 
       default:
@@ -5346,9 +5383,7 @@ SELECT COUNT( conts.total_amount ) as cancel_count,
           // We could get away with keeping this in 4.6 if we make it such that it throws an enotice in 4.7 so
           // people have to de-slopify it.
           if (!empty($value[0])) {
-            if ($op != 'BETWEEN') {
-              $dragonPlace = $iAmAnIntentionalENoticeThatWarnsOfAProblemYouShouldReport;
-            }
+            $dragonPlace = $iAmAnIntentionalENoticeThatWarnsOfAProblemYouShouldReport;
             if (($queryString = CRM_Core_DAO::createSqlFilter($field, array($op => $value), $dataType)) != FALSE) {
               return $queryString;
             }
@@ -5394,7 +5429,7 @@ SELECT COUNT( conts.total_amount ) as cancel_count,
       ts('Address Fields') => 'civicrm_address',
       ts('Notes') => 'civicrm_note',
       ts('Change Log') => 'civicrm_log',
-      ts('Mailings') => 'civicrm_mailing',
+      ts('Mailings') => 'civicrm_mailing_event_queue',
     );
     CRM_Contact_BAO_Query_Hook::singleton()->getPanesMapper($panesMapper);
 
@@ -5531,7 +5566,7 @@ AND   displayRelType.is_active = 1
   }
 
   /**
-   * Builds the necessary structures for all fields that are similar to option value look-ups.
+   * Builds the necessary structures for all fields that are similar to option value lookups.
    *
    * @param string $name
    *   the name of the field.
@@ -5541,8 +5576,8 @@ AND   displayRelType.is_active = 1
    *   depends on the operator and who's calling the query builder.
    * @param int $grouping
    *   the index where to place the where clause.
-   * @param string $daoName
-   *   DAO Name.
+   * @param $selectValues
+   *   The key value pairs for this element. This allows us to use this function for things besides option-value pairs.
    * @param array $field
    *   an array that contains various properties of the field identified by $name.
    * @param string $label
@@ -5550,18 +5585,28 @@ AND   displayRelType.is_active = 1
    * @param string $dataType
    *   The data type for this element.
    * @param bool $useIDsOnly
+   *
+   * @return void
+   *   adds the where clause and qill to the query object
    */
   public function optionValueQuery(
     $name,
     $op,
     $value,
     $grouping,
-    $daoName = NULL,
+    $selectValues,
     $field,
     $label,
     $dataType = 'String',
     $useIDsOnly = FALSE
   ) {
+
+    if (!empty($selectValues) && !is_array($value) && !empty($selectValues[$value])) {
+      $qill = $selectValues[$value];
+    }
+    else {
+      $qill = $value;
+    }
 
     $pseudoFields = array(
       'email_greeting',
@@ -5573,6 +5618,26 @@ AND   displayRelType.is_active = 1
       'communication_style_id',
     );
 
+    if (is_numeric($value)) {
+      $qill = $selectValues[(int ) $value];
+    }
+    elseif ($op == 'IN' || $op == 'NOT IN') {
+      if (is_array($value)) {
+        $intVals = array();
+        $newValues = array();
+        foreach ($value as $k => $v) {
+          $intVals[$k] = (int) $k;
+          $newValues[] = $selectValues[(int) $k];
+        }
+
+        $value = (in_array($name, $pseudoFields)) ? $intVals : $newValues;
+        $qill = implode(', ', $newValues);
+      }
+    }
+    elseif (!array_key_exists($value, $selectValues)) {
+      // its a string, lets get the int value
+      $value = array_search($value, $selectValues);
+    }
     if ($useIDsOnly) {
       list($tableName, $fieldName) = explode('.', $field['where'], 2);
       if ($tableName == 'civicrm_contact') {
@@ -5585,6 +5650,7 @@ AND   displayRelType.is_active = 1
     else {
       $wc = self::caseImportant($op) ? "LOWER({$field['where']})" : "{$field['where']}";
     }
+
     if (in_array($name, $pseudoFields)) {
       if (!in_array($name, array('gender_id', 'prefix_id', 'suffix_id', 'communication_style_id'))) {
         $wc = "contact_a.{$name}_id";
@@ -5592,12 +5658,9 @@ AND   displayRelType.is_active = 1
       $dataType = 'Positive';
       $value = (!$value) ? 0 : $value;
     }
-    if ($name == "world_region") {
-      $field['name'] = $name;
-    }
 
-    list($qillop, $qillVal) = CRM_Contact_BAO_Query::buildQillForFieldValue($daoName, $field['name'], $value, $op);
-    $this->_qill[$grouping][] = ts("%1 %2 %3", array(1 => $label, 2 => $qillop, 3 => $qillVal));
+    $this->_qill[$grouping][] = $label . " $op '$qill'";
+    $op = (in_array($name, $pseudoFields) && ($op == 'LIKE' || $op == 'RLIKE')) ? '=' : $op;
     $this->_where[$grouping][] = self::buildClause($wc, $op, $value, $dataType);
   }
 
@@ -5791,41 +5854,21 @@ AND   displayRelType.is_active = 1
    *
    * @return array
    */
-  public static function buildQillForFieldValue(
-    $daoName,
-    $fieldName,
-    $fieldValue,
-    $op,
-    $pseudoExtraParam = array(),
-    $type = CRM_Utils_Type::T_STRING
-  ) {
+  public static function buildQillForFieldValue($daoName = NULL, $fieldName, $fieldValue, $op, $pseudoExtraParam =
+  array(), $type = CRM_Utils_Type::T_STRING) {
     $qillOperators = CRM_Core_SelectValues::getSearchBuilderOperators();
-
-    // if Operator chosen is NULL/EMPTY then
-    if (strpos($op, 'NULL') !== FALSE || strpos($op, 'EMPTY') !== FALSE) {
-      return array(CRM_Utils_Array::value($op, $qillOperators, $op), '');
-    }
 
     if ($fieldName == 'activity_type_id') {
       $pseudoOptions = CRM_Core_PseudoConstant::activityType(TRUE, TRUE, FALSE, 'label', TRUE);
     }
-    elseif ($fieldName == 'country_id') {
-      $pseudoOptions = CRM_Core_PseudoConstant::country();
-    }
-    elseif ($fieldName == 'county_id') {
-      $pseudoOptions = CRM_Core_PseudoConstant::county();
-    }
-    elseif ($fieldName == 'world_region') {
-      $pseudoOptions = CRM_Core_PseudoConstant::worldRegion();
-    }
     elseif ($daoName == 'CRM_Event_DAO_Event' && $fieldName == 'id') {
       $pseudoOptions = CRM_Event_BAO_Event::getEvents(0, $fieldValue, TRUE, TRUE, TRUE);
     }
-    elseif ($fieldName == 'contribution_product_id') {
-      $pseudoOptions = CRM_Contribute_PseudoConstant::products();
-    }
     elseif ($daoName == 'CRM_Contact_DAO_Group' && $fieldName == 'id') {
       $pseudoOptions = CRM_Core_PseudoConstant::group();
+    }
+    elseif ($fieldName == 'country_id') {
+      $pseduoOptions = CRM_Core_PseudoConstant::country();
     }
     elseif ($daoName) {
       $pseudoOptions = CRM_Core_PseudoConstant::get($daoName, $fieldName, $pseudoExtraParam);
@@ -5902,6 +5945,7 @@ AND   displayRelType.is_active = 1
     }
   }
 
+
   /**
    * Process special fields of Search Form in OK (Operator in Key) format
    *
@@ -5924,126 +5968,10 @@ AND   displayRelType.is_active = 1
         }
         else {
           // if wildcard is already present return searchString as it is OR append and/or prepend with wildcard
-          $isWilcard = strstr($value, '%') ? FALSE : CRM_Core_Config::singleton()->includeWildCardInName;
-          $formValues[$element] = array('LIKE' => self::getWildCardedValue($isWilcard, 'LIKE', $value));
+          $isWildcard = strstr($value, '%') ? FALSE : CRM_Core_Config::singleton()->includeWildCardInName;
+          $formValues[$element] = array('LIKE' => self::getWildCardedValue($isWildcard, 'LIKE', $value));
         }
       }
     }
   }
-
-  /**
-   * Parse and assimilate the various sort options.
-   *
-   * Side-effect: if sorting on a common column from a related table (`city`, `postal_code`,
-   * `email`), the related table may be joined automatically.
-   *
-   * At time of writing, this code is deeply flawed and should be rewritten. For the moment,
-   * it's been extracted to a standalone function.
-   *
-   * @param string|CRM_Utils_Sort $sort
-   *   The order by string.
-   * @param bool $sortByChar
-   *   If true returns the distinct array of first characters for search results.
-   * @param null $sortOrder
-   *   Who knows? Hu knows. He who knows Hu knows who.
-   * @param string $additionalFromClause
-   *   Should be clause with proper joins, effective to reduce where clause load.
-   * @return array
-   *   list(string $orderByClause, string $additionalFromClause).
-   */
-  protected function prepareOrderBy($sort, $sortByChar, $sortOrder, $additionalFromClause) {
-    $config = CRM_Core_Config::singleton();
-    if ($config->includeOrderByClause ||
-      isset($this->_distinctComponentClause)
-    ) {
-      if ($sort) {
-        if (is_string($sort)) {
-          $orderBy = $sort;
-        }
-        else {
-          $orderBy = trim($sort->orderBy());
-        }
-        // Deliberately remove the backticks again, as they mess up the evil
-        // string munging below. This balanced by re-escaping before use.
-        $orderBy = str_replace('`', '', $orderBy);
-
-        if (!empty($orderBy)) {
-          // this is special case while searching for
-          // change log CRM-1718
-          if (preg_match('/sort_name/i', $orderBy)) {
-            $orderBy = str_replace('sort_name', 'contact_a.sort_name', $orderBy);
-          }
-
-          $order = " ORDER BY $orderBy";
-
-          if ($sortOrder) {
-            $order .= " $sortOrder";
-          }
-
-          // always add contact_a.id to the ORDER clause
-          // so the order is deterministic
-          if (strpos('contact_a.id', $order) === FALSE) {
-            $order .= ", contact_a.id";
-          }
-        }
-      }
-      elseif ($sortByChar) {
-        $order = " ORDER BY UPPER(LEFT(contact_a.sort_name, 1)) asc";
-      }
-      else {
-        $order = " ORDER BY contact_a.sort_name asc, contact_a.id";
-      }
-    }
-
-    // hack for order clause
-    if ($order) {
-      $fieldStr = trim(str_replace('ORDER BY', '', $order));
-      $fieldOrder = explode(' ', $fieldStr);
-      $field = $fieldOrder[0];
-
-      if ($field) {
-        switch ($field) {
-          case 'city':
-          case 'postal_code':
-            $this->_tables["civicrm_address"] = $this->_whereTables["civicrm_address"] = 1;
-            $order = str_replace($field, "civicrm_address.{$field}", $order);
-            break;
-
-          case 'country':
-          case 'state_province':
-            $this->_tables["civicrm_{$field}"] = $this->_whereTables["civicrm_{$field}"] = 1;
-            if (is_array($this->_returnProperties) && empty($this->_returnProperties)) {
-              $additionalFromClause .= " LEFT JOIN civicrm_{$field} ON civicrm_{$field}.id = civicrm_address.{$field}_id";
-            }
-            $order = str_replace($field, "civicrm_{$field}.name", $order);
-            break;
-
-          case 'email':
-            $this->_tables["civicrm_email"] = $this->_whereTables["civicrm_email"] = 1;
-            $order = str_replace($field, "civicrm_email.{$field}", $order);
-            break;
-
-          default:
-            //CRM-12565 add "`" around $field if it is a pseudo constant
-            foreach ($this->_pseudoConstantsSelect as $key => $value) {
-              if (!empty($value['element']) && $value['element'] == $field) {
-                $order = str_replace($field, "`{$field}`", $order);
-              }
-            }
-        }
-        $this->_fromClause = self::fromClause($this->_tables, NULL, NULL, $this->_primaryLocation, $this->_mode);
-        $this->_simpleFromClause = self::fromClause($this->_whereTables, NULL, NULL, $this->_primaryLocation, $this->_mode);
-      }
-    }
-
-    // The above code relies on crazy brittle string manipulation of a peculiarly-encoded ORDER BY
-    // clause. But this magic helper which forgivingly reescapes ORDER BY.
-    // Note: $sortByChar implies that $order was hard-coded/trusted, so it can do funky things.
-    if ($order && !$sortByChar) {
-      $order = ' ORDER BY ' . CRM_Utils_Type::escape(preg_replace('/^\s*ORDER BY\s*/', '', $order), 'MysqlOrderBy');
-      return array($order, $additionalFromClause);
-    }
-    return array($order, $additionalFromClause);
-  }
-
 }

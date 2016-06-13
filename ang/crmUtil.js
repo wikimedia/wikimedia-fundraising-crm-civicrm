@@ -2,8 +2,8 @@
 (function (angular, $, _) {
   angular.module('crmUtil', []);
 
-  // Angular implementation of CRM.api3
-  // @link http://wiki.civicrm.org/confluence/display/CRMDOC/AJAX+Interface#AJAXInterface-CRM.api3
+  // usage:
+  //   crmApi('Entity', 'action', {...}).then(function(apiResult){...})
   //
   // Note: To mock API results in unit-tests, override crmApi.backend, e.g.
   //   var apiSpy = jasmine.createSpy('crmApi');
@@ -16,15 +16,10 @@
       var deferred = $q.defer();
       var p;
       var backend = crmApi.backend || CRM.api3;
-      if (params && params.body_html) {
-        // CRM-18474 - remove Unicode Character 'LINE SEPARATOR' (U+2028)
-        // and 'PARAGRAPH SEPARATOR' (U+2029) from the html if present.
-        params.body_html = params.body_html.replace(/([\u2028]|[\u2029])/g, '\n');
-      }
       if (_.isObject(entity)) {
         // eval content is locally generated.
         /*jshint -W061 */
-        p = backend(eval('('+angular.toJson(entity)+')'), action);
+        p = backend(eval('('+angular.toJson(entity)+')'), message);
       } else {
         // eval content is locally generated.
         /*jshint -W061 */

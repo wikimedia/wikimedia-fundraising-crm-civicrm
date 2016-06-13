@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,16 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class is used to retrieve and display a range of  contacts that match the given criteria.
+ * This class is used to retrieve and display a range of
+ * contacts that match the given criteria (specifically for
+ * results of advanced search options.
  *
- * Specifically for results of advanced search options.
  */
 class CRM_Activity_Selector_Search extends CRM_Core_Selector_Base implements CRM_Core_Selector_API {
 
@@ -170,25 +173,6 @@ class CRM_Activity_Selector_Search extends CRM_Core_Selector_Base implements CRM
 
     $this->_activityClause = $activityClause;
 
-    // CRM-12675
-    $components = CRM_Core_Component::getNames();
-    $componentClause = array();
-    foreach ($components as $componentID => $componentName) {
-      if (!CRM_Core_Permission::check("access $componentName")) {
-        $componentClause[] = " (activity_type.component_id IS NULL OR activity_type.component_id <> {$componentID}) ";
-      }
-    }
-
-    if (!empty($componentClause)) {
-      $componentRestriction = implode(' AND ', $componentClause);
-      if (empty($this->_activityClause)) {
-        $this->_activityClause = $componentRestriction;
-      }
-      else {
-        $this->_activityClause .= ' AND ' . $componentRestriction;
-      }
-    }
-
     // type of selector
     $this->_action = $action;
     $this->_query = new CRM_Contact_BAO_Query($this->_queryParams,
@@ -262,7 +246,7 @@ class CRM_Activity_Selector_Search extends CRM_Core_Selector_Base implements CRM
     $mailingIDs = CRM_Mailing_BAO_Mailing::mailingACLIDs();
     $accessCiviMail = CRM_Core_Permission::check('access CiviMail');
 
-    // Get all campaigns.
+    //get all campaigns.
     $allCampaigns = CRM_Campaign_BAO_Campaign::getCampaigns(NULL, NULL, FALSE, FALSE, FALSE, TRUE);
 
     $engagementLevels = CRM_Campaign_PseudoConstant::engagementLevel();
@@ -270,13 +254,13 @@ class CRM_Activity_Selector_Search extends CRM_Core_Selector_Base implements CRM
     $sourceID = CRM_Utils_Array::key('Activity Source', $activityContacts);
     $assigneeID = CRM_Utils_Array::key('Activity Assignees', $activityContacts);
     $targetID = CRM_Utils_Array::key('Activity Targets', $activityContacts);
-    // Get all activity types
+    //get all activity types
     $activityTypes = CRM_Core_PseudoConstant::activityType(TRUE, TRUE, FALSE, 'name', TRUE);
 
     while ($result->fetch()) {
       $row = array();
 
-      // Ignore rows where we dont have an activity id.
+      // ignore rows where we dont have an activity id
       if (empty($result->activity_id)) {
         continue;
       }
@@ -345,7 +329,7 @@ class CRM_Activity_Selector_Search extends CRM_Core_Selector_Base implements CRM
         $result->activity_id
       );
 
-      // Carry campaign to selector.
+      //carry campaign to selector.
       $row['campaign'] = CRM_Utils_Array::value($result->activity_campaign_id, $allCampaigns);
       $row['campaign_id'] = $result->activity_campaign_id;
 
@@ -355,7 +339,7 @@ class CRM_Activity_Selector_Search extends CRM_Core_Selector_Base implements CRM
         );
       }
 
-      // Check if recurring activity.
+      //Check if recurring activity
       $repeat = CRM_Core_BAO_RecurringEntity::getPositionAndCount($row['activity_id'], 'civicrm_activity');
       $row['repeat'] = '';
       if ($repeat) {

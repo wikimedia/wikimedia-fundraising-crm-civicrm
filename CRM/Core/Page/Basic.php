@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,9 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 abstract class CRM_Core_Page_Basic extends CRM_Core_Page {
 
@@ -110,6 +112,8 @@ abstract class CRM_Core_Page_Basic extends CRM_Core_Page {
    *
    * @param CRM_Core_Controller $controller
    *   The controller object.
+   *
+   * @return void
    */
   public function addValues($controller) {
   }
@@ -130,10 +134,12 @@ abstract class CRM_Core_Page_Basic extends CRM_Core_Page {
 
   /**
    * Run the basic page (run essentially starts execution for that page).
+   *
+   * @return void
    */
   public function run() {
     // CRM-9034
-    // do not see args or pageArgs being used, so we should
+    // dont see args or pageArgs being used, so we should
     // consider eliminating them in a future version
     $n = func_num_args();
     $args = ($n > 0) ? func_get_arg(0) : NULL;
@@ -184,6 +190,8 @@ abstract class CRM_Core_Page_Basic extends CRM_Core_Page {
 
   /**
    * Browse all entities.
+   *
+   * @return void
    */
   public function browse() {
     $n = func_num_args();
@@ -226,7 +234,10 @@ abstract class CRM_Core_Page_Basic extends CRM_Core_Page {
       $object->orderBy($key . ' asc');
     }
 
-    $contactTypes = CRM_Contact_BAO_ContactType::getSelectElements(FALSE, FALSE);
+    //@todo FIXME - using the CRM_Core_DAO::VALUE_SEPARATOR creates invalid html - if you can find the form
+    // this is loaded onto then replace with something like '__' & test
+    $separator = CRM_Core_DAO::VALUE_SEPARATOR;
+    $contactTypes = CRM_Contact_BAO_ContactType::getSelectElements(FALSE, TRUE, $separator);
     // find all objects
     $object->find();
     while ($object->fetch()) {
@@ -243,12 +254,8 @@ abstract class CRM_Core_Page_Basic extends CRM_Core_Page {
           CRM_Core_DAO::storeValues($object, $values[$object->id]);
 
           if (is_a($object, 'CRM_Contact_DAO_RelationshipType')) {
-            if (isset($values[$object->id]['contact_type_a'])) {
-              $values[$object->id]['contact_type_a_display'] = $contactTypes[$values[$object->id]['contact_type_a']];
-            }
-            if (isset($values[$object->id]['contact_type_b'])) {
-              $values[$object->id]['contact_type_b_display'] = $contactTypes[$values[$object->id]['contact_type_b']];
-            }
+            $values[$object->id]['contact_type_a_display'] = $contactTypes[$values[$object->id]['contact_type_a']];
+            $values[$object->id]['contact_type_b_display'] = $contactTypes[$values[$object->id]['contact_type_b']];
           }
 
           // populate action links
@@ -281,6 +288,8 @@ abstract class CRM_Core_Page_Basic extends CRM_Core_Page {
    *   The permission assigned to this object.
    *
    * @param bool $forceAction
+   *
+   * @return void
    */
   public function action(&$object, $action, &$values, &$links, $permission, $forceAction = FALSE) {
     $values['class'] = '';
@@ -361,6 +370,8 @@ abstract class CRM_Core_Page_Basic extends CRM_Core_Page {
    *
    * @param bool $imageUpload
    * @param bool $pushUserContext
+   *
+   * @return void
    */
   public function edit($mode, $id = NULL, $imageUpload = FALSE, $pushUserContext = TRUE) {
     $controller = new CRM_Core_Controller_Simple($this->editForm(),

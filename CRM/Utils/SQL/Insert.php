@@ -51,28 +51,6 @@ class CRM_Utils_SQL_Insert {
   }
 
   /**
-   * Insert a record based on a DAO.
-   *
-   * @param \CRM_Core_DAO $dao
-   * @return \CRM_Utils_SQL_Insert
-   * @throws \CRM_Core_Exception
-   */
-  public static function dao(CRM_Core_DAO $dao) {
-    $table = CRM_Core_DAO::getLocaleTableName($dao->getTableName());
-    $row = array();
-    foreach ((array) $dao as $key => $value) {
-      if ($value === 'null') {
-        $value = NULL; // Blerg!!!
-      }
-      // Skip '_foobar' and '{\u00}*_options' and 'N'.
-      if (preg_match('/[a-zA-Z]/', $key{0}) && $key !== 'N') {
-        $row[$key] = $value;
-      }
-    }
-    return self::into($table)->row($row);
-  }
-
-  /**
    * Create a new SELECT query.
    *
    * @param string $table
@@ -83,14 +61,6 @@ class CRM_Utils_SQL_Insert {
     $this->rows = array();
   }
 
-  /**
-   * Get columns.
-   *
-   * @param array $columns
-   *
-   * @return $this
-   * @throws \CRM_Core_Exception
-   */
   public function columns($columns) {
     if ($this->columns !== NULL) {
       throw new CRM_Core_Exception("Column order already specified.");
@@ -100,10 +70,7 @@ class CRM_Utils_SQL_Insert {
   }
 
   /**
-   * Get rows.
-   *
    * @param array $rows
-   *
    * @return CRM_Utils_SQL_Insert
    */
   public function rows($rows) {
@@ -114,10 +81,7 @@ class CRM_Utils_SQL_Insert {
   }
 
   /**
-   * Get row.
-   *
    * @param array $row
-   *
    * @return CRM_Utils_SQL_Insert
    * @throws CRM_Core_Exception
    */
@@ -145,7 +109,6 @@ class CRM_Utils_SQL_Insert {
    * Use REPLACE INTO instead of INSERT INTO.
    *
    * @param bool $asReplace
-   *
    * @return CRM_Utils_SQL_Insert
    */
   public function usingReplace($asReplace = TRUE) {
@@ -154,10 +117,7 @@ class CRM_Utils_SQL_Insert {
   }
 
   /**
-   * Escape string.
-   *
    * @param string|NULL $value
-   *
    * @return string
    *   SQL expression, e.g. "it\'s great" (with-quotes) or NULL (without-quotes)
    */
@@ -166,8 +126,6 @@ class CRM_Utils_SQL_Insert {
   }
 
   /**
-   * Convert to SQL.
-   *
    * @return string
    *   SQL statement
    */

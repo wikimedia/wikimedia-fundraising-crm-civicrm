@@ -24,12 +24,11 @@ class ProcessBuilder
     private $arguments;
     private $cwd;
     private $env = array();
-    private $input;
+    private $stdin;
     private $timeout = 60;
     private $options = array();
     private $inheritEnv = true;
-    private $prefix = array();
-    private $outputDisabled = false;
+    private $prefix;
 
     /**
      * Constructor.
@@ -68,17 +67,17 @@ class ProcessBuilder
     }
 
     /**
-     * Adds an unescaped prefix to the command string.
+     * Adds a prefix to the command string.
      *
      * The prefix is preserved when resetting arguments.
      *
-     * @param string|array $prefix A command prefix or an array of command prefixes
+     * @param string $prefix A command prefix
      *
      * @return ProcessBuilder
      */
     public function setPrefix($prefix)
     {
-        $this->prefix = is_array($prefix) ? $prefix : array($prefix);
+        $this->prefix = $prefix;
 
         return $this;
     }
@@ -147,37 +146,17 @@ class ProcessBuilder
     }
 
     /**
-     * Adds a set of environment variables.
-     *
-     * Already existing environment variables with the same name will be
-     * overridden by the new values passed to this method. Pass `null` to unset
-     * a variable.
-     *
-     * @param array $variables The variables
-     *
-     * @return ProcessBuilder
-     */
-    public function addEnvironmentVariables(array $variables)
-    {
-        $this->env = array_replace($this->env, $variables);
-
-        return $this;
-    }
-
-    /**
      * Sets the input of the process.
      *
-     * Deprecation: As of Symfony 2.5, this method only accepts string values.
-     *
-     * @param string|null $input The input as a string
+     * @param string|null $stdin The input as a string
      *
      * @return ProcessBuilder
      *
      * @throws InvalidArgumentException In case the argument is invalid
      */
-    public function setInput($input)
+    public function setInput($stdin)
     {
-        $this->input = ProcessUtils::validateInput(sprintf('%s::%s', __CLASS__, __FUNCTION__), $input);
+        $this->stdin = ProcessUtils::validateInput(sprintf('%s::%s', __CLASS__, __FUNCTION__), $stdin);
 
         return $this;
     }
@@ -228,30 +207,6 @@ class ProcessBuilder
     }
 
     /**
-     * Disables fetching output and error output from the underlying process.
-     *
-     * @return ProcessBuilder
-     */
-    public function disableOutput()
-    {
-        $this->outputDisabled = true;
-
-        return $this;
-    }
-
-    /**
-     * Enables fetching output and error output from the underlying process.
-     *
-     * @return ProcessBuilder
-     */
-    public function enableOutput()
-    {
-        $this->outputDisabled = false;
-
-        return $this;
-    }
-
-    /**
      * Creates a Process instance and returns it.
      *
      * @return Process
@@ -260,28 +215,21 @@ class ProcessBuilder
      */
     public function getProcess()
     {
-        if (0 === count($this->prefix) && 0 === count($this->arguments)) {
+        if (!$this->prefix && !count($this->arguments)) {
             throw new LogicException('You must add() command arguments before calling getProcess().');
         }
 
         $options = $this->options;
 
-        $arguments = array_merge($this->prefix, $this->arguments);
+        $arguments = $this->prefix ? array_merge(array($this->prefix), $this->arguments) : $this->arguments;
         $script = implode(' ', array_map(array(__NAMESPACE__.'\\ProcessUtils', 'escapeArgument'), $arguments));
 
         if ($this->inheritEnv) {
-            // include $_ENV for BC purposes
-            $env = array_replace($_ENV, $_SERVER, $this->env);
+            $env = $this->env ? $this->env + $_ENV : null;
         } else {
             $env = $this->env;
         }
 
-        $process = new Process($script, $this->cwd, $env, $this->input, $this->timeout, $options);
-
-        if ($this->outputDisabled) {
-            $process->disableOutput();
-        }
-
-        return $process;
+        return new Process($script, $this->cwd, $env, $this->stdin, $this->timeout, $options);
     }
 }

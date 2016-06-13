@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,23 +26,22 @@
 <div class="crm-block crm-content-block crm-contribution-view-form-block">
 <div class="action-link">
   <div class="crm-submit-buttons">
-    {if (call_user_func(array('CRM_Core_Permission','check'), 'edit contributions') && call_user_func(array('CRM_Core_Permission', 'check'), "edit contributions of type $financial_type") && $canEdit) ||
-    	(call_user_func(array('CRM_Core_Permission','check'), 'edit contributions') && $noACL)}
+    {if call_user_func(array('CRM_Core_Permission','check'), 'edit contributions')}
       {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=update&context=$context"}
       {if ( $context eq 'fulltext' || $context eq 'search' ) && $searchKey}
         {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=update&context=$context&key=$searchKey"}
       {/if}
       <a class="button" href="{crmURL p='civicrm/contact/view/contribution' q=$urlParams}" accesskey="e"><span>
-          <i class="crm-i fa-pencil"></i> {ts}Edit{/ts}</span>
+          <div class="icon ui-icon-pencil"></div>{ts}Edit{/ts}</span>
       </a>
     {/if}
-    {if (call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute') && call_user_func(array('CRM_Core_Permission', 'check'), "delete contributions of type $financial_type") && $canDelete)     || (call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute') && $noACL)}
+    {if call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute')}
       {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=delete&context=$context"}
       {if ( $context eq 'fulltext' || $context eq 'search' ) && $searchKey}
         {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=delete&context=$context&key=$searchKey"}
       {/if}
       <a class="button" href="{crmURL p='civicrm/contact/view/contribution' q=$urlParams}"><span>
-          <i class="crm-i fa-trash"></i> {ts}Delete{/ts}</span>
+          <div class="icon delete-icon"></div>{ts}Delete{/ts}</span>
       </a>
     {/if}
     {include file="CRM/common/formButtons.tpl" location="top"}
@@ -51,14 +50,14 @@
     {if $invoicing}
       <div class="css_right">
         <a class="button no-popup" href="{crmURL p='civicrm/contribute/invoice' q=$pdfUrlParams}">
-          <i class="crm-i fa-print"></i>
+          <div class="icon ui-icon-print"></div>
         {if $contribution_status != 'Refunded' && $contribution_status != 'Cancelled' }
           {ts}Print Invoice{/ts}</a>
         {else}
           {ts}Print Invoice and Credit Note{/ts}</a>
         {/if}
         <a class="button" href="{crmURL p='civicrm/contribute/invoice/email' q=$emailUrlParams}">
-          <i class="crm-i fa-paper-plane"></i>
+          <div class="icon ui-icon-mail-closed"></div>
           {ts}Email Invoice{/ts}</a>
       </div>
     {/if}
@@ -156,7 +155,7 @@
     {/if}
   {/if}
   <tr>
-    <td class="label">{ts}Payment Method{/ts}</td>
+    <td class="label">{ts}Paid By{/ts}</td>
     <td>{$payment_instrument}{if $payment_processor_name} ({$payment_processor_name}){/if}</td>
   </tr>
 
@@ -316,20 +315,21 @@
 {/if}
 
 <div class="crm-submit-buttons">
-  {if (call_user_func(array('CRM_Core_Permission','check'), 'edit contributions') && call_user_func(array('CRM_Core_Permission', 'check'), "edit contributions of type $financial_type") && $canEdit) ||
-    	(call_user_func(array('CRM_Core_Permission','check'), 'edit contributions') && $noACL)}
+  {if call_user_func(array('CRM_Core_Permission','check'), 'edit contributions')}
     {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=update&context=$context"}
     {if ( $context eq 'fulltext' || $context eq 'search' ) && $searchKey}
       {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=update&context=$context&key=$searchKey"}
     {/if}
-    <a class="button" href="{crmURL p='civicrm/contact/view/contribution' q=$urlParams}" accesskey="e"><span><i class="crm-i fa-pencil"></i> {ts}Edit{/ts}</span></a>
+    <a class="button" href="{crmURL p='civicrm/contact/view/contribution' q=$urlParams}" accesskey="e"><span><div
+          class="icon ui-icon-pencil"></div>{ts}Edit{/ts}</span></a>
   {/if}
-  {if (call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute') && call_user_func(array('CRM_Core_Permission', 'check'), "delete contributions of type $financial_type") && $canDelete)     || (call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute') && $noACL)}
+  {if call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute')}
     {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=delete&context=$context"}
     {if ( $context eq 'fulltext' || $context eq 'search' ) && $searchKey}
       {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=delete&context=$context&key=$searchKey"}
     {/if}
-    <a class="button" href="{crmURL p='civicrm/contact/view/contribution' q=$urlParams}"><span><i class="crm-i fa-trash"></i> {ts}Delete{/ts}</span></a>
+    <a class="button" href="{crmURL p='civicrm/contact/view/contribution' q=$urlParams}"><span><div
+          class="icon delete-icon"></div>{ts}Delete{/ts}</span></a>
   {/if}
   {include file="CRM/common/formButtons.tpl" location="bottom"}
 </div>

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,12 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Dashboard page for managing Access Control.
- *
+ * Dashboard page for managing Access Control
  * For initial version, this page only contains static links - so this class is empty for now.
  */
 class CRM_Admin_Page_Access extends CRM_Core_Page {
@@ -45,11 +46,11 @@ class CRM_Admin_Page_Access extends CRM_Core_Page {
 
     switch ($config->userFramework) {
       case 'Drupal':
-        $this->assign('ufAccessURL', url('admin/people/permissions'));
+        $this->assign('ufAccessURL', CRM_Utils_System::url('admin/people/permissions'));
         break;
 
       case 'Drupal6':
-        $this->assign('ufAccessURL', url('admin/user/permissions'));
+        $this->assign('ufAccessURL', CRM_Utils_System::url('admin/user/permissions'));
         break;
 
       case 'Joomla':

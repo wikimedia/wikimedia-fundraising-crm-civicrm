@@ -1,7 +1,7 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
  | Copyright (C) 2011 Marty Wright                                    |
  | Licensed to CiviCRM under the Academic Free License version 3.0.   |
@@ -29,11 +29,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Page for displaying list of PDF Page Formats.
+ * Page for displaying list of PDF Page Formats
  */
 class CRM_Admin_Page_PdfFormats extends CRM_Core_Page_Basic {
 
@@ -120,6 +122,8 @@ class CRM_Admin_Page_PdfFormats extends CRM_Core_Page_Basic {
    * Browse all PDF Page Formats.
    *
    * @param null $action
+   *
+   * @return void
    */
   public function browse($action = NULL) {
     // Get list of configured PDF Page Formats

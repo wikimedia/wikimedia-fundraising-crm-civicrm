@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -508,14 +508,13 @@ class CRM_Core_Permission {
     }
 
     // if component_id is present, ensure it is enabled
-    if (isset($item['component_id']) && $item['component_id']) {
-      if (!isset(Civi::$statics[__CLASS__]['componentNameId'])) {
-        Civi::$statics[__CLASS__]['componentNameId'] = array_flip(CRM_Core_Component::getComponentIDs());
-      }
-      $componentName = Civi::$statics[__CLASS__]['componentNameId'][$item['component_id']];
-
+    if (isset($item['component_id']) &&
+      $item['component_id']
+    ) {
       $config = CRM_Core_Config::singleton();
-      if (is_array($config->enableComponents) && in_array($componentName, $config->enableComponents)) {
+      if (is_array($config->enableComponentIDs) &&
+        in_array($item['component_id'], $config->enableComponentIDs)
+      ) {
         // continue with process
       }
       else {
@@ -553,18 +552,30 @@ class CRM_Core_Permission {
 
   /**
    * @param bool $all
-   *   Include disabled components
    * @param bool $descriptions
-   *   Whether to return descriptions
+   *   whether to return descriptions
    *
    * @return array
    */
-  public static function basicPermissions($all = FALSE, $descriptions = FALSE) {
-    $cacheKey = implode('-', array($all, $descriptions));
-    if (empty(Civi::$statics[__CLASS__][__FUNCTION__][$cacheKey])) {
-      Civi::$statics[__CLASS__][__FUNCTION__][$cacheKey] = self::assembleBasicPermissions($all, $descriptions);
+  public static function &basicPermissions($all = FALSE, $descriptions = FALSE) {
+    if ($descriptions) {
+      static $permissionsDesc = NULL;
+
+      if (!$permissionsDesc) {
+        $permissionsDesc = self::assembleBasicPermissions($all, $descriptions);
+      }
+
+      return $permissionsDesc;
     }
-    return Civi::$statics[__CLASS__][__FUNCTION__][$cacheKey];
+    else {
+      static $permissions = NULL;
+
+      if (!$permissions) {
+        $permissions = self::assembleBasicPermissions($all, $descriptions);
+      }
+
+      return $permissions;
+    }
   }
 
   /**
@@ -620,7 +631,6 @@ class CRM_Core_Permission {
     // Add any permissions defined in hook_civicrm_permission implementations.
     $module_permissions = $config->userPermissionClass->getAllModulePermissions($descriptions);
     $permissions = array_merge($permissions, $module_permissions);
-    CRM_Financial_BAO_FinancialType::permissionedFinancialTypes($permissions, $descriptions);
     return $permissions;
   }
 
@@ -763,10 +773,6 @@ class CRM_Core_Permission {
       ),
       'merge duplicate contacts' => array(
         $prefix . ts('merge duplicate contacts'),
-        ts('Delete Contacts must also be granted in order for this to work.'),
-      ),
-      'force merge duplicate contacts' => array(
-        $prefix . ts('force merge duplicate contacts'),
         ts('Delete Contacts must also be granted in order for this to work.'),
       ),
       'view debug output' => array(
@@ -952,7 +958,9 @@ class CRM_Core_Permission {
    * @return bool
    */
   public static function isMultisiteEnabled() {
-    return Civi::settings()->get('is_enabled') ? TRUE : FALSE;
+    return CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MULTISITE_PREFERENCES_NAME,
+      'is_enabled'
+    ) ? TRUE : FALSE;
   }
 
   /**

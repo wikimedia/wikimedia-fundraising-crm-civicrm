@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,8 @@
 
 /**
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
  */
 
 /**
@@ -38,11 +39,17 @@ interface CRM_Extension_Container_Interface {
 
   /**
    * Determine if any unmet requirements prevent use of this container.
+   *
+   * @return array
+   *   List of error messages; empty if OK.
    */
   public function checkRequirements();
 
   /**
    * Get a list of extensions available in this container.
+   *
+   * @return array
+   *   List of keys (strings).
    */
   public function getKeys();
 
@@ -51,6 +58,9 @@ interface CRM_Extension_Container_Interface {
    *
    * @param string $key
    *   Fully-qualified extension name.
+   * @return string
+   *   Local path to the extension's main .php file.
+   * @throws Exception
    */
   public function getPath($key);
 
@@ -59,6 +69,9 @@ interface CRM_Extension_Container_Interface {
    *
    * @param string $key
    *   Fully-qualified extension name.
+   * @return string
+   *   Public URL.
+   * @throws Exception
    */
   public function getResUrl($key);
 

@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,13 +25,14 @@
 *}
 {crmRegion name="billing-block"}
 <div id="payment_information">
-  {if $paymentFields|@count}
+  {if $paymentFields|@count && (!$form.$expressButtonName || $paymentProcessor.payment_processor_type EQ 'PayPal')}
     <fieldset class="billing_mode-group {$paymentTypeName}_info-group">
       <legend>
         {$paymentTypeLabel}
       </legend>
-      {crmRegion name="billing-block-pre"}
-      {/crmRegion}
+      {if $form.$expressButtonName}
+        {include file= "CRM/Core/paypalexpress.tpl"}
+      {/if}
       <div class="crm-section billing_mode-section {$paymentTypeName}_info-section">
         {foreach from=$paymentFields item=paymentField}
           {assign var='name' value=$form.$paymentField.name}
@@ -137,7 +138,7 @@
         }
       }
       if (checked) {
-        $('#billingcheckbox').prop('checked', true).data('crm-initial-value', true);
+        $('#billingcheckbox').prop('checked', true);
         if (!CRM.billing || CRM.billing.billingProfileIsHideable) {
           $('.billing_name_address-group').hide();
         }
@@ -203,22 +204,8 @@
         $('#credit_card_number').val(cc);
       });
     });
-
+    {/literal}
   </script>
-  {/literal}
 {/if}
-{if $suppressSubmitButton}
-{literal}
-  <script type="text/javascript">
-    CRM.$(function($) {
-      $('.crm-submit-buttons', $('#billing-payment-block').closest('form')).hide();
-    });
-  </script>
-{/literal}
-{/if}
-{/crmRegion}
-{crmRegion name="billing-block-post"}
-  {* Payment processors sometimes need to append something to the end of the billing block. We create a region for
-     clarity  - the plan is to move to assigning this through the payment processor to this region *}
-{/crmRegion}
 
+{/crmRegion}

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,8 @@
  * when the actual value is NULL or "". Rewrite the output.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
  */
 
 require_once 'api/Wrapper.php';
@@ -56,17 +57,19 @@ class CRM_Utils_API_NullOutputCoder extends CRM_Utils_API_AbstractFieldCoder {
   }
 
   /**
-   * Going to filter the submitted values across XSS vulnerability.
+   * going to filter the
+   * submitted values across XSS vulnerability.
    *
    * @param array|string $values
+   *
+   * @internal param bool $castToString If TRUE, all scalars will be filtered (and therefore cast to strings)
+   *    If FALSE, then non-string values will be preserved
    */
   public function encodeInput(&$values) {
   }
 
   /**
-   * Decode output.
-   *
-   * @param array $values
+   * @param $values
    * @param bool $castToString
    */
   public function decodeOutput(&$values, $castToString = FALSE) {
@@ -83,12 +86,13 @@ class CRM_Utils_API_NullOutputCoder extends CRM_Utils_API_AbstractFieldCoder {
   }
 
   /**
-   * To api output.
+   * @inheritDoc
+   */
+  /**
+   * @param $apiRequest
+   * @param $result
    *
-   * @param array $apiRequest
-   * @param array $result
-   *
-   * @return array
+   * @return modified
    */
   public function toApiOutput($apiRequest, $result) {
     $lowerAction = strtolower($apiRequest['action']);

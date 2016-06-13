@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,6 +26,9 @@
 {* Step 1 of New Event Wizard, and Edit Event Info form. *}
 
 <div class="crm-block crm-form-block crm-event-manage-eventinfo-form-block">
+{if $cdType}
+  {include file="CRM/Custom/Form/CustomData.tpl"}
+{else}
   {assign var=eventID value=$id}
         <div class="crm-submit-buttons">
         {include file="CRM/common/formButtons.tpl" location="top"}
@@ -90,7 +93,7 @@
       <td>
         {$form.max_participants.html|crmAddClass:four}
         {if call_user_func(array('CRM_Core_Permission','check'), 'administer CiviCRM') }
-          <a class="crm-popup crm-hover-button" target="_blank" title="{ts}Edit Participant Status Options{/ts}" href="{crmURL p='civicrm/admin/participant_status' q='reset=1'}"><i class="crm-i fa-wrench"></i></a>
+          <a class="crm-popup crm-hover-button" target="_blank" title="{ts}Edit Participant Status Options{/ts}" href="{crmURL p='civicrm/admin/participant_status' q='reset=1'}"><span class="icon ui-icon-wrench"> </span></a>
         {/if}
       </td>
     </tr>
@@ -168,6 +171,7 @@
     {include file="CRM/common/showHide.tpl" elemType="table-row"}
 
     {include file="CRM/Form/validate.tpl"}
+{/if}
 </div>
 {literal}
 <script type="text/javascript">
@@ -181,3 +185,4 @@
   });
 </script>
 {/literal}
+

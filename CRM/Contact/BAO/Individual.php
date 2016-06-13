@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,16 +28,18 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Class contains functions for individual contact type.
+ * Class contains functions for individual contact type
  */
 class CRM_Contact_BAO_Individual extends CRM_Contact_DAO_Contact {
 
   /**
-   * Class constructor.
+   * This is a contructor of the class.
    */
   public function __construct() {
   }
@@ -214,14 +216,18 @@ class CRM_Contact_BAO_Individual extends CRM_Contact_DAO_Contact {
       }
 
       //build the sort name.
-      $format = Civi::settings()->get('sort_name_format');
+      $format = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+        'sort_name_format'
+      );
       $sortName = CRM_Utils_Address::format($formatted, $format,
         FALSE, FALSE, TRUE, $tokenFields
       );
       $sortName = trim($sortName);
 
       //build the display name.
-      $format = Civi::settings()->get('display_name_format');
+      $format = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+        'display_name_format'
+      );
       $displayName = CRM_Utils_Address::format($formatted, $format,
         FALSE, FALSE, TRUE, $tokenFields
       );
@@ -345,12 +351,14 @@ class CRM_Contact_BAO_Individual extends CRM_Contact_DAO_Contact {
   }
 
   /**
-   * Regenerates display_name for contacts with given prefixes/suffixes.
+   * Regenerates display_name for contacts with given prefixes/suffixes
    *
    * @param array $ids
    *   The array with the prefix/suffix id governing which contacts to regenerate.
    * @param int $action
    *   The action describing whether prefix/suffix was UPDATED or DELETED.
+   *
+   * @return void
    */
   public static function updateDisplayNames(&$ids, $action) {
     // get the proper field name (prefix_id or suffix_id) and its value
