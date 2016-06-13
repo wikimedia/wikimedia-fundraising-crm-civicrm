@@ -2,5 +2,5 @@
 host=gerrit.wikimedia.org
 port=29418
 project=wikimedia/fundraising/crm/civicrm.git
-defaultbranch=master
+defaultbranch=4.7.8-wmf_dev
 defaultrebase=0
