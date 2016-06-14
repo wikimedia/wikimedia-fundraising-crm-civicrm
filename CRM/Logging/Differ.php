@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -42,7 +42,7 @@ class CRM_Logging_Differ {
    * Class constructor.
    *
    * @param string $log_conn_id
-   * @param $log_date
+   * @param string $log_date
    * @param string $interval
    */
   public function __construct($log_conn_id, $log_date, $interval = '10 SECOND') {
@@ -50,7 +50,7 @@ class CRM_Logging_Differ {
     $this->db = $dsn['database'];
     $this->log_conn_id = $log_conn_id;
     $this->log_date = $log_date;
-    $this->interval = $interval;
+    $this->interval = self::filterInterval($interval);
   }
 
   /**
@@ -181,7 +181,7 @@ WHERE lt.log_conn_id = %1
 
     // look for all the changes in the given connection that happened less than {$this->interval} s later than log_date to the given id to catch multi-query changes
     $logDateClause = "";
-    if ($this->log_date) {
+    if ($this->log_date && $this->interval) {
       $logDateClause = " AND log_date >= %2 AND log_date < DATE_ADD(%2, INTERVAL {$this->interval})";
       $params[2] = array($this->log_date, 'String');
     }
@@ -468,13 +468,43 @@ ORDER BY log_date
       'name' => 'logging_uniqueid_date',
       'group' => 'CiviCRM Preferences',
     ));
-    if (strtotime($uniqueDate) < strtotime($change_date)) {
-      return FALSE;
-    }
-    else {
+    if (strtotime($uniqueDate) <= strtotime($change_date)) {
       return TRUE;
     }
+    else {
+      return FALSE;
+    }
 
+  }
+
+  /**
+   * Filter a MySQL interval expression.
+   *
+   * @param string $interval
+   * @return string
+   *   Normalized version of $interval
+   * @throws \CRM_Core_Exception
+   *   If the expression is invalid.
+   * @see https://dev.mysql.com/doc/refman/5.5/en/date-and-time-functions.html#function_date-add
+   */
+  private static function filterInterval($interval) {
+    if (empty($interval)) {
+      return $interval;
+    }
+
+    $units = array('MICROSECOND', 'SECOND', 'MINUTE', 'HOUR', 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR');
+    $interval = strtoupper($interval);
+    if (preg_match('/^([0-9]+) ([A-Z]+)$/', $interval, $matches)) {
+      if (in_array($matches[2], $units)) {
+        return $interval;
+      }
+    }
+    if (preg_match('/^\'([0-9: \.\-]+)\' ([A-Z]+)_([A-Z]+)$/', $interval, $matches)) {
+      if (in_array($matches[2], $units) && in_array($matches[3], $units)) {
+        return $interval;
+      }
+    }
+    throw new CRM_Core_Exception("Malformed interval");
   }
 
 }

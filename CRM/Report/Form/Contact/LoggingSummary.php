@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,8 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
   /**
@@ -210,8 +209,8 @@ class CRM_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
           $deletedID = CRM_Core_DAO::singleValueQuery('
             SELECT GROUP_CONCAT(contact_id) FROM civicrm_activity_contact ac
             INNER JOIN civicrm_activity a
-            ON a.id = ac.activity_id AND a.parent_id = ' . $row['log_civicrm_entity_id']
-            .' AND ac.record_type_id = '  . CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_ActivityContact', 'record_type_id', 'Activity Targets')
+            ON a.id = ac.activity_id AND a.parent_id = ' . $row['log_civicrm_entity_id'] . ' AND ac.record_type_id =
+            ' . CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_ActivityContact', 'record_type_id', 'Activity Targets')
           );
           if ($deletedID && !stristr($deletedID, ',')) {
             $baseQueryCriteria .= '&oid=' . $deletedID;

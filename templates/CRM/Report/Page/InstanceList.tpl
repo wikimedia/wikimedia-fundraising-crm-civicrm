@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,7 +26,7 @@
 {strip}
   <div class="action-link">
     {if $templateUrl}
-      <a href="{$templateUrl}" class="button"><span><div class="icon ui-icon-circle-plus"></div> {$newButton}</span></a>
+      <a href="{$templateUrl}" class="button"><span><i class="crm-i fa-plus-circle"></i> {$newButton}</span></a>
     {/if}
     {if $reportUrl}
       <a href="{$reportUrl}" class="button"><span>{ts}View All Reports{/ts}</span></a>
@@ -53,6 +53,7 @@
                       <ul class="panel">
                         {foreach from=$row.actions item=action key=action_name}
                           <li><a href="{$action.url}" class="{$action_name} action-item crm-hover-button small-popup"
+                          {if $action.confirm_message}onclick="return window.confirm({$action.confirm_message|json_encode|htmlspecialchars})"{/if}
                           title="{$action.label}">{$action.label}</a></li>
                         {/foreach}
                       </ul>
@@ -69,7 +70,7 @@
 
     <div class="action-link">
       {if $templateUrl}
-        <a href="{$templateUrl}" class="button"><span><div class="icon ui-icon-circle-plus"></div> {$newButton}</span></a>
+        <a href="{$templateUrl}" class="button"><span><i class="crm-i fa-plus-circle"></i> {$newButton}</span></a>
       {/if}
       {if $reportUrl}
         <a href="{$reportUrl}" class="button"><span>{ts}View All Reports{/ts}</span></a>

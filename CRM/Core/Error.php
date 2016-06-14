@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,9 +30,7 @@
  * PEAR_ErrorStack and use that framework
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 require_once 'PEAR/ErrorStack.php';
@@ -46,7 +44,8 @@ require_once 'Log.php';
  */
 class CRM_Exception extends PEAR_Exception {
   /**
-   * Redefine the exception so message isn't optional
+   * Redefine the exception so message isn't optional.
+   *
    * Supported signatures:
    *  - PEAR_Exception(string $message);
    *  - PEAR_Exception(string $message, int $code);
@@ -169,10 +168,11 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * which currently use PEAR::raiseError to notify of error messages.
    *
    * @param object $pearError PEAR_Error
-   *
-   * @return void
    */
   public static function handle($pearError) {
+    if (defined('CIVICRM_TEST')) {
+      return self::simpleHandler($pearError);
+    }
 
     // setup smarty with config, session and template location.
     $template = CRM_Core_Smarty::singleton();
@@ -183,15 +183,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     }
 
     // create the error array
-    $error = array();
-    $error['callback'] = $pearError->getCallback();
-    $error['code'] = $pearError->getCode();
-    $error['message'] = $pearError->getMessage();
-    $error['mode'] = $pearError->getMode();
-    $error['debug_info'] = $pearError->getDebugInfo();
-    $error['type'] = $pearError->getType();
-    $error['user_info'] = $pearError->getUserInfo();
-    $error['to_string'] = $pearError->toString();
+    $error = self::getErrorDetails($pearError);
 
     // We access connection info via _DB_DATAOBJECT instead
     // of, e.g., calling getDatabaseConnection(), so that we
@@ -259,6 +251,26 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    */
   public static function simpleHandler($pearError) {
 
+    $error = self::getErrorDetails($pearError);
+
+    // ensure that debug does not check permissions since we are in bootstrap
+    // mode and need to print a decent message to help the user
+    CRM_Core_Error::debug('Initialization Error', $error, TRUE, TRUE, FALSE);
+
+    // always log the backtrace to a file
+    self::backtrace('backTrace', TRUE);
+
+    exit(0);
+  }
+
+  /**
+   * this function is used to return error details
+   *
+   * @param $pearError
+   *
+   * @return array $error
+   */
+  public static function getErrorDetails($pearError) {
     // create the error array
     $error = array();
     $error['callback'] = $pearError->getCallback();
@@ -270,14 +282,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     $error['user_info'] = $pearError->getUserInfo();
     $error['to_string'] = $pearError->toString();
 
-    // ensure that debug does not check permissions since we are in bootstrap
-    // mode and need to print a decent message to help the user
-    CRM_Core_Error::debug('Initialization Error', $error, TRUE, TRUE, FALSE);
-
-    // always log the backtrace to a file
-    self::backtrace('backTrace', TRUE);
-
-    exit(0);
+    return $error;
   }
 
   /**
@@ -291,6 +296,10 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * Also, if we do not return any value the PEAR_ErrorStack::push() then does the
    * action of PEAR_ERRORSTACK_PUSHANDLOG which displays the errors on the screen,
    * since the logger set for this error stack is 'display' - see CRM_Core_Config::getLog();
+   *
+   * @param mixed $pearError
+   *
+   * @return int
    */
   public static function handlePES($pearError) {
     return PEAR_ERRORSTACK_PUSH;
@@ -307,8 +316,6 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    *   The email address to notify of this situation.
    *
    * @throws Exception
-   *
-   * @return void
    */
   public static function fatal($message = NULL, $code = NULL, $email = NULL) {
     $vars = array(
@@ -373,16 +380,14 @@ class CRM_Core_Error extends PEAR_ErrorStack {
         $out['backtrace'] = self::parseBacktrace(debug_backtrace());
         $message .= '<p><em>See console for backtrace</em></p>';
       }
-      CRM_Core_Session::setStatus($message, ts('Sorry an Error Occured'), 'error');
+      CRM_Core_Session::setStatus($message, ts('Sorry an error occurred'), 'error');
       CRM_Core_Transaction::forceRollbackIfEnabled();
       CRM_Core_Page_AJAX::returnJsonResponse($out);
     }
 
     $template = CRM_Core_Smarty::singleton();
-
     $template->assign($vars);
-
-    $config->userSystem->outputError($template->fetch($config->fatalErrorTemplate));
+    $config->userSystem->outputError($template->fetch('CRM/common/fatal.tpl'));
 
     self::abend(CRM_Core_Error::FATAL_ERROR);
   }
@@ -395,8 +400,6 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * something that follows a cleaner separation of concerns.
    *
    * @param Exception $exception
-   *
-   * @return void
    */
   public static function handleUnhandledException($exception) {
     try {
@@ -442,13 +445,13 @@ class CRM_Core_Error extends PEAR_ErrorStack {
     // Case C: Default error handler
 
     // log to file
-    CRM_Core_Error::debug_var('Fatal Error Details', $vars);
+    CRM_Core_Error::debug_var('Fatal Error Details', $vars, FALSE);
     CRM_Core_Error::backtrace('backTrace', TRUE);
 
     // print to screen
     $template = CRM_Core_Smarty::singleton();
     $template->assign($vars);
-    $content = $template->fetch($config->fatalErrorTemplate);
+    $content = $template->fetch('CRM/common/fatal.tpl');
     if ($config->backtrace) {
       $content = self::formatHtmlException($exception) . $content;
     }
@@ -572,25 +575,21 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * Provided the user has the 'view debug output' the output should be displayed. In all
    * cases it should be logged.
    *
-   * @param $message
+   * @param string $message
    * @param bool $out
    *   Should we log or return the output.
    *
    * @param string $comp
    *   Message to be output.
    * @param string $priority
-   * @param array $logFileOptions
-   *   Options to pass to the log file.
    *
    * @return string
-   *   format of the backtrace
-   *
-   *
+   *   Format of the backtrace
    */
-  public static function debug_log_message($message, $out = FALSE, $comp = '', $priority = NULL, $logFileOptions = array()) {
+  public static function debug_log_message($message, $out = FALSE, $comp = '', $priority = NULL) {
     $config = CRM_Core_Config::singleton();
 
-    $file_log = self::createDebugLogger($comp, $logFileOptions);
+    $file_log = self::createDebugLogger($comp);
     $file_log->log("$message\n", $priority);
 
     $str = '<p/><code>' . htmlspecialchars($message) . '</code>';
@@ -610,21 +609,9 @@ class CRM_Core_Error extends PEAR_ErrorStack {
   }
 
   /**
-   * Log message without appending timestamp or error level.
-   *
-   * @param string $message
-   *   Message to output.
-   * @param bool $out
-   *   Should we print the output.
-   * @param string $prefix
-   *   String to append to the log file
-   */
-  public static function debug_raw_message($message, $out = FALSE, $prefix = '') {
-    self::debug_log_message($message, $out, $prefix, NULL, array('lineFormat' => '%4$s'));
-  }
-
-  /**
    * Append to the query log (if enabled)
+   *
+   * @param string $string
    */
   public static function debug_query($string) {
     if (defined('CIVICRM_DEBUG_LOG_QUERY')) {
@@ -643,11 +630,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * @param string $query
    */
   public static function debug_query_result($query) {
-    $dao = CRM_Core_DAO::executeQuery($query);
-    $results = array();
-    while ($dao->fetch()) {
-      $results[] = (array) $dao;
-    }
+    $results = CRM_Core_DAO::executeQuery($query)->fetchAll();
     CRM_Core_Error::debug_var('dao result', array('query' => $query, 'results' => $results));
   }
 
@@ -655,25 +638,12 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * Obtain a reference to the error log.
    *
    * @param string $prefix
-   * @param array $logConfig
-   *   Configuration options to pass to the logging class.
    *
    * @return Log
    */
-  public static function createDebugLogger($prefix = '', $logConfig = array()) {
-    return Log::singleton('file', self::getDebugLoggerFileName($prefix), '', $logConfig);
-  }
-
-  /**
-   * Get the log filename for the supplied prefix.
-   *
-   * @param $prefix
-   *
-   * @return string
-   */
-  public static function getDebugLoggerFileName($prefix) {
+  public static function createDebugLogger($prefix = '') {
     self::generateLogFileName($prefix);
-    return \Civi::$statics[__CLASS__]['logger_file' . $prefix];
+    return Log::singleton('file', \Civi::$statics[__CLASS__]['logger_file' . $prefix], '');
   }
 
   /**
@@ -905,7 +875,6 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    *
    * @param null $redirect
    * @param string $title
-   * @return void
    */
   public static function statusBounce($status, $redirect = NULL, $title = NULL) {
     $session = CRM_Core_Session::singleton();
@@ -939,6 +908,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    * @throws PEAR_Exception
    */
   public static function exceptionHandler($pearError) {
+    CRM_Core_Error::debug_var('Fatal Error Details', self::getErrorDetails($pearError));
     CRM_Core_Error::backtrace('backTrace', TRUE);
     throw new PEAR_Exception($pearError->getMessage(), $pearError);
   }
@@ -998,6 +968,8 @@ class CRM_Core_Error extends PEAR_ErrorStack {
 
   /**
    * Terminate execution abnormally.
+   *
+   * @param string $code
    */
   protected static function abend($code) {
     // do a hard rollback of any pending transactions

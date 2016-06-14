@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,36 +28,30 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
- *  This file contains functions for creating and altering CiviCRM-tables.
- */
-
-/**
- * structure, similar to what is used in GenCode.php
+ *  This file contains functions for creating and altering CiviCRM-tables structure.
  *
  * $table = array(
- * 'name'       => TABLE_NAME,
- *                'attributes' => ATTRIBUTES,
- *                'fields'     => array(
- *                                      array(
- * 'name'          => FIELD_NAME,
- *                                             'type'          => FIELD_SQL_TYPE,
- * // can be field, index, constraint
- *                                             'class'         => FIELD_CLASS_TYPE,
- *                                             'primary'       => BOOLEAN,
- *                                             'required'      => BOOLEAN,
- *                                             'searchable'    => TRUE,
- *                                             'fk_table_name' => FOREIGN_KEY_TABLE_NAME,
- *                                             'fk_field_name' => FOREIGN_KEY_FIELD_NAME,
- *                                             'comment'       => COMMENT,
- *                                             'default'       => DEFAULT, )
- *                                      ...
- *                                      ) );
+ *  'name'  => TABLE_NAME,
+ *  'attributes' => ATTRIBUTES,
+ *  'fields' => array(
+ *    array(
+ *      'name' => FIELD_NAME,
+ *      // can be field, index, constraint
+ *      'type' => FIELD_SQL_TYPE,
+ *      'class'         => FIELD_CLASS_TYPE,
+ *      'primary'       => BOOLEAN,
+ *      'required'      => BOOLEAN,
+ *      'searchable'    => TRUE,
+ *      'fk_table_name' => FOREIGN_KEY_TABLE_NAME,
+ *      'fk_field_name' => FOREIGN_KEY_FIELD_NAME,
+ *      'comment'       => COMMENT,
+ *      'default'       => DEFAULT, )
+ *      ...
+ *  ));
  */
 class CRM_Core_BAO_SchemaHandler {
 
@@ -455,7 +449,7 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
         else {
           // handle indices over substrings, CRM-6245
           // $lengthName is appended to index name, $lengthSize is the field size modifier
-          $lengthName = isset($substrLenghts[$table][$fieldName]) ? "_{$substrLenghts[$table][$fieldName]})" : '';
+          $lengthName = isset($substrLenghts[$table][$fieldName]) ? "_{$substrLenghts[$table][$fieldName]}" : '';
           $lengthSize = isset($substrLenghts[$table][$fieldName]) ? "({$substrLenghts[$table][$fieldName]})" : '';
         }
 
@@ -578,6 +572,25 @@ MODIFY      {$columnName} varchar( $length )
     $result = CRM_Core_DAO::executeQuery(
       "SHOW INDEX FROM $tableName WHERE key_name = %1 AND seq_in_index = 1",
       array(1 => array($indexName, 'String'))
+    );
+    if ($result->fetch()) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Check if the table has a specified column
+   *
+   * @param string $tableName
+   * @param string $columnName
+   *
+   * @return \CRM_Core_DAO|object
+   */
+  public static function checkIfFieldExists($tableName, $columnName) {
+    $result = CRM_Core_DAO::executeQuery(
+      "SHOW COLUMNS FROM $tableName LIKE %1",
+      array(1 => array($columnName, 'String'))
     );
     if ($result->fetch()) {
       return TRUE;

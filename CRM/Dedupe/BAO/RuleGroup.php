@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -77,6 +77,7 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
         'addressee.label' => 'civicrm_contact.addressee_id',
         'email_greeting.label' => 'civicrm_contact.email_greeting_id',
         'postal_greeting.label' => 'civicrm_contact.postal_greeting_id',
+        'civicrm_phone.phone' => 'civicrm_phone.phone_numeric',
       );
       // the table names we support in dedupe rules - a filter for importableFields()
       $supportedTables = array(
@@ -230,6 +231,9 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
 
             preg_match($patternColumn, $query, $matches);
             $query = str_replace(' WHERE ', str_replace('column', $matches[1], $dupeCopyJoin), $query);
+            if (($u = strpos($query, 'UNION')) !== False) {
+              $query = substr($query, 0, $u);
+            }
           }
           $searchWithinDupes = 1;
 
@@ -344,6 +348,10 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
    * default is to always check permissioning but public pages for example might not want
    * permission to be checked for anonymous users. Refer CRM-6211. We might be beaking
    * Multi-Site dedupe for public pages.
+   *
+   * @param bool $checkPermission
+   *
+   * @return string
    */
   public function thresholdQuery($checkPermission = TRUE) {
     $this->_aclFrom = '';
@@ -412,6 +420,11 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
 
   /**
    * Get all of the combinations of fields that would work with a rule.
+   *
+   * @param array $rgFields
+   * @param int $threshold
+   * @param array $combos
+   * @param array $running
    */
   public static function combos($rgFields, $threshold, &$combos, $running = array()) {
     foreach ($rgFields as $rgField => $weight) {
@@ -456,6 +469,29 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
       $result[$dao->id] = $name;
     }
     return $result;
+  }
+
+
+  /**
+   * Get the cached contact type for a particular rule group.
+   *
+   * @param int $rule_group_id
+   *
+   * @return string
+   */
+  public static function getContactTypeForRuleGroup($rule_group_id) {
+    if (!isset(\Civi::$statics[__CLASS__]) || !isset(\Civi::$statics[__CLASS__]['rule_groups'])) {
+      \Civi::$statics[__CLASS__]['rule_groups'] = array();
+    }
+    if (empty(\Civi::$statics[__CLASS__]['rule_groups'][$rule_group_id])) {
+      \Civi::$statics[__CLASS__]['rule_groups'][$rule_group_id]['contact_type'] = CRM_Core_DAO::getFieldValue(
+        'CRM_Dedupe_DAO_RuleGroup',
+        $rule_group_id,
+        'contact_type'
+      );
+    }
+
+    return \Civi::$statics[__CLASS__]['rule_groups'][$rule_group_id]['contact_type'];
   }
 
 }

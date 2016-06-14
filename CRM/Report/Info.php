@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,8 +30,9 @@
  * information about it. It needs to extend CRM_Core_Component_Info
  * abstract class.
  *
- * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
+ * $Id$
+ *
  */
 class CRM_Report_Info extends CRM_Core_Component_Info {
 
@@ -86,13 +87,9 @@ class CRM_Report_Info extends CRM_Core_Component_Info {
         ts('access Report Criteria'),
         ts('Change report search criteria'),
       ),
-      'access own private reports' => array(
-        ts('access own private reports'),
-        ts('Access reports owned by the contact'),
-      ),
-      'access all private reports' => array(
-        ts('access all private reports'),
-        ts('Access all private reports'),
+      'administer private reports' => array(
+        ts('administer private reports'),
+        ts('Edit all private reports'),
       ),
       'administer reserved reports' => array(
         ts('administer reserved reports'),

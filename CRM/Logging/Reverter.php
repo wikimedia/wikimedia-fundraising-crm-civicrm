@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -116,6 +116,7 @@ class CRM_Logging_Reverter {
     foreach ($deletes as $table => $ids) {
       CRM_Core_DAO::executeQuery("DELETE FROM `$table` WHERE id IN (" . implode(', ', array_unique($ids)) . ')');
     }
+
     // revert updates by updating to previous values
     foreach ($reverts as $table => $row) {
       switch (TRUE) {
@@ -132,9 +133,17 @@ class CRM_Logging_Reverter {
               if (empty($value) and $value !== 0 and $value !== '0') {
                 $value = 'null';
               }
+              // Date reaches this point in ISO format (possibly) so strip out stuff
+              // if it does have hyphens of colons demarking the date & it regexes as being a date
+              // or datetime format.
+              if (preg_match('/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/', $value)) {
+                $value = str_replace('-', '', $value);
+                $value = str_replace(':', '', $value);
+              }
               $dao->$field = $value;
             }
             $changes['log_action'] == 'Delete' ? $dao->insert() : $dao->update();
+
             $dao->reset();
           }
           break;
@@ -152,6 +161,7 @@ class CRM_Logging_Reverter {
               if (!isset($ctypes[$table][$field])) {
                 continue;
               }
+              $fldVal = "%{$counter}";
               switch ($ctypes[$table][$field]) {
                 case 'Date':
                   $value = substr(CRM_Utils_Date::isoToMysql($value), 0, 8);
@@ -160,10 +170,17 @@ class CRM_Logging_Reverter {
                 case 'Timestamp':
                   $value = CRM_Utils_Date::isoToMysql($value);
                   break;
+
+                case 'Boolean':
+                  if ($value === '') {
+                    $fldVal = 'DEFAULT';
+                  }
               }
               $inserts[$field] = "%$counter";
-              $updates[] = "$field = %$counter";
-              $params[$counter] = array($value, $ctypes[$table][$field]);
+              $updates[] = "{$field} = {$fldVal}";
+              if ($fldVal != 'DEFAULT') {
+                $params[$counter] = array($value, $ctypes[$table][$field]);
+              }
               $counter++;
             }
             if ($changes['log_action'] == 'Delete') {
