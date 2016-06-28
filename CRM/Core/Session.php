@@ -564,7 +564,9 @@ class CRM_Core_Session {
   /**
    * Check if session is empty.
    *
-   * if so we don't cache stuff that we can get away with, helps proxies like varnish.   * @return bool
+   * if so we don't cache stuff that we can get away with, helps proxies like varnish.
+   *
+   * @return bool
    */
   public function isEmpty() {
     return empty($_SESSION);

@@ -625,7 +625,7 @@ class CRM_Report_Form extends CRM_Core_Form {
     }
 
     // Special permissions check for private instance if it's not the current contact instance
-    if (!$this->_id ||
+    if ($this->_id &&
       (CRM_Report_BAO_ReportInstance::reportIsPrivate($this->_id) &&
       !CRM_Report_BAO_ReportInstance::contactIsOwner($this->_id))) {
       if (!CRM_Core_Permission::check('access all private reports')) {
@@ -1468,13 +1468,6 @@ class CRM_Report_Form extends CRM_Core_Form {
     $this->_actionButtonName = $this->getButtonName('submit');
     $this->addTaskMenu($this->getActions($this->_id));
 
-    if ($this->_id) {
-      $this->addElement('submit', $this->_createNewButtonName,
-        ts('Save a Copy') . '...');
-    }
-    $this->addElement('submit', $this->_instanceButtonName,
-      ts('Update Report'));
-
     $this->assign('instanceForm', $this->_instanceForm);
 
     // CRM-16274 Determine if user has 'edit all contacts' or equivalent
@@ -1522,40 +1515,13 @@ class CRM_Report_Form extends CRM_Core_Form {
    * @return array
    */
   protected function getActions($instanceId) {
-    $actions = array(
-      'html' => $this->getResultsLabel(),
-      'save' => 'Update',
-      'copy' => 'Save a Copy',
-      'print' => 'Print Report',
-      'pdf' => 'Print to PDF',
-    );
+    $actions = CRM_Report_BAO_ReportInstance::getActionMetadata();
     if (empty($instanceId)) {
-      $actions['save'] = ts('Create Report');
+      $actions['report_instance.save']['title'] = ts('Create Report');
     }
 
-    if ($this->_outputMode || $this->_id) {
-      $actions['html'] = 'Refresh Results';
-    }
-
-    if ($this->_csvSupported) {
-      $actions['csv'] = 'Export as CSV';
-    }
-
-    if (!empty($this->_charts)) {
-      $this->assign('charts', $this->_charts);
-      if ($this->_format != '') {
-        $actions['tabular'] = 'View as tabular data';
-      }
-      if ($this->_format != 'pieChart') {
-        $actions['pieChart'] = 'View as pie chart';
-      }
-      if ($this->_format != 'barChart') {
-        $actions['barChart'] = 'View as bar graph';
-      }
-    }
-
-    if (CRM_Core_Permission::check('administer Reports')) {
-      $actions['delete'] = 'Delete report';
+    if (!$this->_csvSupported) {
+      unset($actions['report_instance.csv']);
     }
 
     return $actions;
@@ -2627,23 +2593,16 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
       $this->setParams($this->_formValues);
     }
 
-    $this->_formValues = $this->_params;
-    if (CRM_Core_Permission::check('administer Reports') &&
-      isset($this->_id) &&
-      ($this->_instanceButtonName ==
-        $this->controller->getButtonName() . '_save' ||
-        $this->_chartButtonName == $this->controller->getButtonName()
-      )
-    ) {
-      $this->assign('updateReportButton', TRUE);
-    }
-
     $this->processReportMode();
 
     if ($this->_outputMode == 'save' || $this->_outputMode == 'copy') {
       $this->_createNew = ($this->_outputMode == 'copy');
       CRM_Report_Form_Instance::postProcess($this);
     }
+    if ($this->_outputMode == 'delete') {
+      CRM_Report_BAO_ReportInstance::doFormDelete($this->_id, 'civicrm/report/list?reset=1', 'civicrm/report/list?reset=1');
+    }
+
     $this->beginPostProcessCommon();
   }
 
@@ -3270,9 +3229,9 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
    */
   public function compileContent() {
     $templateFile = $this->getHookedTemplateFileName();
-    return $this->_formValues['report_header'] .
+    return CRM_Utils_Array::value('report_header', $this->_formValues) .
     CRM_Core_Form::$_template->fetch($templateFile) .
-    $this->_formValues['report_footer'];
+    CRM_Utils_Array::value('report_footer', $this->_formValues);
   }
 
 
@@ -4612,39 +4571,21 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
    *   is that we might print a bar chart as a pdf.
    */
   protected function setOutputMode() {
-    $buttonName = $this->controller->getButtonName();
-    $this->_outputMode = CRM_Utils_Request::retrieve(
+    $this->_outputMode = str_replace('report_instance.', '', CRM_Utils_Request::retrieve(
       'output',
       'String',
       CRM_Core_DAO::$_nullObject,
       FALSE,
       CRM_Utils_Array::value('task', $this->_params)
-    );
-
-    if ($buttonName) {
-      if ($buttonName == $this->_instanceButtonName) {
-        $this->_outputMode = 'save';
-      }
-      if ($buttonName == $this->_printButtonName) {
-        $this->_outputMode = 'print';
-      }
-      if ($buttonName == $this->_pdfButtonName) {
-        $this->_outputMode = 'pdf';
-      }
-      if ($this->_csvButtonName == $buttonName) {
-        $this->_outputMode = 'csv';
-      }
-      if ($this->_groupButtonName == $buttonName) {
-        $this->_outputMode = 'group';
-      }
-      if ($buttonName == $this->_createNewButtonName) {
-        $this->_outputMode = 'copy';
-      }
+    ));
+    if (isset($this->_params['task'])) {
+      unset($this->_params['task']);
     }
   }
 
   /**
    * CRM-17793 - Alter DateTime section header to group by date from the datetime field.
+   *
    * @param $tempTable
    * @param $columnName
    */
@@ -4705,9 +4646,6 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
           LEFT JOIN civicrm_address {$this->_aliases['civicrm_address']}
           ON ({$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_address']}.contact_id)
           AND {$this->_aliases['civicrm_address']}.is_primary = 1\n";
-      if ($buttonName == $this->_createNewButtonName) {
-        $this->_outputMode = 'copy';
-      }
     }
   }
 

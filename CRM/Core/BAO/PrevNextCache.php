@@ -217,7 +217,7 @@ WHERE  cacheKey     = %3 AND
    *
    * @return array
    */
-  public static function retrieve($cacheKey, $join = NULL, $whereClause = NULL, $offset = 0, $rowCount = 0, $select = array(), $orderByClause = '', $includeConflicts = TRUE) {
+  public static function retrieve($cacheKey, $join = NULL, $whereClause = NULL, $offset = 0, $rowCount = 0, $select = array(), $orderByClause = '', $includeConflicts = TRUE, $params = array()) {
     $selectString = 'pn.*';
 
     if (!empty($select)) {
@@ -230,7 +230,7 @@ WHERE  cacheKey     = %3 AND
 
     $params = array(
       1 => array($cacheKey, 'String'),
-    );
+    ) + $params;
 
     if (!empty($whereClause)) {
       $whereClause = " AND " . $whereClause;
@@ -312,13 +312,15 @@ FROM   civicrm_prevnext_cache pn
 
   /**
    * @param $cacheKey
-   * @param NULL $join
-   * @param NULL $where
+   * @param string $join
+   * @param string $where
    * @param string $op
+   * @param array $params
+   *   Extra query params to parse into the query.
    *
    * @return int
    */
-  public static function getCount($cacheKey, $join = NULL, $where = NULL, $op = "=") {
+  public static function getCount($cacheKey, $join = NULL, $where = NULL, $op = "=", $params = array()) {
     $query = "
 SELECT COUNT(*) FROM civicrm_prevnext_cache pn
        {$join}
@@ -331,7 +333,7 @@ WHERE (pn.cacheKey $op %1 OR pn.cacheKey $op %2)
     $params = array(
       1 => array($cacheKey, 'String'),
       2 => array("{$cacheKey}_conflicts", 'String'),
-    );
+    ) + $params;
     return (int) CRM_Core_DAO::singleValueQuery($query, $params, TRUE, FALSE);
   }
 
@@ -599,6 +601,37 @@ WHERE  cacheKey LIKE %1
     $params['offset'] = $offset;
     $params['rowCount1'] = $rowCount;
     return $params;
+  }
+
+  /**
+   * Flip 2 contacts in the prevNext cache.
+   *
+   * @param array $prevNextId
+   * @param bool $onlySelected
+   *   Only flip those which have been marked as selected.
+   */
+  public static function flipPair(array $prevNextId, $onlySelected) {
+    $dao = new CRM_Core_DAO_PrevNextCache();
+    if ($onlySelected) {
+      $dao->is_selected = 1;
+    }
+    foreach ($prevNextId as $id) {
+      $dao->id = $id;
+      if ($dao->find(TRUE)) {
+        $originalData = unserialize($dao->data);
+        $srcFields = array('ID', 'Name');
+        $swapFields = array('srcID', 'srcName', 'dstID', 'dstName');
+        $data = array_diff_assoc($originalData, array_fill_keys($swapFields, 1));
+        foreach ($srcFields as $key) {
+          $data['src' . $key] = $originalData['dst' . $key];
+          $data['dst' . $key] = $originalData['src' . $key];
+        }
+        $dao->data = serialize($data);
+        $dao->entity_id1 = $data['srcID'];
+        $dao->entity_id2 = $data['dstID'];
+        $dao->save();
+      }
+    }
   }
 
 }
