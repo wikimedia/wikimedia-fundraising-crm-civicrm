@@ -862,15 +862,9 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
       ) {
         // Rule: If both main-contact, and other-contact have a field with a
         // different value, then let $mode decide if to merge it or not
+        // Note that an integer of 0 should be treated as a value!
         if (
-          (!empty($migrationInfo['rows'][$key]['main'])
-            // For custom fields a 0 (e.g in an int field) could be a true conflict. This
-            // is probably true for other fields too - e.g. 'do_not_email' but
-            // leaving that investigation as a @todo - until tests can be written.
-            // Note the handling of this has test coverage - although the data-typing
-            // of '0' feels flakey we have insurance.
-            || ($migrationInfo['rows'][$key]['main'] === '0' && substr($key, 0, 12) == 'move_custom_')
-          )
+          ($migrationInfo['rows'][$key]['main'] !== '' && $migrationInfo['rows'][$key]['main'] !== NULL)
           && $migrationInfo['rows'][$key]['main'] != $migrationInfo['rows'][$key]['other']
         ) {
 
