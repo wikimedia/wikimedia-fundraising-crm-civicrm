@@ -806,6 +806,9 @@ COLS;
   private function triggersExist() {
     // FIXME: probably should be a bit more thorough…
     // note that the LIKE parameter is TABLE NAME
+    if (\Civi::settings()->get('logging_no_trigger_permission')) {
+      return TRUE;
+    }
     return (bool) CRM_Core_DAO::singleValueQuery("SHOW TRIGGERS LIKE 'civicrm_contact'");
   }
 

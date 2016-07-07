@@ -175,7 +175,7 @@ UPDATE civicrm_log
   public static function useLoggingReport() {
     // first check if logging is enabled
     $config = CRM_Core_Config::singleton();
-    if (!$config->logging) {
+    if (!Civi::settings()->get('logging')) {
       return FALSE;
     }
 
