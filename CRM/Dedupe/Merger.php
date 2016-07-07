@@ -1693,7 +1693,15 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
     static $treeCache = array();
     if (!array_key_exists($migrationInfo['main_details']['contact_type'], $treeCache)) {
       $treeCache[$migrationInfo['main_details']['contact_type']] = CRM_Core_BAO_CustomGroup::getTree($migrationInfo['main_details']['contact_type'],
-        CRM_Core_DAO::$_nullObject, NULL, -1
+        NULL,
+        NULL,
+        -1,
+        array(),
+        NULL,
+        TRUE,
+        NULL,
+        FALSE,
+        FALSE
       );
     }
     $cgTree = &$treeCache[$migrationInfo['main_details']['contact_type']];
