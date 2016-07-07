@@ -1895,6 +1895,9 @@ SELECT contact_id
    * @return bool
    */
   public static function checkTriggerViewPermission($view = TRUE, $trigger = TRUE) {
+    if (\Civi::settings()->get('logging_no_trigger_permission')) {
+      return TRUE;
+    }
     // test for create view and trigger permissions and if allowed, add the option to go multilingual
     // and logging
     // I'm not sure why we use the getStaticProperty for an error, rather than checking for DB_Error
