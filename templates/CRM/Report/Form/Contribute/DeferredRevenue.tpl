@@ -1,5 +1,4 @@
-<?php
-/*
+{*
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
@@ -23,45 +22,49 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
- */
+*}
+{if $criteriaForm OR $instanceForm OR $instanceFormError}
+  <div class="crm-block crm-form-block crm-report-field-form-block">
+    {include file="CRM/Report/Form/Fields.tpl"}
+  </div>
+{/if}
 
-/**
- * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
- * $Id$
- */
+<div class="crm-block crm-content-block crm-report-form-block">
+  {*include actions*}
+  {include file="CRM/Report/Form/Actions.tpl"}
 
-if (defined('PANTHEON_ENVIRONMENT')) {
-  ini_set('session.save_handler', 'files');
-}
-session_start();
+  {*Statistics at the Top of the page*}
+  {include file="CRM/Report/Form/Statistics.tpl" top=true}
+  
+<table class="report-layout display">
+   {foreach from=$rows item=row}
+   <thead><th colspan=16><font color="black" size="3">{$row.label}</font></th></thead>
+   
+  <thead class="sticky">
+    <tr>
+   {foreach from=$columnHeaders item=ignore key=header}
+       <th>{$header}</th>
+  {/foreach}
+    </tr>
+  </thead>
+   {foreach from=$row.rows item=innerRow}
+    <tr>
+   {foreach from=$columnHeaders item=ignore key=header}
+       <td>{$innerRow.$header}</td>
+   {/foreach}
+  {/foreach}
+    </tr>
+{/foreach}
+</table>
 
-require_once '../civicrm.config.php';
+  <br />
+  {*Statistics at the bottom of the page*}
+  {include file="CRM/Report/Form/Statistics.tpl" bottom=true}
 
-/* Cache the real UF, override it with the SOAP environment */
-
-$config = CRM_Core_Config::singleton();
-$log = new CRM_Utils_SystemLogger();
-if (empty($_GET)) {
-  $log->alert('payment_notification processor_name=PayPal', $_REQUEST);
-  $paypalIPN = new CRM_Core_Payment_PayPalProIPN($_REQUEST);
-}
-else {
-  $log->alert('payment_notification PayPal_Standard', $_REQUEST);
-  $paypalIPN = new CRM_Core_Payment_PayPalIPN($_REQUEST);
-  // @todo upgrade standard per Pro
-}
-try {
-  //CRM-18245
-  if ($config->userFramework == 'Joomla') {
-    CRM_Utils_System::loadBootStrap();
-  }
-  $paypalIPN->main();
-}
-catch (CRM_Core_Exception $e) {
-  CRM_Core_Error::debug_log_message($e->getMessage());
-  CRM_Core_Error::debug_var('error data', $e->getErrorData(), TRUE, TRUE);
-  CRM_Core_Error::debug_var('REQUEST', $_REQUEST, TRUE, TRUE);
-  //@todo give better info to logged in user - ie dev
-  echo "The transaction has failed. Please review the log for more detail";
-}
+  {include file="CRM/Report/Form/ErrorMessage.tpl"}
+</div>
+{if $outputMode == 'print'}
+  <script type="text/javascript">
+    window.print();
+  </script>
+{/if}

@@ -706,7 +706,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
       $msg = "{$stats['merged']} " . ts('Contact(s) were merged.');
     }
     if (!empty($stats['skipped'])) {
-      $msg .= $stats['skipped'] . ts('Contact(s) were skipped.');
+      $msg .= $stats['skipped'] . ts(' Contact(s) were skipped.');
     }
     return $msg;
   }
@@ -755,12 +755,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
         CRM_Utils_Hook::merge('flip', $dupes, $dupes['dstID'], $dupes['srcID']);
         $mainId = $dupes['dstID'];
         $otherId = $dupes['srcID'];
-        $isAutoFlip = CRM_Utils_Array::value('auto_flip', $dupes, $autoFlip);
-        // if we can, make sure that $mainId is the one with lower id number
-        if ($isAutoFlip && ($mainId > $otherId)) {
-          $mainId = $dupes['srcID'];
-          $otherId = $dupes['dstID'];
-        }
+
         if (!$mainId || !$otherId) {
           // return error
           return FALSE;
@@ -862,9 +857,15 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
       ) {
         // Rule: If both main-contact, and other-contact have a field with a
         // different value, then let $mode decide if to merge it or not
-        // Note that an integer of 0 should be treated as a value!
         if (
-          ($migrationInfo['rows'][$key]['main'] !== '' && $migrationInfo['rows'][$key]['main'] !== NULL)
+          (!empty($migrationInfo['rows'][$key]['main'])
+            // For custom fields a 0 (e.g in an int field) could be a true conflict. This
+            // is probably true for other fields too - e.g. 'do_not_email' but
+            // leaving that investigation as a @todo - until tests can be written.
+            // Note the handling of this has test coverage - although the data-typing
+            // of '0' feels flakey we have insurance.
+            || ($migrationInfo['rows'][$key]['main'] === '0' && substr($key, 0, 12) == 'move_custom_')
+          )
           && $migrationInfo['rows'][$key]['main'] != $migrationInfo['rows'][$key]['other']
         ) {
 
