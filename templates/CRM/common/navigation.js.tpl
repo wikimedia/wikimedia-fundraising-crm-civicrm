@@ -135,7 +135,6 @@ $('#civicrm-menu').ready(function() {
       $.Menu.closeAll();
     })
     .on('focus', function() {
-      setQuickSearchValue();
       if ($(this).attr('style').indexOf('14em') < 0) {
         $(this).animate({width: '14em'});
       }
@@ -162,29 +161,15 @@ $('#civicrm-menu').ready(function() {
     }
     e.preventDefault();
   });
-  function setQuickSearchValue() {
-    var $selection = $('.crm-quickSearchField input:checked'),
-      label = $selection.parent().text(),
-      value = $selection.val();
+  $('.crm-quickSearchField').click(function() {
+    var label = $(this).text();
+    var value = $('input', this).val();
     // These fields are not supported by advanced search
     if (!value || value === 'first_name' || value === 'last_name') {
       value = 'sort_name';
     }
-    $('#sort_name_navigation').attr({name: value, placeholder: label});
-  }
-  $('.crm-quickSearchField').click(function() {
-    setQuickSearchValue();
-    $('#sort_name_navigation').focus();
+    $('#sort_name_navigation').attr({name: value, placeholder: label}).focus();
   });
-  // Set & retrieve default value
-  if (window.localStorage) {
-    $('.crm-quickSearchField').click(function() {
-      localStorage.quickSearchField = $('input', this).val();
-    });
-    if (localStorage.quickSearchField) {
-      $('.crm-quickSearchField input[value=' + localStorage.quickSearchField + ']').prop('checked', true);
-    }
-  }
   // redirect to view page if there is only one contact
   $('#id_search_block').on('submit', function() {
     var $menu = $('#sort_name_navigation').autocomplete('widget');
