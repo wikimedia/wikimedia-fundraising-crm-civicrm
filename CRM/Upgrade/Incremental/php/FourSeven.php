@@ -218,7 +218,7 @@ class CRM_Upgrade_Incremental_php_FourSeven extends CRM_Upgrade_Incremental_Base
   public function upgrade_4_7_10($rev) {
     $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => $rev)), 'runSql', $rev);
     $this->addTask(ts('Upgrade Add Help Pre and Post Fields to price value table'), 'addHelpPreAndHelpPostFieldsPriceFieldValue');
-    $this->addTask(ts('Alter index and type for image URL'), 'alterIndexAndTypeForImageURL');
+    //$this->addTask(ts('Alter index and type for image URL'), 'alterIndexAndTypeForImageURL');
   }
 
   /*
