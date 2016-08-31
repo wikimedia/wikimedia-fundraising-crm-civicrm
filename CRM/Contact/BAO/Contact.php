@@ -520,7 +520,7 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
    * @param array $params
    */
   public static function addBillingNameFieldsIfOtherwiseNotSet(&$params) {
-    $nameFields = array('first_name', 'middle_name', 'last_name');
+    $nameFields = array('first_name', 'middle_name', 'last_name', 'nick_name', 'prefix_id', 'suffix_id');
     foreach ($nameFields as $field) {
       if (!empty($params[$field])) {
         return;
@@ -2050,11 +2050,7 @@ ORDER BY civicrm_email.is_primary DESC";
     $primaryPhoneLoc = NULL;
     $session = CRM_Core_Session::singleton();
     foreach ($params as $key => $value) {
-      $locTypeId = $typeId = NULL;
       list($fieldName, $locTypeId, $typeId) = CRM_Utils_System::explode('-', $key, 3);
-
-      //store original location type id
-      $actualLocTypeId = $locTypeId;
 
       if ($locTypeId == 'Primary') {
         if ($contactID) {

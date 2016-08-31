@@ -37,7 +37,7 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
   protected $_gid;
   protected $action;
 
-	/**
+  /**
    * Get BAO Name.
    *
    * @return string

@@ -29,8 +29,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2016
- * $Id$
- *
  */
 class CRM_Report_Form_Contact_Detail extends CRM_Report_Form {
   const ROW_COUNT_LIMIT = 10;
@@ -43,6 +41,19 @@ class CRM_Report_Form_Contact_Detail extends CRM_Report_Form {
     'Household',
     'Organization',
   );
+
+  /**
+   * This report has not been optimised for group filtering.
+   *
+   * The functionality for group filtering has been improved but not
+   * all reports have been adjusted to take care of it. This report has not
+   * and will run an inefficient query until fixed.
+   *
+   * CRM-19170
+   *
+   * @var bool
+   */
+  protected $groupFilterNotOptimised = TRUE;
 
   /**
    * Class constructor.
@@ -128,18 +139,18 @@ class CRM_Report_Form_Contact_Detail extends CRM_Report_Form {
           ),
         ),
         'order_bys' => array(
-          'state_province_id' => array('title' => 'State/Province'),
-          'city' => array('title' => 'City'),
-          'postal_code' => array('title' => 'Postal Code'),
+          'state_province_id' => array('title' => ts('State/Province')),
+          'city' => array('title' => ts('City')),
+          'postal_code' => array('title' => ts('Postal Code')),
         ),
       ),
       'civicrm_country' => array(
         'dao' => 'CRM_Core_DAO_Country',
         'fields' => array(
-          'name' => array('title' => 'Country', 'default' => TRUE),
+          'name' => array('title' => ts('Country'), 'default' => TRUE),
         ),
         'order_bys' => array(
-          'name' => array('title' => 'Country'),
+          'name' => array('title' => ts('Country')),
         ),
         'grouping' => 'contact-fields',
       ),
@@ -215,7 +226,7 @@ class CRM_Report_Form_Contact_Detail extends CRM_Report_Form {
             'title' => ts('Membership Status'),
             'default' => TRUE,
           ),
-          'source' => array('title' => 'Membership Source'),
+          'source' => array('title' => ts('Membership Source')),
         ),
       ),
       'civicrm_participant' => array(
@@ -272,11 +283,11 @@ class CRM_Report_Form_Contact_Detail extends CRM_Report_Form {
             'default' => TRUE,
           ),
           'start_date' => array(
-            'title' => 'Start Date ',
+            'title' => ts('Start Date'),
             'type' => CRM_Report_Form::OP_DATE,
           ),
           'end_date' => array(
-            'title' => 'End Date ',
+            'title' => ts('End Date'),
             'type' => CRM_Report_Form::OP_DATE,
           ),
         ),
