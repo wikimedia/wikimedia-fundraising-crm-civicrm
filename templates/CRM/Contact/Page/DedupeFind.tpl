@@ -156,8 +156,8 @@
   {capture assign=backURL}{crmURL p="civicrm/contact/dedupemerge" q="`$urlQuery`&action=map" a=1}{/capture}
    <a href="{$backURL}" title="{ts}Batch Merge Duplicate Contacts{/ts}" onclick="return confirm('{ts escape="js"}This will run the batch merge process on the selected duplicates. The operation will run in safe mode - only records with no direct data conflicts will be merged. Click OK to proceed if you are sure you wish to run this operation.{/ts}');" class="button"><span><i class="crm-i fa-compress"></i> {ts}Batch Merge Selected Duplicates{/ts}</span></a>
 
-   {capture assign=backURL}{crmURL p="civicrm/contact/dedupefind" q="`$urlQuery`&action=renew" a=1}{/capture}
-   <a href="{$backURL}" title="{ts}Batch Merge Duplicate Contacts{/ts}" onclick="return confirm('{ts escape="js"}This will run the batch merge process on the listed duplicates. The operation will run in safe mode - only records with no direct data conflicts will be merged. Click OK to proceed if you are sure you wish to run this operation.{/ts}');" class="button"><span><i class="crm-i fa-compress"></i> {ts}Batch Merge All Duplicates{/ts}</span></a>
+    {capture assign=backURL}{crmURL p="civicrm/contact/dedupemerge" q=$urlQuery a=1}{/capture}
+    <a href="{$backURL}" title="{ts}Batch Merge Duplicate Contacts{/ts}" onclick="return confirm('{ts escape="js"}This will run the batch merge process on the listed duplicates. The operation will run in safe mode - only records with no direct data conflicts will be merged. Click OK to proceed if you are sure you wish to run this operation.{/ts}');" class="button"><span><i class="crm-i fa-compress"></i> {ts}Batch Merge All Duplicates{/ts}</span></a>
 
    <a href='#' title="{ts}Flip Selected Duplicates{/ts}" class="crm-dedupe-flip-selections button"><span><i class="crm-i fa-exchange"></i> {ts}Flip Selected Duplicates{/ts}</span></a>
 
