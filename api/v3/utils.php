@@ -501,9 +501,10 @@ function _civicrm_api3_field_names($fields) {
  *   }
  */
 function _civicrm_api3_custom_fields_for_entity($entity) {
-  $result = array();
-
-  $query = "
+  static $result = array();
+  if (!isset($result[$entity])) {
+    $result[$entity] = array();
+    $query = "
 SELECT f.id, f.label, f.data_type,
        f.html_type, f.is_search_range,
        f.option_group_id, f.custom_group_id,
@@ -515,21 +516,22 @@ SELECT f.id, f.label, f.data_type,
    AND f.is_active = 1
    AND g.extends = %1";
 
-  $params = array(
-    '1' => array($entity, 'String'),
-  );
-
-  $dao = CRM_Core_DAO::executeQuery($query, $params);
-  while ($dao->fetch()) {
-    $result[$dao->id] = array(
-      'table_name' => $dao->table_name,
-      'column_name' => $dao->column_name,
-      'data_type' => $dao->data_type,
+    $params = array(
+      '1' => array($entity, 'String'),
     );
-  }
-  $dao->free();
 
-  return $result;
+    $dao = CRM_Core_DAO::executeQuery($query, $params);
+    while ($dao->fetch()) {
+      $result[$entity][$dao->id] = array(
+        'table_name' => $dao->table_name,
+        'column_name' => $dao->column_name,
+        'data_type' => $dao->data_type,
+      );
+    }
+    $dao->free();
+  }
+
+  return $result[$entity];
 }
 
 /**
