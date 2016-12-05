@@ -648,7 +648,7 @@ class CRM_Contact_Form_Contact extends CRM_Core_Form {
             }
 
             if (empty($blockValues['location_type_id'])) {
-              $errors["{$name}[$instance][location_type_id]"] = ts('The Location Type should be set if there is  %1 information.', array(1 => $label));
+              //$errors["{$name}[$instance][location_type_id]"] = ts('The Location Type should be set if there is  %1 information.', array(1 => $label));
             }
           }
 
