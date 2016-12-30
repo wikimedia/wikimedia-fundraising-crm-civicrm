@@ -645,7 +645,7 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
         $today = date('Ymd');
         $relationActive = " AND (crel.is_active = 1 AND ( crel.end_date is NULL OR crel.end_date >= {$today} ) )";
         $relationWhere = " WHERE contact_a.is_deleted = 0 {$relationshipClause} {$relationActive}";
-        $relationGroupBy = " GROUP BY crel.{$contactA}";
+        $relationGroupBy = CRM_Contact_BAO_Query::getGroupByFromSelectColumns($relationQuery[$rel]->_select, "crel.{$contactA}");
         $relationSelect = "{$relationSelect}, {$contactA} as refContact ";
         $relationQueryString = "$relationSelect $relationFrom $relationWhere $relationHaving $relationGroupBy";
 
@@ -706,14 +706,14 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
 
     $queryString .= $groupBy;
 
-    // always add contact_a.id to the ORDER clause
-    // so the order is deterministic
-    //CRM-15301
-    if (strpos('contact_a.id', $order) === FALSE) {
-      $order .= ", contact_a.id";
-    }
-
     if ($order) {
+      // always add contact_a.id to the ORDER clause
+      // so the order is deterministic
+      //CRM-15301
+      if (strpos('contact_a.id', $order) === FALSE) {
+        $order .= ", contact_a.id";
+      }
+
       list($field, $dir) = explode(' ', $order, 2);
       $field = trim($field);
       if (!empty($returnProperties[$field])) {
@@ -813,10 +813,10 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
             elseif ($field == 'provider_id' || $field == 'im_provider') {
               $fieldValue = CRM_Utils_Array::value($fieldValue, $imProviders);
             }
-            elseif ($field == 'master_id') {
+            elseif (strstr($field, 'master_id')) {
               $masterAddressId = NULL;
-              if (isset($iterationDAO->master_id)) {
-                $masterAddressId = $iterationDAO->master_id;
+              if (isset($iterationDAO->$field)) {
+                $masterAddressId = $iterationDAO->$field;
               }
               // get display name of contact that address is shared.
               $fieldValue = CRM_Contact_BAO_Contact::getMasterDisplayName($masterAddressId, $iterationDAO->contact_id);
@@ -1130,14 +1130,16 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
       if (empty($exportParams['suppress_csv_for_testing'])) {
         self::writeCSVFromTable($exportTempTable, $headerRows, $sqlColumns, $exportMode);
       }
+      else {
+        // return tableName and sqlColumns in test context
+        return array($exportTempTable, $sqlColumns);
+      }
 
       // delete the export temp table and component table
       $sql = "DROP TABLE IF EXISTS {$exportTempTable}";
       CRM_Core_DAO::executeQuery($sql);
-      // Do not exit in test context.
-      if (empty($exportParams['suppress_csv_for_testing'])) {
-        CRM_Utils_System::civiExit();
-      }
+
+      CRM_Utils_System::civiExit();
     }
     else {
       CRM_Core_Error::fatal(ts('No records to export'));
@@ -1187,8 +1189,8 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
    * Handle import error file creation.
    */
   public static function invoke() {
-    $type = CRM_Utils_Request::retrieve('type', 'Positive', CRM_Core_DAO::$_nullObject);
-    $parserName = CRM_Utils_Request::retrieve('parser', 'String', CRM_Core_DAO::$_nullObject);
+    $type = CRM_Utils_Request::retrieve('type', 'Positive');
+    $parserName = CRM_Utils_Request::retrieve('parser', 'String');
     if (empty($parserName) || empty($type)) {
       return;
     }
@@ -1381,7 +1383,8 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
 
             switch ($query->_fields[$field]['data_type']) {
               case 'String':
-                $length = empty($query->_fields[$field]['text_length']) ? 255 : $query->_fields[$field]['text_length'];
+                // May be option labels, which could be up to 512 characters
+                $length = max(512, CRM_Utils_Array::value('text_length', $query->_fields[$field]));
                 $sqlColumns[$fieldName] = "$fieldName varchar($length)";
                 break;
 
@@ -1494,7 +1497,7 @@ CREATE TABLE {$exportTempTable} (
     }
 
     $sql .= "
-) ENGINE=MyISAM DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
 ";
 
     CRM_Core_DAO::executeQuery($sql);
@@ -2058,7 +2061,6 @@ WHERE  {$whereClause}";
       }
     }
     elseif (array_key_exists($field, $contactRelationshipTypes)) {
-      self::manipulateHeaderRows($headerRows, $contactRelationshipTypes);
       foreach ($value as $relationField => $relationValue) {
         // below block is same as primary block (duplicate)
         if (isset($relationQuery[$field]->_fields[$relationField]['title'])) {
@@ -2116,6 +2118,7 @@ WHERE  {$whereClause}";
           }
         }
       }
+      self::manipulateHeaderRows($headerRows, $contactRelationshipTypes);
     }
     elseif ($selectedPaymentFields && array_key_exists($field, self::componentPaymentFields())) {
       $headerRows[] = CRM_Utils_Array::value($field, self::componentPaymentFields());

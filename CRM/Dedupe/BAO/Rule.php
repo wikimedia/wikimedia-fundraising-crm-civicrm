@@ -178,11 +178,11 @@ class CRM_Dedupe_BAO_Rule extends CRM_Dedupe_DAO_Rule {
         $cids[] = CRM_Utils_Type::escape($cid, 'Integer');
       }
       if (count($cids) == 1) {
-        $query .= " AND (t1.$id = {$cids[0]} UNION $query AND t2.$id = {$cids[0]})";
+        $query .= " AND (t1.$id = {$cids[0]}) UNION $query AND t2.$id = {$cids[0]}";
       }
       else {
-        $query .= " AND (t1.$id IN (" . implode(',', $cids) . "))
-        UNION $query AND (t2.$id IN (" . implode(',', $cids) . "))";
+        $query .= " AND t1.$id IN (" . implode(',', $cids) . ")
+        UNION $query AND  t2.$id IN (" . implode(',', $cids) . ")";
       }
     }
 
