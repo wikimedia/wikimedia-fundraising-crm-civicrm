@@ -250,8 +250,7 @@ class CRM_Utils_Mail_EmailProcessor {
           require_once 'CRM/Utils/DeprecatedUtils.php';
           $params = _civicrm_api3_deprecated_activity_buildmailparams($mailParams, $emailActivityTypeId);
 
-          $params['version'] = 3;
-          $result = civicrm_api('activity', 'create', $params);
+          $result = civicrm_api3('activity', 'create', $params);
 
           if ($result['is_error']) {
             $matches = FALSE;
@@ -280,6 +279,7 @@ class CRM_Utils_Mail_EmailProcessor {
         if (!empty($action)) {
           $result = NULL;
 
+          try {
           switch ($action) {
             case 'b':
             case 'bounce':
@@ -376,9 +376,8 @@ class CRM_Utils_Mail_EmailProcessor {
                 'event_queue_id' => $queue,
                 'hash' => $hash,
                 'body' => $text,
-                'version' => 3,
               );
-              $result = civicrm_api('Mailing', 'event_bounce', $params);
+              $result = civicrm_api3('Mailing', 'event_bounce', $params);
               break;
 
             case 'c':
@@ -388,9 +387,8 @@ class CRM_Utils_Mail_EmailProcessor {
                 'contact_id' => $job,
                 'subscribe_id' => $queue,
                 'hash' => $hash,
-                'version' => 3,
               );
-              $result = civicrm_api('Mailing', 'event_confirm', $params);
+              $result = civicrm_api3('Mailing', 'event_confirm', $params);
               break;
 
             case 'o':
@@ -399,9 +397,8 @@ class CRM_Utils_Mail_EmailProcessor {
                 'job_id' => $job,
                 'event_queue_id' => $queue,
                 'hash' => $hash,
-                'version' => 3,
               );
-              $result = civicrm_api('MailingGroup', 'event_domain_unsubscribe', $params);
+              $result = civicrm_api3('MailingGroup', 'event_domain_unsubscribe', $params);
               break;
 
             case 'r':
@@ -415,9 +412,8 @@ class CRM_Utils_Mail_EmailProcessor {
                 'replyTo' => $replyTo,
                 'bodyHTML' => NULL,
                 'fullEmail' => $mail->generate(),
-                'version' => 3,
               );
-              $result = civicrm_api('Mailing', 'event_reply', $params);
+              $result = civicrm_api3('Mailing', 'event_reply', $params);
               break;
 
             case 'e':
@@ -427,9 +423,8 @@ class CRM_Utils_Mail_EmailProcessor {
                 'job_id' => $job,
                 'event_queue_id' => $queue,
                 'hash' => $hash,
-                'version' => 3,
               );
-              $result = civicrm_api('MailingGroup', 'event_resubscribe', $params);
+              $result = civicrm_api3('MailingGroup', 'event_resubscribe', $params);
               break;
 
             case 's':
@@ -437,9 +432,8 @@ class CRM_Utils_Mail_EmailProcessor {
               $params = array(
                 'email' => $mail->from->email,
                 'group_id' => $job,
-                'version' => 3,
               );
-              $result = civicrm_api('MailingGroup', 'event_subscribe', $params);
+              $result = civicrm_api3('MailingGroup', 'event_subscribe', $params);
               break;
 
             case 'u':
@@ -448,21 +442,20 @@ class CRM_Utils_Mail_EmailProcessor {
                 'job_id' => $job,
                 'event_queue_id' => $queue,
                 'hash' => $hash,
-                'version' => 3,
               );
-              $result = civicrm_api('MailingGroup', 'event_unsubscribe', $params);
+              $result = civicrm_api3('MailingGroup', 'event_unsubscribe', $params);
               break;
           }
-
-          if ($result['is_error']) {
-            echo "Failed Processing: {$mail->subject}, Action: $action, Job ID: $job, Queue ID: $queue, Hash: $hash. Reason: {$result['error_message']}\n";
-          }
-          else {
-            CRM_Utils_Hook::emailProcessor('mailing', $params, $mail, $result, $action);
+          CRM_Utils_Hook::emailProcessor('mailing', $params, $mail, $result, $action);
+          $store->markProcessed($key);
+        }
+        catch (CiviCRM_API3_Exception $e) {
+          watchdog('civi-fail', "Failed Processing: {$mail->subject}, Action: $action, Job ID: $job, Queue ID: $queue, Hash: $hash. Reason: {$result['error_message']}\n" . print_r($mail, 1));
+          throw $e;
           }
         }
 
-        $store->markProcessed($key);
+
       }
       // CRM-7356 – used by IMAP only
       $store->expunge();
