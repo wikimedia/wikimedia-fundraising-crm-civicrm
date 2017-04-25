@@ -1162,7 +1162,7 @@ class DB_common extends PEAR
         else {
             global $user;
             if (empty($user)) {
-                $prefix = 'phpunit-test';
+                $prefix = '';
             }
             else {
                 $prefix = "/* https://civicrm.wikimedia.org/user/{$user->uid} */ ";
