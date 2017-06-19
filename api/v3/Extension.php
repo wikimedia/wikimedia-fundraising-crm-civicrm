@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -244,7 +244,9 @@ function civicrm_api3_extension_download($params) {
   }
   CRM_Extension_System::singleton()->getCache()->flush();
   CRM_Extension_System::singleton(TRUE);
-  CRM_Extension_System::singleton()->getManager()->install(array($params['key']));
+  if (CRM_Utils_Array::value('install', $params, TRUE)) {
+    CRM_Extension_System::singleton()->getManager()->install(array($params['key']));
+  }
 
   return civicrm_api3_create_success();
 }
@@ -264,6 +266,12 @@ function _civicrm_api3_extension_download_spec(&$fields) {
     'title' => 'Download URL',
     'type' => CRM_Utils_Type::T_STRING,
     'description' => 'Optional as the system can determine the url automatically for public extensions',
+  );
+  $fields['install'] = array(
+    'title' => 'Auto-install',
+    'type' => CRM_Utils_Type::T_STRING,
+    'description' => 'Automatically install the downloaded extension',
+    'api.default' => TRUE,
   );
 }
 
@@ -324,6 +332,7 @@ function _civicrm_api3_extension_refresh_spec(&$fields) {
  *   API result
  */
 function civicrm_api3_extension_get($params) {
+  $keys = isset($params['key']) ? (array) $params['key'] : NULL;
   $statuses = CRM_Extension_System::singleton()->getManager()->getStatuses();
   $mapper = CRM_Extension_System::singleton()->getMapper();
   $result = array();
@@ -338,9 +347,18 @@ function civicrm_api3_extension_get($params) {
     }
     $info = CRM_Extension_System::createExtendedInfo($obj);
     $info['id'] = $id++; // backward compatibility with indexing scheme
-    $result[] = $info;
+    if (!empty($params['key'])) {
+      if (in_array($key, $keys)) {
+        $result[] = $info;
+      }
+    }
+    else {
+      $result[] = $info;
+    }
   }
-  return _civicrm_api3_basic_array_get('Extension', $params, $result, 'id', array());
+  $options = _civicrm_api3_get_options_from_params($params);
+  $returnFields = !empty($options['return']) ? $options['return'] : array();
+  return _civicrm_api3_basic_array_get('Extension', $params, $result, 'id', $returnFields);
 }
 
 /**

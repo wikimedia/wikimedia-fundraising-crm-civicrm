@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -50,6 +50,11 @@
                 <td class="label">{$form.fatalErrorHandler.label}</td>
                 <td>{$form.fatalErrorHandler.html}<br />
                 <span class="description">{ts}Enter the path and class for a custom PHP error-handling function if you want to override built-in CiviCRM error handling for your site.{/ts}</span></td>
+            </tr>
+            <tr class="crm-debugging-form-block-assetCache">
+                <td class="label">{$form.assetCache.label}</td>
+                <td>{$form.assetCache.html}<br />
+                <span class="description">{ts}Store computed JS/CSS content in cache files? (Note: In "Auto" mode, the "Debug" setting will determine whether to activate the cache.){/ts}</span></td>
             </tr>
         </table>
         <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>

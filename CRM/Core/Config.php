@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -32,7 +32,7 @@
  * The default values in general, should reflect production values (minimizes chances of screwing up)
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 require_once 'Log.php';
@@ -44,6 +44,7 @@ require_once 'api/api.php';
  * Class CRM_Core_Config
  *
  * @property CRM_Utils_System_Base $userSystem
+ * @property CRM_Core_Permission_Base $userPermissionClass
  * @property array $enableComponents
  * @property array $languageLimit
  * @property bool $debug
@@ -488,7 +489,7 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    * Conditionally fire an event during the first page run.
    *
    * The install system is currently implemented several times, so it's hard to add
-   * new installation logic. We use a poor-man's method to detect the first run.
+   * new installation logic. We use a makeshift method to detect the first run.
    *
    * Situations to test:
    *  - New installation

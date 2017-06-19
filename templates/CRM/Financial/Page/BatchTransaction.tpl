@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -90,6 +90,9 @@ CRM.$(function($) {
 });
 function assignRemove(recordID, op) {
   var recordBAO = 'CRM_Batch_BAO_Batch';
+  if (op == 'assign' || op == 'remove') {
+    recordBAO = 'CRM_Batch_BAO_EntityBatch';   
+  }
   var entityID = {/literal}"{$entityID}"{literal};
   if (op == 'close' || op == 'export') {
     var mismatch = checkMismatch();

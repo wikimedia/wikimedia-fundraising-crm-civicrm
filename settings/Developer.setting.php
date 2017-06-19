@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -37,6 +37,27 @@
  */
 
 return array(
+  'assetCache' => array(
+    'group_name' => 'Developer Preferences',
+    'group' => 'developer',
+    'name' => 'assetCache',
+    'type' => 'String',
+    'quick_form_type' => 'Select',
+    'html_type' => 'Select',
+    'html_attributes' => array(
+      //'class' => 'crm-select2',
+    ),
+    'default' => 'auto',
+    'add' => '4.7',
+    'title' => 'Asset Caching',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => 'Store computed JS/CSS content in cache files? (Note: In "Auto" mode, the "Debug" setting will determine whether to activate the cache.)',
+    'help_text' => NULL,
+    'pseudoconstant' => array(
+      'callback' => '\Civi\Core\AssetBuilder::getCacheModes',
+    ),
+  ),
   'userFrameworkLogging' => array(
     'group_name' => 'Developer Preferences',
     'group' => 'developer',

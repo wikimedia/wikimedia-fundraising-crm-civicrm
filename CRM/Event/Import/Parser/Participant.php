@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -42,9 +42,6 @@ class CRM_Event_Import_Parser_Participant extends CRM_Event_Import_Parser {
   protected $_mapperKeys;
 
   private $_contactIdIndex;
-
-  //private $_totalAmountIndex;
-
   private $_eventIndex;
   private $_participantStatusIndex;
   private $_participantRoleIndex;
@@ -399,11 +396,7 @@ class CRM_Event_Import_Parser_Participant extends CRM_Event_Import_Parser {
     }
 
     if ($this->_contactIdIndex < 0) {
-
-      //retrieve contact id using contact dedupe rule
-      $formatValues['contact_type'] = $this->_contactType;
-      $formatValues['version'] = 3;
-      $error = _civicrm_api3_deprecated_check_contact_dedupe($formatValues);
+      $error = $this->checkContactDuplicate($formatValues);
 
       if (CRM_Core_Error::isAPIError($error, CRM_Core_ERROR::DUPLICATE_CONTACT)) {
         $matchedIDs = explode(',', $error['error_message']['params'][0]);

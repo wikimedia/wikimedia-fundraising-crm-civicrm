@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 // we should consider moving these to the settings table
@@ -44,22 +44,18 @@ class CRM_Utils_Mail_EmailProcessor {
   /**
    * Process the default mailbox (ie. that is used by civiMail for the bounce)
    *
-   * @return bool
-   *   Always returns true (for the api). at a later stage we should
-   *   fix this to return true on success / false on failure etc.
+   * @param bool $is_create_activities
+   *   Should activities be created
    */
-  public static function processBounces() {
+  public static function processBounces($is_create_activities) {
     $dao = new CRM_Core_DAO_MailSettings();
     $dao->domain_id = CRM_Core_Config::domainID();
     $dao->is_default = TRUE;
     $dao->find();
 
     while ($dao->fetch()) {
-      self::_process(TRUE, $dao);
+      self::_process(TRUE, $dao, $is_create_activities);
     }
-
-    // always returns true, i.e. never fails :)
-    return TRUE;
   }
 
   /**
@@ -102,7 +98,7 @@ class CRM_Utils_Mail_EmailProcessor {
     $found = FALSE;
     while ($dao->fetch()) {
       $found = TRUE;
-      self::_process(FALSE, $dao);
+      self::_process(FALSE, $dao, $is_create_activities);
     }
     if (!$found) {
       CRM_Core_Error::fatal(ts('No mailboxes have been configured for Email to Activity Processing'));
@@ -127,20 +123,20 @@ class CRM_Utils_Mail_EmailProcessor {
 
   /**
    * @param $civiMail
-   * @param CRM_Core_DAO $dao
+   * @param CRM_Core_DAO_MailSettings $dao
+   * @param bool $is_create_activities
+   *   Create activities.
    *
    * @throws Exception
    */
-  public static function _process($civiMail, $dao) {
+  public static function _process($civiMail, $dao, $is_create_activities) {
     // 0 = activities; 1 = bounce;
     $usedfor = $dao->is_default;
 
     $emailActivityTypeId
-      = (defined('EMAIL_ACTIVITY_TYPE_ID') && EMAIL_ACTIVITY_TYPE_ID) ? EMAIL_ACTIVITY_TYPE_ID : CRM_Core_OptionGroup::getValue(
-        'activity_type',
-        'Inbound Email',
-        'name'
-      );
+      = (defined('EMAIL_ACTIVITY_TYPE_ID') && EMAIL_ACTIVITY_TYPE_ID)
+      ? EMAIL_ACTIVITY_TYPE_ID
+      : CRM_Core_OptionGroup::getValue('activity_type', 'Inbound Email', 'name');
 
     if (!$emailActivityTypeId) {
       CRM_Core_Error::fatal(ts('Could not find a valid Activity Type ID for Inbound Email'));
@@ -236,7 +232,7 @@ class CRM_Utils_Mail_EmailProcessor {
         }
 
         // preseve backward compatibility
-        if ($usedfor == 0 || !$civiMail) {
+        if ($usedfor == 0 || $is_create_activities) {
           // if its the activities that needs to be processed ..
           try {
             $mailParams = CRM_Utils_Mail_Incoming::parseMailingObject($mail);
@@ -250,7 +246,11 @@ class CRM_Utils_Mail_EmailProcessor {
           require_once 'CRM/Utils/DeprecatedUtils.php';
           $params = _civicrm_api3_deprecated_activity_buildmailparams($mailParams, $emailActivityTypeId);
 
-          $result = civicrm_api3('activity', 'create', $params);
+          $params['version'] = 3;
+          if (!empty($dao->activity_status)) {
+            $params['status_id'] = $dao->activity_status;
+          }
+          $result = civicrm_api('activity', 'create', $params);
 
           if ($result['is_error']) {
             $matches = FALSE;
@@ -258,10 +258,9 @@ class CRM_Utils_Mail_EmailProcessor {
           }
           else {
             $matches = TRUE;
+            CRM_Utils_Hook::emailProcessor('activity', $params, $mail, $result);
             echo "Processed as Activity: {$mail->subject}\n";
           }
-
-          CRM_Utils_Hook::emailProcessor('activity', $params, $mail, $result);
         }
 
         // if $matches is empty, this email is not CiviMail-bound
@@ -279,7 +278,6 @@ class CRM_Utils_Mail_EmailProcessor {
         if (!empty($action)) {
           $result = NULL;
 
-          try {
           switch ($action) {
             case 'b':
             case 'bounce':
@@ -376,8 +374,17 @@ class CRM_Utils_Mail_EmailProcessor {
                 'event_queue_id' => $queue,
                 'hash' => $hash,
                 'body' => $text,
+                'version' => 3,
+                // Setting is_transactional means it will rollback if
+                // it crashes part way through creating the bounce.
+                // If the api were standard & had a create this would be the
+                // default. Adding the standard api & deprecating this one
+                // would probably be the
+                // most consistent way to address this - but this is
+                // a quick hack.
+                'is_transactional' => 1,
               );
-              $result = civicrm_api3('Mailing', 'event_bounce', $params);
+              $result = civicrm_api('Mailing', 'event_bounce', $params);
               break;
 
             case 'c':
@@ -387,8 +394,9 @@ class CRM_Utils_Mail_EmailProcessor {
                 'contact_id' => $job,
                 'subscribe_id' => $queue,
                 'hash' => $hash,
+                'version' => 3,
               );
-              $result = civicrm_api3('Mailing', 'event_confirm', $params);
+              $result = civicrm_api('Mailing', 'event_confirm', $params);
               break;
 
             case 'o':
@@ -397,8 +405,9 @@ class CRM_Utils_Mail_EmailProcessor {
                 'job_id' => $job,
                 'event_queue_id' => $queue,
                 'hash' => $hash,
+                'version' => 3,
               );
-              $result = civicrm_api3('MailingGroup', 'event_domain_unsubscribe', $params);
+              $result = civicrm_api('MailingGroup', 'event_domain_unsubscribe', $params);
               break;
 
             case 'r':
@@ -412,8 +421,9 @@ class CRM_Utils_Mail_EmailProcessor {
                 'replyTo' => $replyTo,
                 'bodyHTML' => NULL,
                 'fullEmail' => $mail->generate(),
+                'version' => 3,
               );
-              $result = civicrm_api3('Mailing', 'event_reply', $params);
+              $result = civicrm_api('Mailing', 'event_reply', $params);
               break;
 
             case 'e':
@@ -423,8 +433,9 @@ class CRM_Utils_Mail_EmailProcessor {
                 'job_id' => $job,
                 'event_queue_id' => $queue,
                 'hash' => $hash,
+                'version' => 3,
               );
-              $result = civicrm_api3('MailingGroup', 'event_resubscribe', $params);
+              $result = civicrm_api('MailingGroup', 'event_resubscribe', $params);
               break;
 
             case 's':
@@ -432,8 +443,9 @@ class CRM_Utils_Mail_EmailProcessor {
               $params = array(
                 'email' => $mail->from->email,
                 'group_id' => $job,
+                'version' => 3,
               );
-              $result = civicrm_api3('MailingGroup', 'event_subscribe', $params);
+              $result = civicrm_api('MailingGroup', 'event_subscribe', $params);
               break;
 
             case 'u':
@@ -442,20 +454,21 @@ class CRM_Utils_Mail_EmailProcessor {
                 'job_id' => $job,
                 'event_queue_id' => $queue,
                 'hash' => $hash,
+                'version' => 3,
               );
-              $result = civicrm_api3('MailingGroup', 'event_unsubscribe', $params);
+              $result = civicrm_api('MailingGroup', 'event_unsubscribe', $params);
               break;
           }
-          CRM_Utils_Hook::emailProcessor('mailing', $params, $mail, $result, $action);
-          $store->markProcessed($key);
-        }
-        catch (CiviCRM_API3_Exception $e) {
-          watchdog('civi-fail', "Failed Processing: {$mail->subject}, Action: $action, Job ID: $job, Queue ID: $queue, Hash: $hash. Reason: {$result['error_message']}\n" . print_r($mail, 1));
-          throw $e;
+
+          if ($result['is_error']) {
+            echo "Failed Processing: {$mail->subject}, Action: $action, Job ID: $job, Queue ID: $queue, Hash: $hash. Reason: {$result['error_message']}\n";
+          }
+          else {
+            CRM_Utils_Hook::emailProcessor('mailing', $params, $mail, $result, $action);
           }
         }
 
-
+        $store->markProcessed($key);
       }
       // CRM-7356 – used by IMAP only
       $store->expunge();

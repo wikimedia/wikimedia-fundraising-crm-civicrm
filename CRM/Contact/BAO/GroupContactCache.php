@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Contact_BAO_GroupContactCache extends CRM_Contact_DAO_GroupContactCache {
 
@@ -493,8 +493,9 @@ WHERE  id = %1
   /**
    * Do an opportunistic cache refresh if the site is configured for these.
    *
-   * Sites that do not run the smart group clearing cron job should refresh the caches under an opportunistic mode, akin
-   * to a poor man's cron. The user session will be forced to wait on this so it is less desirable.
+   * Sites that do not run the smart group clearing cron job should refresh the
+   * caches on demand. The user session will be forced to wait so it is less
+   * ideal.
    */
   public static function opportunisticCacheFlush() {
     if (Civi::settings()->get('smart_group_cache_refresh_mode') == 'opportunistic') {

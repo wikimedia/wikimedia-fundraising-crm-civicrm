@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -55,11 +55,11 @@ class CRM_Batch_Page_AJAX {
    */
   public static function getBatchList() {
     $sortMapper = array(
-      0 => 'batch.title',
-      1 => 'batch.type_id',
+      0 => 'title',
+      1 => 'type_id',
       2 => '',
-      3 => 'batch.total',
-      4 => 'batch.status_id',
+      3 => 'total',
+      4 => 'status_id',
       5 => '',
     );
 

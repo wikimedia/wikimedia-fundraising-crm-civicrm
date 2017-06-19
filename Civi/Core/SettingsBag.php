@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -352,7 +352,7 @@ class SettingsBag {
     }
     $dao->find(TRUE);
 
-    if (isset($metadata['on_change'])) {
+    if (isset($metadata['on_change']) && !($value == 0 && ($dao->value === NULL || unserialize($dao->value) == 0))) {
       foreach ($metadata['on_change'] as $callback) {
         call_user_func(
           \Civi\Core\Resolver::singleton()->get($callback),

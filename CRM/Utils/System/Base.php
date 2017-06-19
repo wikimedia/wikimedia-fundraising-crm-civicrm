@@ -287,6 +287,11 @@ abstract class CRM_Utils_System_Base {
     return 'left';
   }
 
+  /**
+   * Get the absolute path to the site's base url.
+   *
+   * @return bool|mixed|string
+   */
   public function getAbsoluteBaseURL() {
     if (!defined('CIVICRM_UF_BASEURL')) {
       return FALSE;
@@ -304,6 +309,11 @@ abstract class CRM_Utils_System_Base {
     return $url;
   }
 
+  /**
+   * Get the relative path to the sites base url.
+   *
+   * @return bool
+   */
   public function getRelativeBaseURL() {
     $absoluteBaseURL = $this->getAbsoluteBaseURL();
     if ($absoluteBaseURL === FALSE) {
@@ -423,6 +433,13 @@ abstract class CRM_Utils_System_Base {
     throw new CRM_Core_Exception("Not implemented: {$className}->getUfId");
   }
 
+  /**
+   * Set the localisation from the user framework.
+   *
+   * @param string $civicrm_language
+   *
+   * @return bool
+   */
   public function setUFLocale($civicrm_language) {
     return TRUE;
   }
@@ -576,15 +593,6 @@ abstract class CRM_Utils_System_Base {
       $tempURL = str_replace("/administrator/", "/", $baseURL);
       $filesURL = $tempURL . "media/civicrm/";
     }
-    elseif ($this->is_drupal) {
-      $siteName = $config->userSystem->parseDrupalSiteName($civicrm_root);
-      if ($siteName) {
-        $filesURL = $baseURL . "sites/$siteName/files/civicrm/";
-      }
-      else {
-        $filesURL = $baseURL . "sites/default/files/civicrm/";
-      }
-    }
     elseif ($config->userFramework == 'UnitTests') {
       $filesURL = $baseURL . "sites/default/files/civicrm/";
     }
@@ -642,7 +650,7 @@ abstract class CRM_Utils_System_Base {
           str_replace('\\', '/', $civicrm_root)
         );
 
-      $siteName = $config->userSystem->parseDrupalSiteName($civicrm_root);
+      $siteName = $config->userSystem->parseDrupalSiteNameFromRoot($civicrm_root);
       if ($siteName) {
         $civicrmDirName = trim(basename($civicrm_root));
         $userFrameworkResourceURL = $baseURL . "sites/$siteName/modules/$civicrmDirName/";
