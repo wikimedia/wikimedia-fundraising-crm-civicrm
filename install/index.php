@@ -569,7 +569,7 @@ class InstallRequirements {
       $host = implode(':', $hostParts);
     }
     else {
-      $port = '';
+      $port = null;
     }
     $conn = @mysqli_connect($host, $username, $password, $database, $port);
     return $conn;
@@ -1268,7 +1268,6 @@ class InstallRequirements {
   ) {
     $this->testing($testDetails);
     $conn = $this->connect($server, $username, $password);
-
     $okay = NULL;
     if (@mysqli_select_db($conn, $database)) {
       $okay = "Database '$database' exists";
