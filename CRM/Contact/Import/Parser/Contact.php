@@ -1675,7 +1675,6 @@ class CRM_Contact_Import_Parser_Contact extends CRM_Contact_Import_Parser {
     //get the prefix id etc if exists
     CRM_Contact_BAO_Contact::resolveDefaults($formatted, TRUE);
 
-    require_once 'CRM/Utils/DeprecatedUtils.php';
     //@todo direct call to API function not supported.
     // setting required check to false, CRM-2839
     // plus we do our own required check in import
@@ -1953,7 +1952,7 @@ class CRM_Contact_Import_Parser_Contact extends CRM_Contact_Import_Parser {
           }
 
           if (!$break) {
-            list($value, $formatted) = $this->formatContactParameters();
+            $this->formatContactParameters($value, $formatted);
           }
         }
         if (!$isAddressCustomField) {
@@ -2276,14 +2275,9 @@ class CRM_Contact_Import_Parser_Contact extends CRM_Contact_Import_Parser {
     //      Custom
 
     // Cache the various object fields
-    static $fields = NULL;
-
-    if ($fields == NULL) {
-      $fields = array();
-    }
+    static $fields = array();
 
     // first add core contact values since for other Civi modules they are not added
-    require_once 'CRM/Contact/BAO/Contact.php';
     $contactFields = CRM_Contact_DAO_Contact::fields();
     _civicrm_api3_store_values($contactFields, $values, $params);
 
@@ -2415,50 +2409,50 @@ class CRM_Contact_Import_Parser_Contact extends CRM_Contact_Import_Parser {
 
     // get the formatted location blocks into params - w/ 3.0 format, CRM-4605
     if (!empty($values['location_type_id'])) {
-      static $fields = NULL;
-      if ($fields == NULL) {
-        $fields = array();
-      }
-
-      foreach (array(
-                 'Phone',
-                 'Email',
-                 'IM',
-                 'OpenID',
-                 'Phone_Ext',
-               ) as $block) {
-        $name = strtolower($block);
-        if (!array_key_exists($name, $values)) {
+      $blockTypes = array(
+        'phone' => 'Phone',
+        'email' => 'Email',
+        'im' => 'IM',
+        'openid' => 'OpenID',
+        'phone_ext' => 'Phone',
+      );
+      foreach ($blockTypes as $blockFieldName => $block) {
+        if (!array_key_exists($blockFieldName, $values)) {
           continue;
         }
 
-        if ($name == 'phone_ext') {
-          $block = 'Phone';
-        }
-
         // block present in value array.
-        if (!array_key_exists($name, $params) || !is_array($params[$name])) {
-          $params[$name] = array();
+        if (!array_key_exists($blockFieldName, $params) || !is_array($params[$blockFieldName])) {
+          $params[$blockFieldName] = array();
         }
 
         if (!array_key_exists($block, $fields)) {
           $className = "CRM_Core_DAO_$block";
-          $fields[$block] =& $className::fields();
+          $fields[$block] = $className::fields();
         }
 
-        $blockCnt = count($params[$name]);
+        $blockCnt = count($params[$blockFieldName]);
 
         // copy value to dao field name.
-        if ($name == 'im') {
-          $values['name'] = $values[$name];
+        if ($blockFieldName == 'im') {
+          $values['name'] = $values[$blockFieldName];
         }
 
         _civicrm_api3_store_values($fields[$block], $values,
-          $params[$name][++$blockCnt]
+          $params[$blockFieldName][++$blockCnt]
         );
 
+        if ($values['location_type_id'] === 'Primary') {
+          if (!empty($params['id'])) {
+            $primary = civicrm_api3($block, 'get', array('return' => 'location_type_id', 'contact_id' => $params['id'], 'is_primary' => 1, 'sequential' => 1));
+          }
+          $defaultLocationType = CRM_Core_BAO_LocationType::getDefault();
+          $values['location_type_id'] = (isset($primary) && $primary['count']) ? $primary['values'][0]['location_type_id'] : $defaultLocationType->id;
+          $values['is_primary'] = 1;
+        }
+
         if (empty($params['id']) && ($blockCnt == 1)) {
-          $params[$name][$blockCnt]['is_primary'] = TRUE;
+          $params[$blockFieldName][$blockCnt]['is_primary'] = TRUE;
         }
 
         // we only process single block at a time.
@@ -2552,6 +2546,16 @@ class CRM_Contact_Import_Parser_Contact extends CRM_Contact_Import_Parser {
           }
           $params['address'][$addressCnt][$field] = $values[$field];
         }
+      }
+
+      if ($values['location_type_id'] === 'Primary') {
+        if (!empty($params['id'])) {
+          $primary = civicrm_api3('Address', 'get', array('return' => 'location_type_id', 'contact_id' => $params['id'], 'is_primary' => 1, 'sequential' => 1));
+        }
+        $defaultLocationType = CRM_Core_BAO_LocationType::getDefault();
+        $params['address'][$addressCnt]['location_type_id'] = (isset($primary) && $primary['count']) ? $primary['values'][0]['location_type_id'] : $defaultLocationType->id;
+        $params['address'][$addressCnt]['is_primary'] = 1;
+
       }
 
       if ($addressCnt == 1) {
