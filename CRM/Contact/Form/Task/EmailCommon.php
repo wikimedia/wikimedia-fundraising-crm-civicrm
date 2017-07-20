@@ -37,7 +37,7 @@
  * components in CiviCRM (since they all have send email as a task)
  */
 class CRM_Contact_Form_Task_EmailCommon {
-  const MAX_EMAILS_KILL_SWITCH = 50;
+  const MAX_EMAILS_KILL_SWITCH = 700;
 
   public $_contactDetails = array();
   public $_allContactDetails = array();
