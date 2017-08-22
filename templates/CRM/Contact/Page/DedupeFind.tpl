@@ -122,7 +122,7 @@
       {foreach from=$dupe_contacts[$cid] item=dupe_name key=dupe_id}
         {if $dupe_name}
           {capture assign=link}<a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=$dupe_id"}">{$dupe_name}</a>{/capture}
-          {capture assign=merge}<a href="{crmURL p='civicrm/contact/merge' q="reset=1&cid=$cid&oid=$dupe_id"}">{ts}merge{/ts}</a>{/capture}
+          {capture assign=merge}<a href="{crmURL p='civicrm/contact/merge' q="`$urlQuery`&reset=1&cid=$cid&oid=$dupe_id"}">{ts}merfe{/ts}</a>{/capture}
           <tr class="{cycle values="odd-row,even-row"}">
       <td>{$link}</td>
       <td style="text-align: right">{$merge}</td>
@@ -339,6 +339,9 @@
       var is_selected = CRM.$('.crm-dedupe-select-all').prop('checked') ? 1 : 0;
     }
 
+    var criteria = {/literal}'{$criteria}'{literal};
+    criteria  = criteria.length > 0 ? criteria : 0;
+
     var dataUrl = {/literal}"{crmURL p='civicrm/ajax/toggleDedupeSelect' h=0 q='snippet=4'}"{literal};
     var rgid = {/literal}"{$rgid}"{literal};
     var gid = {/literal}"{$gid}"{literal};
@@ -346,7 +349,7 @@
     rgid = rgid.length > 0 ? rgid : 0;
     gid  = gid.length > 0 ? gid : 0;
 
-    CRM.$.post(dataUrl, {pnid: id, rgid: rgid, gid: gid, is_selected: is_selected}, function (data) {
+    CRM.$.post(dataUrl, {pnid: id, rgid: rgid, gid: gid, is_selected: is_selected, criteria : criteria}, function (data) {
       // nothing to do for now
     }, 'json');
   }

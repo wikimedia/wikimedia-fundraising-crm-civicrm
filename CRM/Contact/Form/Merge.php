@@ -45,6 +45,11 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
   var $_contactType = NULL;
 
   /**
+   * @var array
+   */
+  public $criteria = array();
+
+  /**
    * Query limit to be retained in the urls.
    *
    * @var int
@@ -74,7 +79,9 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       $this->_gid = $gid = CRM_Utils_Request::retrieve('gid', 'Positive', $this, FALSE);
       $this->_mergeId = CRM_Utils_Request::retrieve('mergeId', 'Positive', $this, FALSE);
       $this->limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this, FALSE);
-      $urlParams = "reset=1&rgid={$this->_rgid}&gid={$this->_gid}&limit=" . $this->limit;
+      $this->criteria = CRM_Utils_Request::retrieve('criteria', 'String', $this, FALSE, '{}');
+
+      $urlParams = "reset=1&rgid={$this->_rgid}&gid={$this->_gid}&limit=" . $this->limit . '&criteria=' . $this->criteria;
 
       $this->bounceIfInvalid($this->_cid, $this->_oid);
 
@@ -83,7 +90,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
         'return' => 'contact_type',
       ));
 
-      $browseUrl = CRM_Utils_System::url('civicrm/contact/dedupefind', $urlParams . '&action=browse');
+      $browseUrl = CRM_Utils_System::url('civicrm/contact/dedupefind', $urlParams . '&action=browse', FALSE, NULL, FALSE);
 
       if (!$this->_rgid) {
         // Unset browse URL as we have come from the search screen.
@@ -99,7 +106,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
         CRM_Core_Session::singleton()->pushUserContext($browseUrl);
       }
 
-      $cacheKey = CRM_Dedupe_Merger::getMergeCacheKeyString($this->_rgid, $gid);
+      $cacheKey = CRM_Dedupe_Merger::getMergeCacheKeyString($this->_rgid, $gid, json_decode($this->criteria, TRUE));
 
       $join = CRM_Dedupe_Merger::getJoinOnDedupeTable();
       $where = "de.id IS NULL";
@@ -126,7 +133,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       }
 
       $flipUrl = CRM_Utils_System::url('civicrm/contact/merge',
-        "reset=1&action=update&cid={$this->_oid}&oid={$this->_cid}&rgid={$this->_rgid}&gid={$gid}"
+        "reset=1&action=update&cid={$this->_oid}&oid={$this->_cid}&rgid={$this->_rgid}&gid={$gid}&criteria={$this->criteria}"
       );
       if (!$flip) {
         $flipUrl .= '&flip=1';
@@ -294,7 +301,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
     CRM_Core_Session::setStatus($message, ts('Contacts Merged'), 'success');
 
     $url = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$this->_cid}");
-    $urlParams = "reset=1&gid={$this->_gid}&rgid={$this->_rgid}&limit={$this->limit}";
+    $urlParams = "reset=1&rgid={$this->_rgid}&gid={$this->_gid}&limit=" . $this->limit . '&criteria=' . $this->criteria;
 
     if (!empty($formValues['_qf_Merge_submit'])) {
       $urlParams .= "&action=update";
@@ -308,7 +315,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
     }
 
     if ($this->next && $this->_mergeId) {
-      $cacheKey = CRM_Dedupe_Merger::getMergeCacheKeyString($this->_rgid, $this->_gid);
+      $cacheKey = CRM_Dedupe_Merger::getMergeCacheKeyString($this->_rgid, $this->_gid, json_decode($this->criteria, TRUE));
 
       $join = CRM_Dedupe_Merger::getJoinOnDedupeTable();
       $where = "de.id IS NULL";
@@ -321,7 +328,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       ) {
 
         $urlParams .= "&cid={$pos['next']['id1']}&oid={$pos['next']['id2']}&mergeId={$pos['next']['mergeId']}&action=update";
-        $url = CRM_Utils_System::url('civicrm/contact/merge', $urlParams);
+        $url = CRM_Utils_System::url('civicrm/contact/merge', $urlParams, FALSE, NULL, FALSE);
       }
     }
 

@@ -228,6 +228,11 @@ class CRM_Contact_Task {
           'class' => 'CRM_Contact_Form_Task_Merge',
           'result' => TRUE,
         );
+        self::$_tasks['find_duplicates'] = array(
+          'title' => ts('Find duplicates for these contacts'),
+          'class' => 'CRM_Contact_Form_Task_FindDuplicates',
+          'result' => TRUE,
+        );
       }
 
       //CRM-4418, check for delete
