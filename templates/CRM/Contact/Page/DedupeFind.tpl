@@ -122,7 +122,7 @@
       {foreach from=$dupe_contacts[$cid] item=dupe_name key=dupe_id}
         {if $dupe_name}
           {capture assign=link}<a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=$dupe_id"}">{$dupe_name}</a>{/capture}
-          {capture assign=merge}<a href="{crmURL p='civicrm/contact/merge' q="`$urlQuery`&reset=1&cid=$cid&oid=$dupe_id"}">{ts}merfe{/ts}</a>{/capture}
+          {capture assign=merge}<a href="{crmURL p='civicrm/contact/merge' q="`$urlQuery`&reset=1&cid=$cid&oid=$dupe_id"}">{ts}merge{/ts}</a>{/capture}
           <tr class="{cycle values="odd-row,even-row"}">
       <td>{$link}</td>
       <td style="text-align: right">{$merge}</td>
