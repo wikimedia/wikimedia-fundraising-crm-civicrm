@@ -78,12 +78,13 @@ class CRM_Contact_Form_Task_FindDuplicates extends CRM_Core_Form {
       CRM_Core_Error::statusBounce(ts('It was not possible to identify a default rule that was applicable to all selected contacts. You must choose only one contact type. You chose %1', array($contactType)));
     }
 
+    $contactIDArray = explode(',', $contactIDs);
     CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contact/dedupefind', array(
       'reset' => 1,
       'action' => 'update',
       'rgid' => $rule_group_id,
-      'criteria' => json_encode(array('contact' => array('id' => array('IN' => explode(',', $contactIDs))))),
-      'limit' => count($contactIDs),
+      'criteria' => json_encode(array('contact' => array('id' => array('IN' => $contactIDArray)))),
+      'limit' => count($contactIDArray),
     )));
   }
 }
