@@ -115,7 +115,7 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
    *   Array of mapping names, keyed by id.
    */
   public static function getMappings($mappingType) {
-    $result = civicrm_api3('Mapping', 'get', array('mapping_type_id' => $mappingType, 'options' => array('sort' => 'name')));
+    $result = civicrm_api3('Mapping', 'get', array('mapping_type_id' => $mappingType, 'options' => array('limit' => 0, 'sort' => 'name')));
     $mapping = array();
 
     foreach ($result['values'] as $key => $value) {
