@@ -306,6 +306,7 @@ WHERE  id IN ( $groupIDs )
    *   run the function exactly once for all groups.
    */
   public static function remove($groupID = NULL, $onceOnly = TRUE) {
+    return;
     static $invoked = FALSE;
 
     // typically this needs to happy only once per instance
@@ -498,6 +499,7 @@ WHERE  id = %1
    * ideal.
    */
   public static function opportunisticCacheFlush() {
+    return;
     if (Civi::settings()->get('smart_group_cache_refresh_mode') == 'opportunistic') {
       self::flushCaches();
     }

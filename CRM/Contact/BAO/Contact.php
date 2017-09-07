@@ -980,7 +980,7 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
    * @param bool $isTrashed
    */
   public static function updateContactCache($contactID, $isTrashed = FALSE) {
-
+    return;
     if ($isTrashed) {
       CRM_Contact_BAO_GroupContactCache::removeContact($contactID);
       // This has been moved to here from CRM_Contact_BAO_Contact_Permission as that was causing

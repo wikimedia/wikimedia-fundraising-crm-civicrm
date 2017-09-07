@@ -142,6 +142,7 @@ WHERE contact_id = %1
    * Deletes all the cache entries.
    */
   public static function resetCache() {
+    return;
     // reset any static caching
     self::$_cache = NULL;
 
