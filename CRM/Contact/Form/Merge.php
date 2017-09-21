@@ -78,7 +78,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       $this->_rgid = CRM_Utils_Request::retrieve('rgid', 'Positive', $this, FALSE);
       $this->_gid = $gid = CRM_Utils_Request::retrieve('gid', 'Positive', $this, FALSE);
       $this->_mergeId = CRM_Utils_Request::retrieve('mergeId', 'Positive', $this, FALSE);
-      $this->limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this, FALSE);
+      $this->limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this, FALSE, 500);
       $this->criteria = CRM_Utils_Request::retrieve('criteria', 'String', $this, FALSE, '{}');
 
       $urlParams = "reset=1&rgid={$this->_rgid}&gid={$this->_gid}&limit=" . $this->limit . '&criteria=' . $this->criteria;
