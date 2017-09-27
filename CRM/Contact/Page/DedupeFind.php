@@ -157,7 +157,7 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
         CRM_Dedupe_Merger::resetMergeStats($cacheKeyString);
       }
 
-      $this->_mainContacts = CRM_Dedupe_Merger::getDuplicatePairs($rgid, $gid, !$isConflictMode, 0, $isConflictMode, '', $isConflictMode, $criteria, TRUE);
+      $this->_mainContacts = CRM_Dedupe_Merger::getDuplicatePairs($rgid, $gid, !$isConflictMode, 0, $isConflictMode, '', $isConflictMode, $criteria, TRUE, $limit);
 
       if (empty($this->_mainContacts)) {
         if ($isConflictMode) {
