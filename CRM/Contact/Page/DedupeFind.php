@@ -64,6 +64,7 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
     $rgid = CRM_Utils_Request::retrieve('rgid', 'Positive', $this);
     $cid = CRM_Utils_Request::retrieve('cid', 'Positive', $this, FALSE, 0);
     $criteria = CRM_Utils_Request::retrieve('criteria', 'String', $this, FALSE, '{}');
+    $isSelected = CRM_Utils_Request::retrieve('is_selected', 'Int', $this, FALSE, 2);
     $this->assign('criteria', $criteria);
 
     $isConflictMode = ($context == 'conflicts');
@@ -141,9 +142,6 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
       $this->action = CRM_Core_Action::UPDATE;
 
       $urlQry['snippet'] = 4;
-      if ($isConflictMode) {
-        $urlQry['selected'] = 1;
-      }
 
       $this->assign('sourceUrl', CRM_Utils_System::url('civicrm/ajax/dedupefind', $urlQry, FALSE, NULL, FALSE));
 
@@ -157,7 +155,7 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
         CRM_Dedupe_Merger::resetMergeStats($cacheKeyString);
       }
 
-      $this->_mainContacts = CRM_Dedupe_Merger::getDuplicatePairs($rgid, $gid, !$isConflictMode, 0, $isConflictMode, '', $isConflictMode, $criteria, TRUE, $limit);
+      $this->_mainContacts = CRM_Dedupe_Merger::getDuplicatePairs($rgid, $gid, !$isConflictMode, 0, $isSelected, '', $isConflictMode, $criteria, TRUE, $limit);
 
       if (empty($this->_mainContacts)) {
         if ($isConflictMode) {

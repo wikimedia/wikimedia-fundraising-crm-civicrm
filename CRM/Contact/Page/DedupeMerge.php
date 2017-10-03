@@ -88,11 +88,11 @@ class CRM_Contact_Page_DedupeMerge extends CRM_Core_Page {
     $where = NULL;
     if ($action == CRM_Core_Action::MAP) {
       $where = "pn.is_selected = 1";
-      $isSelected = 1;
+      $urlQry['is_selected'] = 1;
     }
     else {
       // else merge all (2)
-      $isSelected = 2;
+      $urlQry['is_selected'] = 2;
     }
 
     $total  = CRM_Core_BAO_PrevNextCache::getCount($cacheKeyString, NULL, $where);
@@ -107,7 +107,7 @@ class CRM_Contact_Page_DedupeMerge extends CRM_Core_Page {
     for ($i = 1; $i <= ceil($total / self::BATCHLIMIT); $i++) {
       $task  = new CRM_Queue_Task(
         array('CRM_Contact_Page_DedupeMerge', 'callBatchMerge'),
-        array($rgid, $gid, $mode, self::BATCHLIMIT, $isSelected),
+        array($rgid, $gid, $mode, self::BATCHLIMIT, $urlQry['is_selected']),
         "Processed " . $i * self::BATCHLIMIT . " pair of duplicates out of " . $total
       );
 
