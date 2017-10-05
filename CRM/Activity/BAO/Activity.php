@@ -1105,7 +1105,8 @@ ORDER BY    fixed_sort_order
         }
       }
     }
-
+    CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS {$activityTempTable}");
+    CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS {$activityContactTempTable}");
     return $values;
   }
 

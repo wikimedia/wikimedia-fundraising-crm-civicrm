@@ -85,7 +85,7 @@ class CRM_Dedupe_Finder {
     while ($dao->fetch()) {
       $dupes[] = array($dao->id1, $dao->id2, $dao->weight);
     }
-    $dao->query($rgBao->tableDropQuery());
+    $rgBao->tableDropQuery();
 
     return $dupes;
   }
@@ -156,7 +156,7 @@ class CRM_Dedupe_Finder {
         $dupes[] = $dao->id;
       }
     }
-    $dao->query($rgBao->tableDropQuery());
+    $rgBao->tableDropQuery();
     return array_diff($dupes, $except);
   }
 

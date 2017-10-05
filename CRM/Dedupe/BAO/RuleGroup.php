@@ -133,7 +133,9 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
    * Return the SQL query for dropping the temporary table.
    */
   public function tableDropQuery() {
-    return 'DROP TEMPORARY TABLE IF EXISTS dedupe';
+    CRM_Core_DAO::executeQuery( 'DROP TEMPORARY TABLE IF EXISTS dedupe');
+    CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS dedupe_copy");
+    CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS dedupe_copy2");
   }
 
   /**

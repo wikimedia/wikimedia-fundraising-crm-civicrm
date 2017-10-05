@@ -120,6 +120,7 @@ INNER JOIN srcMailing_$sourceMailingId temp_mr ON temp_mr.mailing_recipient_id =
 SET mr.mailing_id = $newMailingID
      ";
     CRM_Core_DAO::executeQuery($sql);
+    CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS  srcMailing_$sourceMailingId");
   }
 
   /**
