@@ -189,7 +189,7 @@
         }
         // for action column at the last, set nowrap
         $('td:last', row).attr('nowrap','nowrap');
-        // for conflcts column
+        // for conflicts column
         var col = CRM.$('table#dupePairs thead th.crm-contact-conflicts').index();
         $('td:eq(' + col + ')', row).attr('nowrap','nowrap');
       }
@@ -334,8 +334,10 @@
     else {
       var id = [];
       CRM.$(element).each(function() {
-        var sth = CRM.$('input.crm-dedupe-select', this);
-        id.push(CRM.$(sth).prop('name').substr(5));
+        var pnName = CRM.$('input.crm-dedupe-select', this).prop('name');
+        if (pnName !== undefined) {
+          id.push(pnName.substr(5));
+        }
       });
       var is_selected = CRM.$('.crm-dedupe-select-all').prop('checked') ? 1 : 0;
     }
