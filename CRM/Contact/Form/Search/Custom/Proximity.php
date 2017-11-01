@@ -54,27 +54,8 @@ class CRM_Contact_Form_Search_Custom_Proximity extends CRM_Contact_Form_Search_C
     unset($this->_formValues['operator']);
 
     if (!empty($this->_formValues)) {
-      // add the country and state
-      if (!empty($this->_formValues['country_id'])) {
-        $this->_formValues['country'] = CRM_Core_PseudoConstant::country($this->_formValues['country_id']);
-      }
-
-      if (!empty($this->_formValues['state_province_id'])) {
-        $this->_formValues['state_province'] = CRM_Core_PseudoConstant::stateProvince($this->_formValues['state_province_id']);
-      }
-
-      // use the address to get the latitude and longitude
-      CRM_Utils_Geocode_Google::format($this->_formValues);
-
-      if (!is_numeric(CRM_Utils_Array::value('geo_code_1', $this->_formValues)) ||
-        !is_numeric(CRM_Utils_Array::value('geo_code_2', $this->_formValues)) ||
-        !isset($this->_formValues['distance'])
-      ) {
-        CRM_Core_Error::fatal(ts('Could not geocode input'));
-      }
-
-      $this->_latitude = $this->_formValues['geo_code_1'];
-      $this->_longitude = $this->_formValues['geo_code_2'];
+      $this->_latitude = $this->_formValues['geocode_1'];
+      $this->_longitude = $this->_formValues['geocode_2'];
 
       if ($this->_formValues['prox_distance_unit'] == "miles") {
         $conversionFactor = 1609.344;
@@ -111,29 +92,9 @@ class CRM_Contact_Form_Search_Custom_Proximity extends CRM_Contact_Form_Search_C
     $proxUnits = array('km' => ts('km'), 'miles' => ts('miles'));
     $form->add('select', 'prox_distance_unit', ts('Units'), $proxUnits, TRUE);
 
-    $form->add('text',
-      'street_address',
-      ts('Street Address')
-    );
+    $form->add('text', 'geocode_1', ts('Latitude'), NULL, TRUE);
 
-    $form->add('text',
-      'city',
-      ts('City')
-    );
-
-    $form->add('text',
-      'postal_code',
-      ts('Postal Code')
-    );
-
-    $defaults = array();
-    if ($countryDefault) {
-      $defaults['country_id'] = $countryDefault;
-    }
-    $form->addChainSelect('state_province_id');
-
-    $country = array('' => ts('- select -')) + CRM_Core_PseudoConstant::country();
-    $form->add('select', 'country_id', ts('Country'), $country, TRUE, array('class' => 'crm-select2'));
+    $form->add('text', 'geocode_2', ts('Longitude'), NULL, TRUE);
 
     $group = array('' => ts('- any group -')) + CRM_Core_PseudoConstant::nestedGroup();
     $form->addElement('select', 'group', ts('Group'), $group, array('class' => 'crm-select2 huge'));
@@ -153,11 +114,8 @@ class CRM_Contact_Form_Search_Custom_Proximity extends CRM_Contact_Form_Search_C
     $form->assign('elements', array(
       'distance',
       'prox_distance_unit',
-      'street_address',
-      'city',
-      'postal_code',
-      'country_id',
-      'state_province_id',
+      'geocode_1',
+      'geocode_2',
       'group',
       'tag',
     ));
