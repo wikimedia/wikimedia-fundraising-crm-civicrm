@@ -151,16 +151,11 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
       $params['source'] = $params['contact_source'];
     }
 
-    // Fix for preferred communication method.
-    $prefComm = CRM_Utils_Array::value('preferred_communication_method', $params, '');
-    if ($prefComm && is_array($prefComm)) {
+    if (isset($params['preferred_communication_method']) && is_array($params['preferred_communication_method'])) {
+      CRM_Utils_Array::formatArrayKeys($params['preferred_communication_method']);
+      $contact->preferred_communication_method = CRM_Utils_Array::implodePadded($params['preferred_communication_method']);
       unset($params['preferred_communication_method']);
-
-      CRM_Utils_Array::formatArrayKeys($prefComm);
-      $prefComm = CRM_Utils_Array::implodePadded($prefComm);
     }
-
-    $contact->preferred_communication_method = $prefComm;
 
     $allNull = $contact->copyValues($params);
 
@@ -183,6 +178,12 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
         $allNull = FALSE;
         $contact->display_name = $contact->sort_name = CRM_Utils_Array::value('organization_name', $params, '');
       }
+    }
+    if (strlen($contact->display_name) > 128) {
+      $contact->display_name = substr($contact->display_name, 0, 128);
+    }
+    if (strlen($contact->sort_name) > 128) {
+      $contact->sort_name = substr($contact->sort_name, 0, 128);
     }
 
     $privacy = CRM_Utils_Array::value('privacy', $params);
@@ -286,7 +287,7 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
       }
     }
 
-    $config = CRM_Core_Config::singleton();
+    self::ensureGreetingParamsAreSet($params);
 
     // CRM-6942: set preferred language to the current language if it’s unset (and we’re creating a contact).
     if (empty($params['contact_id'])) {
@@ -295,15 +296,10 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
         $params['preferred_language'] = $language;
       }
 
-      // CRM-9739: set greeting & addressee if unset and we’re creating a contact.
-      foreach (self::$_greetingTypes as $greeting) {
-        if (empty($params[$greeting . '_id'])) {
-          if ($defaultGreetingTypeId
-            = CRM_Contact_BAO_Contact_Utils::defaultGreeting($params['contact_type'], $greeting)
-          ) {
-            $params[$greeting . '_id'] = $defaultGreetingTypeId;
-          }
-        }
+      // CRM-21041: set default 'Communication Style' if unset when creating a contact.
+      if (empty($params['communication_style_id'])) {
+        $defaultCommunicationStyleId = CRM_Core_OptionGroup::values('communication_style', TRUE, NULL, NULL, 'AND is_default = 1');
+        $params['communication_style_id'] = array_pop($defaultCommunicationStyleId);
       }
     }
 
@@ -448,6 +444,53 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
   }
 
   /**
+   * Ensure greeting parameters are set.
+   *
+   * By always populating greetings here we can be sure they are set if required & avoid a call later.
+   * (ie. knowing we have definitely tried disambiguates between NULL & not loaded.)
+   *
+   * @param array $params
+   */
+  public static function ensureGreetingParamsAreSet(&$params) {
+    $allGreetingParams = array('addressee' => 'addressee_id', 'postal_greeting' => 'postal_greeting_id', 'email_greeting' => 'email_greeting_id');
+    $missingGreetingParams = array();
+
+    foreach ($allGreetingParams as $greetingIndex => $greetingParam) {
+      if (empty($params[$greetingParam])) {
+        $missingGreetingParams[$greetingIndex] = $greetingParam;
+      }
+    }
+
+    if (!empty($params['contact_id']) && !empty($missingGreetingParams)) {
+      $savedGreetings = civicrm_api3('Contact', 'getsingle', array(
+          'id' => $params['contact_id'],
+          'return' => array_keys($missingGreetingParams))
+      );
+
+      foreach (array_keys($missingGreetingParams) as $missingGreetingParam) {
+        if (!empty($savedGreetings[$missingGreetingParam . '_custom'])) {
+          $missingGreetingParams[$missingGreetingParam . '_custom'] = $missingGreetingParam . '_custom';
+        }
+      }
+      // Filter out other fields.
+      $savedGreetings = array_intersect_key($savedGreetings, array_flip($missingGreetingParams));
+      $params = array_merge($params, $savedGreetings);
+    }
+    else {
+      foreach ($missingGreetingParams as $greetingName => $greeting) {
+        $params[$greeting] = CRM_Contact_BAO_Contact_Utils::defaultGreeting($params['contact_type'], $greetingName);
+      }
+    }
+
+    foreach ($allGreetingParams as $greetingIndex => $greetingParam) {
+      if ($params[$greetingParam] === 'null') {
+        //  If we are setting it to null then null out the display field.
+        $params[$greetingIndex . '_display'] = 'null';
+      }
+    }
+  }
+
+  /**
    * Get the display name and image of a contact.
    *
    * @param int $id
@@ -472,10 +515,10 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
     $dao->query($sql);
     if ($dao->fetch()) {
       $image = CRM_Contact_BAO_Contact_Utils::getImage($dao->contact_sub_type ?
-          $dao->contact_sub_type : $dao->contact_type, FALSE, $id
+        $dao->contact_sub_type : $dao->contact_type, FALSE, $id
       );
       $imageUrl = CRM_Contact_BAO_Contact_Utils::getImage($dao->contact_sub_type ?
-          $dao->contact_sub_type : $dao->contact_type, TRUE, $id
+        $dao->contact_sub_type : $dao->contact_type, TRUE, $id
       );
 
       // use email if display_name is empty
@@ -849,7 +892,7 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
     // make sure we have edit permission for this contact
     // before we delete
     if ($checkPermissions && (($skipUndelete && !CRM_Core_Permission::check('delete contacts')) ||
-      ($restore && !CRM_Core_Permission::check('access deleted contacts')))
+        ($restore && !CRM_Core_Permission::check('access deleted contacts')))
     ) {
       return FALSE;
     }
@@ -1457,10 +1500,10 @@ WHERE id={$id}; ";
 
         // The fields are meant for contact types.
         if (in_array($contactType, array(
-          'Individual',
-          'Household',
-          'Organization',
-          'All',
+            'Individual',
+            'Household',
+            'Organization',
+            'All',
           )
         )) {
           $fields = array_merge($fields, CRM_Core_OptionValue::getFields('', $contactType));
@@ -2683,6 +2726,31 @@ AND       civicrm_openid.is_primary = 1";
   }
 
   /**
+   * Update contact greetings if an update has resulted in a custom field change.
+   *
+   * @param array $updatedFields
+   *   Array of fields that have been updated e.g array('first_name', 'prefix_id', 'custom_2');
+   * @param array $contactParams
+   *   Parameters known about the contact. At minimum array('contact_id' => x).
+   *   Fields in this array will take precedence over DB fields (so far only
+   *   in the case of greeting id fields).
+   */
+  public static function updateGreetingsOnTokenFieldChange($updatedFields, $contactParams) {
+    $contactID = $contactParams['contact_id'];
+    CRM_Contact_BAO_Contact::ensureGreetingParamsAreSet($contactParams);
+    $tokens = CRM_Contact_BAO_Contact_Utils::getTokensRequiredForContactGreetings($contactParams);
+    if (!empty($tokens['all']['contact'])) {
+      $affectedTokens = array_intersect_key($updatedFields[$contactID], array_flip($tokens['all']['contact']));
+      if (!empty($affectedTokens)) {
+        // @todo this is still reloading the whole contact -fix to be more selective & use pre-loaded.
+        $contact = new CRM_Contact_BAO_Contact();
+        $contact->id = $contactID;
+        CRM_Contact_BAO_Contact::processGreetings($contact);
+      }
+    }
+  }
+
+  /**
    * Process greetings and cache.
    *
    * @param object $contact
@@ -2690,10 +2758,14 @@ AND       civicrm_openid.is_primary = 1";
    */
   public static function processGreetings(&$contact) {
 
-    // note that contact object not always has required greeting related
-    // fields that are required to calculate greeting and
-    // also other fields used in tokens etc,
-    // hence we need to retrieve it again.
+    //@todo this function does a lot of unnecessary loading.
+    // ensureGreetingParamsAreSet now makes sure that the contact is
+    // loaded and using updateGreetingsOnTokenFieldChange
+    // allows us the possibility of only doing an update if required.
+
+    // The contact object has not always required the
+    // fields that are required to calculate greetings
+    // so we need to retrieve it again.
     if ($contact->_query !== FALSE) {
       $contact->find(TRUE);
     }
@@ -3220,8 +3292,8 @@ AND       civicrm_openid.is_primary = 1";
       // if still user does not have required permissions, check acl.
       if (!$hasAllPermissions && $menuOptions['ref'] != 'delete-contact') {
         if (in_array($menuOptions['ref'], $aclPermissionedTasks) &&
-            $corePermission == CRM_Core_Permission::EDIT
-            ) {
+          $corePermission == CRM_Core_Permission::EDIT
+        ) {
           $hasAllPermissions = TRUE;
         }
         elseif (in_array($menuOptions['ref'], array(

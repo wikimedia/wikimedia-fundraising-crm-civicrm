@@ -1061,6 +1061,10 @@ class CRM_Contact_DAO_Contact extends CRM_Core_DAO {
           'entity' => 'Contact',
           'bao' => 'CRM_Contact_BAO_Contact',
           'localizable' => 0,
+          'pseudoconstant' => array(
+            'optionGroupName' => 'addressee',
+            'optionEditPath' => 'civicrm/admin/options/addressee',
+          )
         ) ,
         'addressee_custom' => array(
           'name' => 'addressee_custom',
