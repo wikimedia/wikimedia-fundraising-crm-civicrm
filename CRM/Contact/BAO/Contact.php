@@ -2687,15 +2687,8 @@ AND       civicrm_openid.is_primary = 1";
    *
    * @param object $contact
    *   Contact object after save.
-   * @param bool $useDefaults
-   *   Use default greeting values.
    */
-  public static function processGreetings(&$contact, $useDefaults = FALSE) {
-    if ($useDefaults) {
-      //retrieve default greetings
-      $defaultGreetings = CRM_Core_PseudoConstant::greetingDefaults();
-      $contactDefaults = $defaultGreetings[$contact->contact_type];
-    }
+  public static function processGreetings(&$contact) {
 
     // note that contact object not always has required greeting related
     // fields that are required to calculate greeting and
@@ -2729,14 +2722,7 @@ AND       civicrm_openid.is_primary = 1";
       $updateQueryString[] = " email_greeting_custom = NULL ";
     }
     else {
-      if ($useDefaults) {
-        reset($contactDefaults['email_greeting']);
-        $emailGreetingID = key($contactDefaults['email_greeting']);
-        $emailGreetingString = $contactDefaults['email_greeting'][$emailGreetingID];
-        $updateQueryString[] = " email_greeting_id = $emailGreetingID ";
-        $updateQueryString[] = " email_greeting_custom = NULL ";
-      }
-      elseif ($contact->email_greeting_custom) {
+      if ($contact->email_greeting_custom) {
         $updateQueryString[] = " email_greeting_display = NULL ";
       }
     }
@@ -2765,14 +2751,7 @@ AND       civicrm_openid.is_primary = 1";
       $updateQueryString[] = " postal_greeting_custom = NULL ";
     }
     else {
-      if ($useDefaults) {
-        reset($contactDefaults['postal_greeting']);
-        $postalGreetingID = key($contactDefaults['postal_greeting']);
-        $postalGreetingString = $contactDefaults['postal_greeting'][$postalGreetingID];
-        $updateQueryString[] = " postal_greeting_id = $postalGreetingID ";
-        $updateQueryString[] = " postal_greeting_custom = NULL ";
-      }
-      elseif ($contact->postal_greeting_custom) {
+      if ($contact->postal_greeting_custom) {
         $updateQueryString[] = " postal_greeting_display = NULL ";
       }
     }
@@ -2802,14 +2781,7 @@ AND       civicrm_openid.is_primary = 1";
       $updateQueryString[] = " addressee_custom = NULL ";
     }
     else {
-      if ($useDefaults) {
-        reset($contactDefaults['addressee']);
-        $addresseeID = key($contactDefaults['addressee']);
-        $addresseeString = $contactDefaults['addressee'][$addresseeID];
-        $updateQueryString[] = " addressee_id = $addresseeID ";
-        $updateQueryString[] = " addressee_custom = NULL ";
-      }
-      elseif ($contact->addressee_custom) {
+      if ($contact->addressee_custom) {
         $updateQueryString[] = " addressee_display = NULL ";
       }
     }
