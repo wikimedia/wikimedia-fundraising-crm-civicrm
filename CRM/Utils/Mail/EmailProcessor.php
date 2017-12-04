@@ -176,6 +176,7 @@ class CRM_Utils_Mail_EmailProcessor {
     // process fifty at a time, CRM-4002
     while ($mails = $store->fetchNext(MAIL_BATCH_SIZE)) {
       foreach ($mails as $key => $mail) {
+        watchdog('EmailProcessor', "Processing email: $key", array(), WATCHDOG_DEBUG);
 
         // for every addressee: match address elements if it's to CiviMail
         $matches = array();
