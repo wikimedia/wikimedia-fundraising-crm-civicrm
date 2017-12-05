@@ -177,6 +177,8 @@ class CRM_Utils_Mail_EmailProcessor {
     while ($mails = $store->fetchNext(MAIL_BATCH_SIZE)) {
       foreach ($mails as $key => $mail) {
         watchdog('EmailProcessor', "Processing email: $key", array(), WATCHDOG_DEBUG);
+        $messageId = $mail->getHeader('Message-ID');
+        watchdog('EmailProcessor', "With message ID: $messageId", array(), WATCHDOG_DEBUG);
 
         // for every addressee: match address elements if it's to CiviMail
         $matches = array();
@@ -322,7 +324,7 @@ class CRM_Utils_Mail_EmailProcessor {
                     $text = $part->text;
                   }
                   elseif (($part = $mail->body->getReadablePart()) != NULL) {
-                    watchdog('EmailProcessor', "Part is not DeliveryStatus but supposedly has ReadablePart", array(), WATCHDOG_DEBUG);
+                    watchdog('EmailProcessor', "Part is not DeliveryStatus but supposedly has ReadablePart: " . print_r($part, true), array(), WATCHDOG_DEBUG);
                     $text = $part->text;
                   }
                 }
