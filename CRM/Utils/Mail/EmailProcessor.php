@@ -452,7 +452,7 @@ class CRM_Utils_Mail_EmailProcessor {
           $text = $part->text;
         }
         elseif ($part instanceof ezcMailMultipart) {
-          $text = self::getTextFromMultipart($part);
+          $text = self::getTextFromMultipart($part, $recursionLevel);
         }
         if ($text) {
           break;
