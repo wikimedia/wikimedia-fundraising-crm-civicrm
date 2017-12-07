@@ -176,9 +176,6 @@ class CRM_Utils_Mail_EmailProcessor {
     // process fifty at a time, CRM-4002
     while ($mails = $store->fetchNext(MAIL_BATCH_SIZE)) {
       foreach ($mails as $key => $mail) {
-        watchdog('EmailProcessor', "Processing email: $key", array(), WATCHDOG_DEBUG);
-        $messageId = $mail->getHeader('Message-ID');
-        watchdog('EmailProcessor', "With message ID: $messageId", array(), WATCHDOG_DEBUG);
 
         // for every addressee: match address elements if it's to CiviMail
         $matches = array();
@@ -186,7 +183,6 @@ class CRM_Utils_Mail_EmailProcessor {
 
         if ($usedfor == 1) {
           foreach ($mail->to as $address) {
-            watchdog('EmailProcessor', "With address: $address", array(), WATCHDOG_DEBUG);
             if (preg_match($regex, $address->email, $matches)) {
               list($match, $action, $job, $queue, $hash) = $matches;
               break;
@@ -276,7 +272,6 @@ class CRM_Utils_Mail_EmailProcessor {
         // get $replyTo from either the Reply-To header or from From
         // FIXME: make sure it works with Reply-Tos containing non-email stuff
         $replyTo = $mail->getHeader('Reply-To') ? $mail->getHeader('Reply-To') : $mail->from->email;
-        watchdog('EmailProcessor', "With Reply-To: $replyTo", array(), WATCHDOG_DEBUG);
 
         // handle the action by passing it to the proper API call
         // FIXME: leave only one-letter cases when dropping legacy support
@@ -291,11 +286,9 @@ class CRM_Utils_Mail_EmailProcessor {
                 $text = $mail->body->text;
               }
               elseif ($mail->body instanceof ezcMailMultipart) {
-                watchdog('EmailProcessor', "Body is multipart", array(), WATCHDOG_DEBUG);
                 if ($mail->body instanceof ezcMailMultipartReport) {
                   $part = $mail->body->getMachinePart();
                   if ($part instanceof ezcMailDeliveryStatus) {
-                    watchdog('EmailProcessor', "Part is DeliveryStatus", array(), WATCHDOG_DEBUG);
                     foreach ($part->recipients as $rec) {
                       if (isset($rec["Diagnostic-Code"])) {
                         $text = $rec["Diagnostic-Code"];
@@ -320,17 +313,14 @@ class CRM_Utils_Mail_EmailProcessor {
                     }
                   }
                   elseif ($part != NULL and isset($part->text)) {
-                    watchdog('EmailProcessor', "Part is not DeliveryStatus but has text", array(), WATCHDOG_DEBUG);
                     $text = $part->text;
                   }
                   elseif (($part = $mail->body->getReadablePart()) != NULL) {
-                    watchdog('EmailProcessor', "Part is not DeliveryStatus but supposedly has ReadablePart: " . print_r($part, true), array(), WATCHDOG_DEBUG);
                     $text = $part->text;
                   }
                 }
                 elseif ($mail->body instanceof ezcMailMultipartRelated) {
                   foreach ($mail->body->getRelatedParts() as $part) {
-                    watchdog('EmailProcessor', "Looking at related part", array(), WATCHDOG_DEBUG);
                     if (isset($part->subType) and $part->subType == 'plain') {
                       $text = $part->text;
                       break;
@@ -340,7 +330,6 @@ class CRM_Utils_Mail_EmailProcessor {
                 else {
                   foreach ($mail->body->getParts() as $part) {
                     if (isset($part->subType) and $part->subType == 'plain') {
-                      watchdog('EmailProcessor', "Part subtype is plain", array(), WATCHDOG_DEBUG);
                       $text = $part->text;
                       break;
                     }
