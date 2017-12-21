@@ -104,7 +104,7 @@ class Log_observer
             if ($newstyle) {
                 $object = new $class($priority, $conf);
             } else {
-                $object = &new $class($priority);
+                $object = new $class($priority);
             }
             return $object;
         }
