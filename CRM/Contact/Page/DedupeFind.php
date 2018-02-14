@@ -63,10 +63,8 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
     $limit = CRM_Utils_Request::retrieve('limit', 'Integer', $this);
     $rgid = CRM_Utils_Request::retrieve('rgid', 'Positive', $this);
     $cid = CRM_Utils_Request::retrieve('cid', 'Positive', $this, FALSE, 0);
-    $criteria = CRM_Utils_Request::retrieve('criteria', 'String', $this, FALSE, '{}');
-    $isSelected = CRM_Utils_Request::retrieve('is_selected', 'Int', $this, FALSE, 2);
-    $this->assign('criteria', $criteria);
-
+    // Using a placeholder for criteria as it is intended to be able to pass this later.
+    $criteria = array();
     $isConflictMode = ($context == 'conflicts');
     if ($cid) {
       $this->_cid = $cid;
@@ -81,10 +79,8 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
       'rgid' => $rgid,
       'gid' => $gid,
       'limit' => $limit,
-      'criteria' => $criteria,
     );
     $this->assign('urlQuery', CRM_Utils_System::makeQueryString($urlQry));
-    $criteria = json_decode($criteria, TRUE);
 
     if ($context == 'search') {
       $context = 'search';
@@ -142,20 +138,25 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
       $this->action = CRM_Core_Action::UPDATE;
 
       $urlQry['snippet'] = 4;
+      if ($isConflictMode) {
+        $urlQry['selected'] = 1;
+      }
 
       $this->assign('sourceUrl', CRM_Utils_System::url('civicrm/ajax/dedupefind', $urlQry, FALSE, NULL, FALSE));
 
       //reload from cache table
       $cacheKeyString = CRM_Dedupe_Merger::getMergeCacheKeyString($rgid, $gid, $criteria);
 
-      $stats = CRM_Dedupe_Merger::getMergeStatsMsg($cacheKeyString);
+      $stats = CRM_Dedupe_Merger::getMergeStats($cacheKeyString);
       if ($stats) {
-        CRM_Core_Session::setStatus($stats);
+        $message = CRM_Dedupe_Merger::getMergeStatsMsg($stats);
+        $status = empty($stats['skipped']) ? 'success' : 'alert';
+        CRM_Core_Session::setStatus($message, ts('Batch Complete'), $status, array('expires' => 0));
         // reset so we not displaying same message again
         CRM_Dedupe_Merger::resetMergeStats($cacheKeyString);
       }
 
-      $this->_mainContacts = CRM_Dedupe_Merger::getDuplicatePairs($rgid, $gid, !$isConflictMode, 0, $isSelected, '', $isConflictMode, $criteria, TRUE, $limit);
+      $this->_mainContacts = CRM_Dedupe_Merger::getDuplicatePairs($rgid, $gid, !$isConflictMode, 0, $isConflictMode, '', $isConflictMode, $criteria, TRUE);
 
       if (empty($this->_mainContacts)) {
         if ($isConflictMode) {

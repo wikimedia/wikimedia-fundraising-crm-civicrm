@@ -58,10 +58,12 @@ class CRM_Contact_Form_DedupeRules extends CRM_Admin_Form {
     }
     $this->_options = CRM_Core_SelectValues::getDedupeRuleTypes();
     $this->_rgid = CRM_Utils_Request::retrieve('id', 'Positive', $this, FALSE, 0);
-    $contactTypes = civicrm_api3('Contact', 'getOptions', array('field' => "contact_type"));
+
+    // check if $contactType is valid
+    $contactTypes = civicrm_api3('Contact', 'getOptions', array('field' => "contact_type", 'context' => "validate"));
     $contactType = CRM_Utils_Request::retrieve('contact_type', 'String', $this, FALSE, 0);
-    if (in_array($contactType, $contactTypes['values'])) {
-      $this->_contactType = $contactTypes['values'][$contactType];
+    if (CRM_Utils_Array::value($contactType, $contactTypes['values'])) {
+      $this->_contactType = $contactType;
     }
     elseif (!empty($contactType)) {
       throw new CRM_Core_Exception('Contact Type is Not valid');
@@ -163,7 +165,11 @@ class CRM_Contact_Form_DedupeRules extends CRM_Admin_Form {
       }
     }
     if (empty($fields['threshold'])) {
-      $errors['threshold'] = ts('Threshold weight cannot be empty or zero.');
+      // CRM-20607 - Don't validate the threshold of hard-coded rules
+      if (!(CRM_Utils_Array::value('is_reserved', $fields) &&
+        CRM_Utils_File::isIncludable("CRM/Dedupe/BAO/QueryBuilder/{$self->_defaultValues['name']}.php"))) {
+        $errors['threshold'] = ts('Threshold weight cannot be empty or zero.');
+      }
     }
 
     if (!$fieldSelected) {

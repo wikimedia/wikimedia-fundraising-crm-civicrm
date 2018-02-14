@@ -25,7 +25,7 @@
   <td>{$form.contact_type.label}&nbsp;&nbsp;{$form.contact_type.html}<br></td>
   <td>
     {if $form.deleted_contacts}
-    {$form.deleted_contacts.html}&nbsp;&nbsp;{$form.deleted_contacts.label}
+      {$form.deleted_contacts.html}&nbsp;&nbsp;{$form.deleted_contacts.label}
     {/if}
-   </td>
+  </td>
 </tr>

@@ -388,6 +388,7 @@ class CRM_Contact_Page_AJAX {
       }
 
       if ($queryString) {
+        $result = array();
         $offset = CRM_Utils_Array::value('offset', $_GET, 0);
         $rowCount = Civi::settings()->get('search_autocomplete_count');
 
@@ -450,9 +451,7 @@ LIMIT {$offset}, {$rowCount}
             );
           }
         }
-        if ($result) {
-          CRM_Utils_JSON::output($result);
-        }
+        CRM_Utils_JSON::output($result);
       }
     }
     CRM_Utils_System::civiExit();
@@ -483,6 +482,7 @@ LIMIT {$offset}, {$rowCount}
     }
 
     if ($queryString) {
+      $result = array();
       $offset = CRM_Utils_Array::value('offset', $_GET, 0);
       $rowCount = CRM_Utils_Array::value('rowcount', $_GET, 20);
 
@@ -519,9 +519,6 @@ LIMIT {$offset}, {$rowCount}
           'id' => (CRM_Utils_Array::value('id', $_GET)) ? "{$dao->id}::{$dao->phone}" : '"' . $dao->name . '" <' . $dao->phone . '>',
         );
       }
-    }
-
-    if ($result) {
       CRM_Utils_JSON::output($result);
     }
     CRM_Utils_System::civiExit();
@@ -649,16 +646,13 @@ LIMIT {$offset}, {$rowCount}
 
     $gid = CRM_Utils_Request::retrieve('gid', 'Positive');
     $rgid = CRM_Utils_Request::retrieve('rgid', 'Positive');
-    $null = NULL;
-    $criteria = CRM_Utils_Request::retrieve('criteria', 'String', $null, FALSE, '{}');
     $selected    = isset($_REQUEST['selected']) ? CRM_Utils_Type::escape($_REQUEST['selected'], 'Integer') : 0;
     if ($rowCount < 0) {
       $rowCount = 0;
     }
 
     $whereClause = $orderByClause = '';
-    $cacheKeyString   = CRM_Dedupe_Merger::getMergeCacheKeyString($rgid, $gid, json_decode($criteria, TRUE));
-
+    $cacheKeyString   = CRM_Dedupe_Merger::getMergeCacheKeyString($rgid, $gid);
     $searchRows       = array();
 
     $searchParams = self::getSearchOptionsFromRequest();
@@ -814,7 +808,7 @@ LIMIT {$offset}, {$rowCount}
       $searchRows[$count]['weight'] = CRM_Utils_Array::value('weight', $pair);
 
       if (!empty($pairInfo['data']['canMerge'])) {
-        $mergeParams = "reset=1&cid={$pairInfo['entity_id1']}&oid={$pairInfo['entity_id2']}&action=update&rgid={$rgid}&criteria={$criteria}&limit=" . CRM_Utils_Request::retrieve('limit', 'Integer');
+        $mergeParams = "reset=1&cid={$pairInfo['entity_id1']}&oid={$pairInfo['entity_id2']}&action=update&rgid={$rgid}&limit=" . CRM_Utils_Request::retrieve('limit', 'Integer');
         if ($gid) {
           $mergeParams .= "&gid={$gid}";
         }
@@ -1013,9 +1007,8 @@ LIMIT {$offset}, {$rowCount}
     $gid  = CRM_Utils_Type::escape($_REQUEST['gid'], 'Integer');
     $pnid = $_REQUEST['pnid'];
     $isSelected = CRM_Utils_Type::escape($_REQUEST['is_selected'], 'Boolean');
-    $criteria = CRM_Utils_Request::retrieve('criteria', 'String', $null, FALSE, '{}');
 
-    $cacheKeyString = CRM_Dedupe_Merger::getMergeCacheKeyString($rgid, $gid, json_decode($criteria, TRUE));
+    $cacheKeyString = CRM_Dedupe_Merger::getMergeCacheKeyString($rgid, $gid);
 
     $params = array(
       1 => array($isSelected, 'Boolean'),

@@ -829,7 +829,6 @@ class DB_mysql extends DB_common
                                       'DELETE FROM \1 WHERE 1=1', $query);
             }
         }
-        $query = parent::modifyQuery($query);
         return $query;
     }
 

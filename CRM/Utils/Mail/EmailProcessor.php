@@ -35,12 +35,13 @@
 // before the 4.1 release
 define('EMAIL_ACTIVITY_TYPE_ID', NULL);
 define('MAIL_BATCH_SIZE', 50);
-define('MAIL_MAX_RECURSION', 10);
 
 /**
  * Class CRM_Utils_Mail_EmailProcessor.
  */
 class CRM_Utils_Mail_EmailProcessor {
+
+  const MIME_MAX_RECURSION = 10;
 
   /**
    * Process the default mailbox (ie. that is used by civiMail for the bounce)
@@ -99,7 +100,7 @@ class CRM_Utils_Mail_EmailProcessor {
     $found = FALSE;
     while ($dao->fetch()) {
       $found = TRUE;
-      self::_process(FALSE, $dao, $is_create_activities);
+      self::_process(FALSE, $dao, TRUE);
     }
     if (!$found) {
       CRM_Core_Error::fatal(ts('No mailboxes have been configured for Email to Activity Processing'));
@@ -137,7 +138,7 @@ class CRM_Utils_Mail_EmailProcessor {
     $emailActivityTypeId
       = (defined('EMAIL_ACTIVITY_TYPE_ID') && EMAIL_ACTIVITY_TYPE_ID)
       ? EMAIL_ACTIVITY_TYPE_ID
-      : CRM_Core_OptionGroup::getValue('activity_type', 'Inbound Email', 'name');
+      : CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_Activity', 'activity_type_id', 'Inbound Email');
 
     if (!$emailActivityTypeId) {
       CRM_Core_Error::fatal(ts('Could not find a valid Activity Type ID for Inbound Email'));
@@ -435,7 +436,7 @@ class CRM_Utils_Mail_EmailProcessor {
    * @return array
    */
   protected static function getTextFromMultipart($multipart, $recursionLevel = 0) {
-    if ($recursionLevel >= MAIL_MAX_RECURSION) {
+    if ($recursionLevel >= self::MIME_MAX_RECURSION) {
       return NULL;
     }
     $recursionLevel += 1;

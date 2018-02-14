@@ -10,7 +10,7 @@ CiviCRM Team - Atif Shaikh, Coleman Watts, David Greenberg, Eileen McNaughton,
                Yashodha Chaku
 
 AGH Strategies - Andrew Hunt, Tyrell Cook, Nikki Murray
-Agileware - Francis Whittle
+Agileware - Justin Freeman, Francis Whittle, Iris Abarquez, Vaibhav Sagar
 Andrew West
 Aputsiaĸ Niels Janussen
 Aron Novak
@@ -45,7 +45,7 @@ Joanne Chester
 Joe McLaughlin
 John P Kirk
 Joris
-JMA Consulting - Joe Murray, Pradeep Nayak, Edsel Lopez
+JMA Consulting - Joe Murray, Edsel Lopez
 gah242s
 Greenleaf Advancement - Guy Iaccarino
 K Sneed Consulting - Kate Sneed
@@ -60,6 +60,7 @@ Lighthouse Consulting and Design - Brian Shaughnessy
 Marty Wright
 Matthew Wire
 Mattias Michaux
+Megaphone Technology Consulting - Jon Goldberg
 Mohit Aggarwal
 National Urban League - Lisa Taliano
 Nicholai Burton
@@ -68,8 +69,9 @@ New York City Council
 New York State Senate - Ken Zalewski
 Northbridge Digital - Oliver Gibson
 Olaf Buddenhagen
-Palante Technology Cooperative - Jon Goldberg, Joseph Lacey
+Palante Technology Cooperative - Joseph Lacey
 Paul Campbell
+Pradeep Nayak
 Progressive Tech Project - Alice Aguilar, Jamie McClelland
 Richard Van Oosterhout
 RocXa
@@ -102,11 +104,12 @@ Key Contributors and Sponsors for 4.6
 ************************************************
 
 CiviCRM Team - Atif Shaikh, Coleman Watts, David Greenberg, Donald Lobo,
-               Eileen McNaughton, Jitendra Purohit, Josh Gowan, Kurund Jalmi, 
+               Eileen McNaughton, Jitendra Purohit, Josh Gowan, Kurund Jalmi,
                Michael McAndrew, Monish Deb, Rohan Ramesh Katkar, Tim Otten,
                Yashodha Chaku
-ADG Communications - Steve Binkowski  
+ADG Communications - Steve Binkowski
 AGH Strategies - Andrew Hunt, Jane Hanley, Tommy Bobo, Tyrell Cook
+Agileware - Justin Freeman, Francis Whittle, Iris Abarquez, Vaibhav Sagar
 Alex C
 Allan Chappell
 Amnesty International Spain - Carlos Capote

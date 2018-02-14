@@ -10,5 +10,5 @@ UPDATE civicrm_mapping_field SET name = 'contribution_check_number' WHERE name =
 
 -- CRM-20158
 ALTER TABLE `civicrm_financial_trxn`
-  ADD `card_type_id` INT(10) UNSIGNED NULL DEFAULT NULL COMMENT 'FK to accept_creditcard option group values' AFTER payment_instrument_id,
-  ADD pan_truncation VARCHAR( 4 ) NULL DEFAULT NULL COMMENT 'Last 4 digits of credit card.' AFTER check_number;
+  ADD card_type INT( 10 ) UNSIGNED NULL DEFAULT NULL COMMENT 'FK to accept_creditcard option group values' AFTER payment_instrument_id,
+  ADD pan_truncation INT UNSIGNED NULL COMMENT 'Last 4 digits of credit card.' AFTER check_number;

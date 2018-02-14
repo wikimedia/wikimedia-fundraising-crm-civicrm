@@ -4,11 +4,12 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41
+class ComposerStaticInit654ef53d5bbb240cca2697e530d0b585
 {
     public static $files = array (
         'decc78cc4436b1292c6c0d151b19445c' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/bootstrap.php',
         '3919eeb97e98d4648304477f8ef734ba' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
+        '5636a0a89fc28f9cfa8624493b142015' => __DIR__ . '/..' . '/civicrm/civicrm-setup/civicrm-setup-autoload.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -22,6 +23,15 @@ class ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41
         array (
             'PhpOffice\\PhpWord\\' => 18,
             'PhpOffice\\Common\\' => 17,
+        ),
+        'M' => 
+        array (
+            'MJS\\TopSort\\Tests\\' => 18,
+            'MJS\\TopSort\\' => 12,
+        ),
+        'F' => 
+        array (
+            'FontLib\\' => 8,
         ),
         'D' => 
         array (
@@ -53,6 +63,18 @@ class ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41
         'PhpOffice\\Common\\' => 
         array (
             0 => __DIR__ . '/..' . '/phpoffice/common/src/Common',
+        ),
+        'MJS\\TopSort\\Tests\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/marcj/topsort/tests/Tests',
+        ),
+        'MJS\\TopSort\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/marcj/topsort/src',
+        ),
+        'FontLib\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phenx/php-font-lib/src/FontLib',
         ),
         'Dompdf\\' => 
         array (
@@ -106,6 +128,10 @@ class ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41
             array (
                 0 => __DIR__ . '/..' . '/phenx/php-svg-lib/src',
             ),
+            'Sabberworm\\CSS' => 
+            array (
+                0 => __DIR__ . '/..' . '/sabberworm/php-css-parser/lib',
+            ),
         ),
         'P' => 
         array (
@@ -140,10 +166,6 @@ class ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41
         ),
         'F' => 
         array (
-            'FontLib\\' => 
-            array (
-                0 => __DIR__ . '/..' . '/phenx/php-font-lib/src',
-            ),
             'File' => 
             array (
                 0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
@@ -323,10 +345,10 @@ class ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInitf196fc4ad3b92a401f82639a4b453d41::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit654ef53d5bbb240cca2697e530d0b585::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit654ef53d5bbb240cca2697e530d0b585::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit654ef53d5bbb240cca2697e530d0b585::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInit654ef53d5bbb240cca2697e530d0b585::$classMap;
 
         }, null, ClassLoader::class);
     }

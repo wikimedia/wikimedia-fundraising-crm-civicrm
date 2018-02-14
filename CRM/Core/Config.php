@@ -64,6 +64,7 @@ require_once 'api/api.php';
  * @property string $defaultContactStateProvince
  * @property string $monetaryDecimalPoint
  * @property string $monetaryThousandSeparator
+ * @property array fiscalYearStart
  */
 class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
 
@@ -261,6 +262,28 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
   }
 
   /**
+   * Function to get environment.
+   *
+   * @param string $env
+   * @param bool $reset
+   *
+   * @return string
+   */
+  public static function environment($env = NULL, $reset = FALSE) {
+    static $environment;
+    if ($env) {
+      $environment = $env;
+    }
+    if ($reset || empty($environment)) {
+      $environment = Civi::settings()->get('environment');
+    }
+    if (!$environment) {
+      $environment = 'Production';
+    }
+    return $environment;
+  }
+
+  /**
    * Do general cleanup of caches, temp directories and temp tables
    * CRM-8739
    *
@@ -325,13 +348,13 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    */
   public static function clearDBCache() {
     $queries = array(
-      'DELETE FROM civicrm_acl_cache',
-      'DELETE FROM civicrm_acl_contact_cache',
-      'DELETE FROM civicrm_cache',
-      'DELETE FROM civicrm_prevnext_cache',
+      'TRUNCATE TABLE civicrm_acl_cache',
+      'TRUNCATE TABLE civicrm_acl_contact_cache',
+      'TRUNCATE TABLE civicrm_cache',
+      'TRUNCATE TABLE civicrm_prevnext_cache',
       'UPDATE civicrm_group SET cache_date = NULL',
-      'DELETE FROM civicrm_group_contact_cache',
-      'DELETE FROM civicrm_menu',
+      'TRUNCATE TABLE civicrm_group_contact_cache',
+      'TRUNCATE TABLE civicrm_menu',
       'UPDATE civicrm_setting SET value = NULL WHERE name="navigation" AND contact_id IS NOT NULL',
       'DELETE FROM civicrm_setting WHERE name="modulePaths"', // CRM-10543
     );

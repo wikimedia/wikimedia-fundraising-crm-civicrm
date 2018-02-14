@@ -115,9 +115,10 @@ function _civicrm_api3_address_create_spec(&$params) {
     'type' => CRM_Utils_Type::T_BOOLEAN,
   );
   $params['fix_address'] = array(
-    'title' => 'Fix address',
-    'description' => 'When true, apply various fixes to the address before insert. Default true.',
+    'title' => ts('Fix address'),
+    'description' => ts('When true, apply various fixes to the address before insert. Default true.'),
     'type' => CRM_Utils_Type::T_BOOLEAN,
+    'api.default' => TRUE,
   );
   $params['world_region'] = array(
     'title' => ts('World Region'),

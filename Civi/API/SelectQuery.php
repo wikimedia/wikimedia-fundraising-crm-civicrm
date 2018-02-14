@@ -467,7 +467,7 @@ abstract class SelectQuery {
       }
     }
 
-    // Always select the ID if it exists.
+    // Always select the ID if the table has one.
     if (array_key_exists('id', $this->apiFieldSpec)) {
       $this->selectFields[self::MAIN_TABLE_ALIAS . ".id"] = "id";
     }

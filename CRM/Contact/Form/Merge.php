@@ -45,11 +45,6 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
   var $_contactType = NULL;
 
   /**
-   * @var array
-   */
-  public $criteria = array();
-
-  /**
    * Query limit to be retained in the urls.
    *
    * @var int
@@ -78,10 +73,8 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       $this->_rgid = CRM_Utils_Request::retrieve('rgid', 'Positive', $this, FALSE);
       $this->_gid = $gid = CRM_Utils_Request::retrieve('gid', 'Positive', $this, FALSE);
       $this->_mergeId = CRM_Utils_Request::retrieve('mergeId', 'Positive', $this, FALSE);
-      $this->limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this, FALSE, 500);
-      $this->criteria = CRM_Utils_Request::retrieve('criteria', 'String', $this, FALSE, '{}');
-
-      $urlParams = "reset=1&rgid={$this->_rgid}&gid={$this->_gid}&limit=" . $this->limit . '&criteria=' . $this->criteria;
+      $this->limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this, FALSE);
+      $urlParams = "reset=1&rgid={$this->_rgid}&gid={$this->_gid}&limit=" . $this->limit;
 
       $this->bounceIfInvalid($this->_cid, $this->_oid);
 
@@ -90,7 +83,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
         'return' => 'contact_type',
       ));
 
-      $browseUrl = CRM_Utils_System::url('civicrm/contact/dedupefind', $urlParams . '&action=browse', FALSE, NULL, FALSE);
+      $browseUrl = CRM_Utils_System::url('civicrm/contact/dedupefind', $urlParams . '&action=browse');
 
       if (!$this->_rgid) {
         // Unset browse URL as we have come from the search screen.
@@ -106,7 +99,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
         CRM_Core_Session::singleton()->pushUserContext($browseUrl);
       }
 
-      $cacheKey = CRM_Dedupe_Merger::getMergeCacheKeyString($this->_rgid, $gid, json_decode($this->criteria, TRUE));
+      $cacheKey = CRM_Dedupe_Merger::getMergeCacheKeyString($this->_rgid, $gid);
 
       $join = CRM_Dedupe_Merger::getJoinOnDedupeTable();
       $where = "de.id IS NULL";
@@ -133,7 +126,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       }
 
       $flipUrl = CRM_Utils_System::url('civicrm/contact/merge',
-        "reset=1&action=update&cid={$this->_oid}&oid={$this->_cid}&rgid={$this->_rgid}&gid={$gid}&criteria={$this->criteria}"
+        "reset=1&action=update&cid={$this->_oid}&oid={$this->_cid}&rgid={$this->_rgid}&gid={$gid}"
       );
       if (!$flip) {
         $flipUrl .= '&flip=1';
@@ -237,6 +230,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
   }
 
   public function buildQuickForm() {
+    $this->unsavedChangesWarn = FALSE;
     CRM_Utils_System::setTitle(ts('Merge %1 contacts', array(1 => $this->_contactType)));
     $buttons = array();
 
@@ -301,7 +295,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
     CRM_Core_Session::setStatus($message, ts('Contacts Merged'), 'success');
 
     $url = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$this->_cid}");
-    $urlParams = "reset=1&rgid={$this->_rgid}&gid={$this->_gid}&limit=" . $this->limit . '&criteria=' . $this->criteria;
+    $urlParams = "reset=1&gid={$this->_gid}&rgid={$this->_rgid}&limit={$this->limit}";
 
     if (!empty($formValues['_qf_Merge_submit'])) {
       $urlParams .= "&action=update";
@@ -315,7 +309,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
     }
 
     if ($this->next && $this->_mergeId) {
-      $cacheKey = CRM_Dedupe_Merger::getMergeCacheKeyString($this->_rgid, $this->_gid, json_decode($this->criteria, TRUE));
+      $cacheKey = CRM_Dedupe_Merger::getMergeCacheKeyString($this->_rgid, $this->_gid);
 
       $join = CRM_Dedupe_Merger::getJoinOnDedupeTable();
       $where = "de.id IS NULL";
@@ -328,7 +322,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       ) {
 
         $urlParams .= "&cid={$pos['next']['id1']}&oid={$pos['next']['id2']}&mergeId={$pos['next']['mergeId']}&action=update";
-        $url = CRM_Utils_System::url('civicrm/contact/merge', $urlParams, FALSE, NULL, FALSE);
+        $url = CRM_Utils_System::url('civicrm/contact/merge', $urlParams);
       }
     }
 
