@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  * $Id$
  *
  */
@@ -590,10 +590,10 @@ class CRM_Report_Form_Contact_Relationship extends CRM_Report_Form {
     $isStatusFilter = FALSE;
     $relStatus = NULL;
     if (CRM_Utils_Array::value('is_active_value', $this->_params) == '1') {
-      $relStatus = 'Is equal to Active';
+      $relStatus = ts('Is equal to Active');
     }
     elseif (CRM_Utils_Array::value('is_active_value', $this->_params) == '0') {
-      $relStatus = 'Is equal to Inactive';
+      $relStatus = ts('Is equal to Inactive');
     }
     if (!empty($statistics['filters'])) {
       foreach ($statistics['filters'] as $id => $value) {

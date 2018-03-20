@@ -4,5 +4,5 @@
  * Used where CiviCRM is part of an install profile like CiviCRM Starterkit.
  */
 if (!defined('CIVICRM_CONFDIR')) {
-  define( 'CIVICRM_CONFDIR', '/srv/org.wikimedia.civicrm/drupal/sites/default');
+  define( 'CIVICRM_CONFDIR', realpath( dirname( __FILE__ ) . "/../../../default" ));
 }

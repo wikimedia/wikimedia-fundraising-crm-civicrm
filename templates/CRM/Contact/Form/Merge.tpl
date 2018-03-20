@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -298,7 +298,7 @@
     }
 
     // Update operation description
-    var operation_description = "{/literal}{ts}add{/ts}{literal}";
+    var operation_description = "{/literal}{ts escape='js'}add{/ts}{literal}";
     var add_new_check_length = this_controls.find(".location_operation_checkbox input:checked").length;
     if (mainBlock != false) {
       if (add_new_check_length > 0) {

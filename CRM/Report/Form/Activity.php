@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 class CRM_Report_Form_Activity extends CRM_Report_Form {
   protected $_selectAliasesTotal = array();
@@ -396,7 +396,7 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
    *
    * @param null $recordType
    */
-  public function select($recordType = NULL) {
+  public function select($recordType = 'target') {
     if (!array_key_exists("contact_{$recordType}", $this->_params['fields']) &&
       $recordType != 'final'
     ) {
@@ -499,7 +499,7 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
    *
    * @param string $recordType
    */
-  public function from($recordType) {
+  public function from($recordType = 'target') {
     $activityContacts = CRM_Activity_BAO_ActivityContact::buildOptions('record_type_id', 'validate');
     $activityTypeId = CRM_Core_DAO::getFieldValue("CRM_Core_DAO_OptionGroup", 'activity_type', 'id', 'name');
     $assigneeID = CRM_Utils_Array::key('Activity Assignees', $activityContacts);
@@ -582,7 +582,7 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
       $this->_aliases['civicrm_contact'] = 'civicrm_contact_source';
     }
 
-    $this->addAddressFromClause();
+    $this->joinAddressFromContact();
   }
 
   /**
@@ -930,7 +930,7 @@ GROUP BY civicrm_activity_id $having {$this->_orderBy}";
     $activityStatus = CRM_Core_PseudoConstant::activityStatus();
     $priority = CRM_Core_PseudoConstant::get('CRM_Activity_DAO_Activity', 'priority_id');
     $viewLinks = FALSE;
-    $context = CRM_Utils_Request::retrieve('context', 'String', $this, FALSE, 'report');
+    $context = CRM_Utils_Request::retrieve('context', 'Alphanumeric', $this, FALSE, 'report');
     $actUrl = '';
 
     if (CRM_Core_Permission::check('access CiviCRM')) {

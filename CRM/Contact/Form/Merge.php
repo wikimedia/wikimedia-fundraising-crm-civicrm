@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 
 /**
@@ -120,16 +120,9 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       $mainUfId = CRM_Core_BAO_UFMatch::getUFId($this->_cid);
       $mainUser = NULL;
       if ($mainUfId) {
-        // d6 compatible
-        if ($config->userSystem->is_drupal == '1') {
-          $mainUser = user_load($mainUfId);
-        }
-        elseif ($config->userFramework == 'Joomla') {
-          $mainUser = JFactory::getUser($mainUfId);
-        }
-
+        $mainUser = $config->userSystem->getUser($this->_cid);
         $this->assign('mainUfId', $mainUfId);
-        $this->assign('mainUfName', $mainUser ? $mainUser->name : NULL);
+        $this->assign('mainUfName', $mainUser ? $mainUser['name'] : NULL);
       }
       $flipParams = array_merge($urlParams, ['action' => 'update', 'cid' => $this->_oid, 'oid' => $this->_cid]);
       if (!$flip) {
@@ -164,16 +157,9 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       $otherUser = NULL;
 
       if ($otherUfId) {
-        // d6 compatible
-        if ($config->userSystem->is_drupal == '1') {
-          $otherUser = user_load($otherUfId);
-        }
-        elseif ($config->userFramework == 'Joomla') {
-          $otherUser = JFactory::getUser($otherUfId);
-        }
-
+        $otherUser = $config->userSystem->getUser($this->_oid);
         $this->assign('otherUfId', $otherUfId);
-        $this->assign('otherUfName', $otherUser ? $otherUser->name : NULL);
+        $this->assign('otherUfName', $otherUser ? $otherUser['name'] : NULL);
       }
 
       $cmsUser = ($mainUfId && $otherUfId) ? TRUE : FALSE;
@@ -250,7 +236,7 @@ class CRM_Contact_Form_Merge extends CRM_Core_Form {
       'type' => 'next',
       'name' => $this->next ? ts('Merge and go to Next Pair') : ts('Merge'),
       'isDefault' => TRUE,
-      'icon' => $this->next ? 'circle-triangle-e' : 'check',
+      'icon' => $this->next ? 'fa-play-circle' : 'check',
     );
 
     if ($this->next || $this->prev) {

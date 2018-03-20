@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.7                                                |
+  | CiviCRM version 5                                                  |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2017                                |
+  | Copyright CiviCRM LLC (c) 2004-2018                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
 
@@ -1334,7 +1334,7 @@ WHERE {$whereClause}";
   public static function getChildGroupIds($regularGroupIDs) {
     $childGroupIDs = array();
 
-    foreach ($regularGroupIDs as $regularGroupID) {
+    foreach ((array) $regularGroupIDs as $regularGroupID) {
       // temporary store the child group ID(s) of regular group identified by $id,
       //   later merge with main child group array
       $tempChildGroupIDs = array();

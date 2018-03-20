@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 class CRM_Utils_Mail {
 
@@ -203,8 +203,15 @@ class CRM_Utils_Mail {
       CRM_Utils_Array::value('toEmail', $params),
       FALSE
     );
-    $headers['Cc'] = CRM_Utils_Array::value('cc', $params);
-    $headers['Bcc'] = CRM_Utils_Array::value('bcc', $params);
+
+    // On some servers mail() fails when 'Cc' or 'Bcc' headers are defined but empty.
+    foreach (['Cc', 'Bcc'] as $optionalHeader) {
+      $headers[$optionalHeader] = CRM_Utils_Array::value(strtolower($optionalHeader), $params);
+      if (empty($headers[$optionalHeader])) {
+        unset($headers[$optionalHeader]);
+      }
+    }
+
     $headers['Subject'] = CRM_Utils_Array::value('subject', $params);
     $headers['Content-Type'] = $htmlMessage ? 'multipart/mixed; charset=utf-8' : 'text/plain; charset=utf-8';
     $headers['Content-Disposition'] = 'inline';
@@ -263,7 +270,7 @@ class CRM_Utils_Mail {
     }
 
     $message = self::setMimeParams($msg);
-    $headers = &$msg->headers($headers);
+    $headers = $msg->headers($headers);
 
     $to = array($params['toEmail']);
     $result = NULL;
@@ -421,7 +428,7 @@ class CRM_Utils_Mail {
    *
    * @return mixed
    */
-  public static function &setMimeParams(&$message, $params = NULL) {
+  public static function setMimeParams($message, $params = NULL) {
     static $mimeParams = NULL;
     if (!$params) {
       if (!$mimeParams) {

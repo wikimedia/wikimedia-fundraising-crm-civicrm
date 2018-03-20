@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 
 /**
@@ -83,7 +83,7 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
     $this->_reset = CRM_Utils_Request::retrieve('reset', 'Boolean');
     $this->_force = CRM_Utils_Request::retrieve('force', 'Boolean', $this, FALSE);
     $this->_limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this);
-    $this->_context = CRM_Utils_Request::retrieve('context', 'String', $this, FALSE, 'search');
+    $this->_context = CRM_Utils_Request::retrieve('context', 'Alphanumeric', $this, FALSE, 'search');
 
     /*
      * WMF HACK: "force" causes a search with null criteria.  Disable until this is fixed.
@@ -186,11 +186,11 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
       $permission = CRM_Core_Permission::getPermission();
 
       $queryParams = $this->get('queryParams');
-      $softCreditFiltering = FALSE;
+      $taskParams['softCreditFiltering'] = FALSE;
       if (!empty($queryParams)) {
-        $softCreditFiltering = CRM_Contribute_BAO_Query::isSoftCreditOptionEnabled($queryParams);
+        $taskParams['softCreditFiltering'] = CRM_Contribute_BAO_Query::isSoftCreditOptionEnabled($queryParams);
       }
-      $tasks = CRM_Contribute_Task::permissionedTaskTitles($permission, $softCreditFiltering);
+      $tasks = CRM_Contribute_Task::permissionedTaskTitles($permission, $taskParams);
       $this->addTaskMenu($tasks);
     }
 
@@ -267,7 +267,7 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
 
     $this->_done = TRUE;
 
-    if (!empty($_POST)) {
+    if (!empty($_POST) && !$this->_force) {
       $this->_formValues = $this->controller->exportValues($this->_name);
     }
 
