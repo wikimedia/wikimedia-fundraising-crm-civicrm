@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 
 /**
@@ -60,37 +60,37 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
       $group->title = $params['title'];
     }
 
-    if (in_array($params['extends'][0],
-      array(
-        'ParticipantRole',
-        'ParticipantEventName',
-        'ParticipantEventType',
-      )
-    )) {
+    $extends = CRM_Utils_Array::value('extends', $params, []);
+    $extendsEntity = CRM_Utils_Array::value(0, $extends);
+
+    $participantEntities = array(
+      'ParticipantRole',
+      'ParticipantEventName',
+      'ParticipantEventType',
+    );
+
+    if (in_array($extendsEntity, $participantEntities)) {
       $group->extends = 'Participant';
     }
     else {
-      $group->extends = $params['extends'][0];
+      $group->extends = $extendsEntity;
     }
 
     $group->extends_entity_column_id = 'null';
-    if (
-      $params['extends'][0] == 'ParticipantRole' ||
-      $params['extends'][0] == 'ParticipantEventName' ||
-      $params['extends'][0] == 'ParticipantEventType'
+    if (in_array($extendsEntity, $participantEntities)
     ) {
-      $group->extends_entity_column_id = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionValue', $params['extends'][0], 'value', 'name');
+      $group->extends_entity_column_id = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionValue', $extendsEntity, 'value', 'name');
     }
 
     //this is format when form get submit.
-    $extendsChildType = CRM_Utils_Array::value(1, $params['extends']);
+    $extendsChildType = CRM_Utils_Array::value(1, $extends);
     //lets allow user to pass direct child type value, CRM-6893
     if (!empty($params['extends_entity_column_value'])) {
       $extendsChildType = $params['extends_entity_column_value'];
     }
     if (!CRM_Utils_System::isNull($extendsChildType)) {
       $extendsChildType = implode(CRM_Core_DAO::VALUE_SEPARATOR, $extendsChildType);
-      if (CRM_Utils_Array::value(0, $params['extends']) == 'Relationship') {
+      if (CRM_Utils_Array::value(0, $extends) == 'Relationship') {
         $extendsChildType = str_replace(array('_a_b', '_b_a'), array(
           '',
           '',
@@ -211,7 +211,7 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
         $params['id'],
         'table_name'
       );
-      CRM_Core_BAO_SchemaHandler::changeFKConstraint($table, self::mapTableName($params['extends'][0]));
+      CRM_Core_BAO_SchemaHandler::changeFKConstraint($table, self::mapTableName($extendsEntity));
     }
     $transaction->commit();
 
@@ -473,6 +473,8 @@ LEFT JOIN civicrm_custom_field ON (civicrm_custom_field.custom_group_id = civicr
       $in = "'$entityType'";
     }
 
+    $params = array();
+    $sqlParamKey = 1;
     if (!empty($subTypes)) {
       foreach ($subTypes as $key => $subType) {
         $subTypeClauses[] = self::whereListHas("civicrm_custom_group.extends_entity_column_value", self::validateSubTypeByEntity($entityType, $subType));
@@ -489,7 +491,9 @@ WHERE civicrm_custom_group.is_active = 1
   AND $subTypeClause
 ";
       if ($subName) {
-        $strWhere .= " AND civicrm_custom_group.extends_entity_column_id = {$subName} ";
+        $strWhere .= " AND civicrm_custom_group.extends_entity_column_id = %{$sqlParamKey}";
+        $params[$sqlParamKey] = array($subName, 'String');
+        $sqlParamKey = $sqlParamKey + 1;
       }
     }
     else {
@@ -503,11 +507,10 @@ WHERE civicrm_custom_group.is_active = 1
       }
     }
 
-    $params = array();
     if ($groupID > 0) {
       // since we want a specific group id we add it to the where clause
-      $strWhere .= " AND civicrm_custom_group.id = %1";
-      $params[1] = array($groupID, 'Integer');
+      $strWhere .= " AND civicrm_custom_group.id = %{$sqlParamKey}";
+      $params[$sqlParamKey] = array($groupID, 'Integer');
     }
     elseif (!$groupID) {
       // since groupID is false we need to show all Inline groups
@@ -1724,19 +1727,7 @@ ORDER BY civicrm_custom_group.weight,
             }
           }
           elseif ($field['data_type'] == 'Date') {
-            if (!empty($value)) {
-              $time = NULL;
-              if (!empty($field['time_format'])) {
-                $time = CRM_Utils_Request::retrieve($fieldName .
-                  '_time', 'String', $form, FALSE, NULL, 'GET');
-              }
-              list($value, $time) = CRM_Utils_Date::setDateDefaults($value .
-                ' ' . $time);
-              if (!empty($field['time_format'])) {
-                $customValue[$fieldName . '_time'] = $time;
-              }
-            }
-            $valid = TRUE;
+            $valid = CRM_Utils_Rule::date($value);
           }
 
           if ($valid) {
@@ -1959,7 +1950,7 @@ SELECT IF( EXISTS(SELECT name FROM civicrm_contact_type WHERE name like %1), 1, 
   /**
    * Build custom data view.
    *
-   * @param CRM_Core_Form $form
+   * @param CRM_Core_Form|CRM_Core_Page $form
    *   Page object.
    * @param array $groupTree
    * @param bool $returnCount
@@ -1970,6 +1961,7 @@ SELECT IF( EXISTS(SELECT name FROM civicrm_contact_type WHERE name like %1), 1, 
    * @param int $entityId
    *
    * @return array|int
+   * @throws \Exception
    */
   public static function buildCustomDataView(&$form, &$groupTree, $returnCount = FALSE, $gID = NULL, $prefix = NULL, $customValueId = NULL, $entityId = NULL) {
     $details = array();

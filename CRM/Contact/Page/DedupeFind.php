@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
   protected $_cid = NULL;
@@ -59,7 +59,7 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
   public function run() {
     $gid = CRM_Utils_Request::retrieve('gid', 'Positive', $this, FALSE, 0);
     $action = CRM_Utils_Request::retrieve('action', 'String', $this, FALSE, 0);
-    $context = CRM_Utils_Request::retrieve('context', 'String', $this);
+    $context = CRM_Utils_Request::retrieve('context', 'Alphanumeric', $this);
     $limit = CRM_Utils_Request::retrieve('limit', 'Integer', $this);
     $rgid = CRM_Utils_Request::retrieve('rgid', 'Positive', $this);
     $cid = CRM_Utils_Request::retrieve('cid', 'Positive', $this, FALSE, 0);
@@ -146,7 +146,7 @@ class CRM_Contact_Page_DedupeFind extends CRM_Core_Page_Basic {
         $urlQry['selected'] = 1;
       }
 
-      $this->assign('sourceUrl', CRM_Utils_System::url('civicrm/ajax/dedupefind', $urlQry));
+      $this->assign('sourceUrl', CRM_Utils_System::url('civicrm/ajax/dedupefind', $urlQry, FALSE, NULL, FALSE));
 
       //reload from cache table
       $cacheKeyString = CRM_Dedupe_Merger::getMergeCacheKeyString($rgid, $gid, $criteria);

@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -112,7 +112,7 @@
   <script type="text/javascript" >
   CRM.$(function($) {
     var $form = $("form.{/literal}{$form.formClass}{literal}");
-    var action = "{/literal}{$action}{literal}";
+    var action = {/literal}{$action|@json_encode}{literal};
 
     $('.crm-accordion-body').each( function() {
       //remove tab which doesn't have any element

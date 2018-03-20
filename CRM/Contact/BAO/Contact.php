@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
 
@@ -349,8 +349,9 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
       $skipDelete = TRUE;
     }
 
-    //add website
-    CRM_Core_BAO_Website::create($params['website'], $contact->id, $skipDelete);
+    if (isset($params['website'])) {
+      CRM_Core_BAO_Website::process($params['website'], $contact->id, $skipDelete);
+    }
 
     $userID = CRM_Core_Session::singleton()->get('userID');
     // add notes
@@ -649,6 +650,27 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
     }
 
     return NULL;
+  }
+
+  /**
+   * Get the relevant location entity for the array key.
+   *
+   * Based on the field name we determine which location entity
+   * we are dealing with. Apart from a few specific ones they
+   * are mostly 'address' (the default).
+   *
+   * @param string $fieldName
+   *
+   * @return string
+   */
+  protected static function getLocationEntityForKey($fieldName) {
+    if (in_array($fieldName, ['email', 'phone', 'im', 'openid'])) {
+      return $fieldName;
+    }
+    if ($fieldName === 'phone_ext') {
+      return 'phone';
+    }
+    return 'address';
   }
 
   /**
@@ -999,6 +1021,10 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
     if ($skipUndelete) {
       CRM_Utils_Hook::post('delete', $contactType, $contact->id, $contact);
     }
+
+    // also reset the DB_DO global array so we can reuse the memory
+    // http://issues.civicrm.org/jira/browse/CRM-4387
+    CRM_Core_DAO::freeResult();
 
     return TRUE;
   }
@@ -2176,7 +2202,7 @@ ORDER BY civicrm_email.is_primary DESC";
 
         $loc = CRM_Utils_Array::key($index, $locationType);
 
-        $blockName = in_array($fieldName, $blocks) ? $fieldName : 'address';
+        $blockName = self::getLocationEntityForKey($fieldName);
 
         $data[$blockName][$loc]['location_type_id'] = $locTypeId;
 
@@ -2213,9 +2239,6 @@ ORDER BY civicrm_email.is_primary DESC";
           if ($loc != $primaryPhoneLoc) {
             unset($data['phone'][$loc]['is_primary']);
           }
-        }
-        elseif ($fieldName == 'phone_ext') {
-          $data['phone'][$loc]['phone_ext'] = $value;
         }
         elseif ($fieldName == 'email') {
           $data['email'][$loc]['email'] = $value;
@@ -2273,7 +2296,7 @@ ORDER BY civicrm_email.is_primary DESC";
             $data['address'][$loc][substr($fieldName, 8)] = $value;
           }
           else {
-            $data['address'][$loc][$fieldName] = $value;
+            $data[$blockName][$loc][$fieldName] = $value;
           }
         }
       }

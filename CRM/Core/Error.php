@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@
  * PEAR_ErrorStack and use that framework
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 
 require_once 'PEAR/ErrorStack.php';
@@ -329,7 +329,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
    */
   public static function fatal($message = NULL, $code = NULL, $email = NULL) {
     $vars = array(
-      'message' => htmlspecialchars($message),
+      'message' => $message,
       'code' => $code,
     );
 

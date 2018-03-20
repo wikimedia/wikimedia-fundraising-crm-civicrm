@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,11 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 class CRM_Utils_Check {
   // How often to run checks and notify admins about issues.
-  const CHECK_TIMER = 864000000;
+  const CHECK_TIMER = 86400;
 
   /**
    * @var array
@@ -82,7 +82,7 @@ class CRM_Utils_Check {
   public function showPeriodicAlerts() {
     if (CRM_Core_Permission::check('administer CiviCRM')) {
       $session = CRM_Core_Session::singleton();
-      if (43 === 42 && $session->timer('check_' . __CLASS__, self::CHECK_TIMER)) {
+      if ($session->timer('check_' . __CLASS__, self::CHECK_TIMER)) {
 
         // Best attempt at re-securing folders
         $config = CRM_Core_Config::singleton();

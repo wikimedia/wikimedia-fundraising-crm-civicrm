@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 
 /**
@@ -235,7 +235,7 @@ class CRM_Contact_Form_Contact extends CRM_Core_Form {
 
         // omitting contactImage from title for now since the summary overlay css doesn't work outside of our crm-container
         CRM_Utils_System::setTitle($displayName);
-        $context = CRM_Utils_Request::retrieve('context', 'String', $this);
+        $context = CRM_Utils_Request::retrieve('context', 'Alphanumeric', $this);
         $qfKey = CRM_Utils_Request::retrieve('key', 'String', $this);
 
         $urlParams = 'reset=1&cid=' . $this->_contactId;
@@ -648,7 +648,7 @@ class CRM_Contact_Form_Contact extends CRM_Core_Form {
             }
 
             if (empty($blockValues['location_type_id'])) {
-              //$errors["{$name}[$instance][location_type_id]"] = ts('The Location Type should be set if there is  %1 information.', array(1 => $label));
+              $errors["{$name}[$instance][location_type_id]"] = ts('The Location Type should be set if there is  %1 information.', array(1 => $label));
             }
           }
 
@@ -1042,7 +1042,7 @@ class CRM_Contact_Form_Contact extends CRM_Core_Form {
       $session->replaceUserContext(CRM_Utils_System::url('civicrm/contact/add', $resetStr));
     }
     else {
-      $context = CRM_Utils_Request::retrieve('context', 'String', $this);
+      $context = CRM_Utils_Request::retrieve('context', 'Alphanumeric', $this);
       $qfKey = CRM_Utils_Request::retrieve('key', 'String', $this);
       //validate the qfKey
       $urlParams = 'reset=1&cid=' . $contact->id;

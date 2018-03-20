@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
 
@@ -274,6 +274,9 @@ abstract class CRM_Contact_Import_Parser extends CRM_Import_Parser {
       if ($this->_maxLinesToProcess > 0 && $this->_validCount >= $this->_maxLinesToProcess) {
         break;
       }
+
+      // clean up memory from dao's
+      CRM_Core_DAO::freeResult();
 
       // see if we've hit our timeout yet
       /* if ( $the_thing_with_the_stuff ) {

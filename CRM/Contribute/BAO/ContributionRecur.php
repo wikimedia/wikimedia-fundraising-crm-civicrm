@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 class CRM_Contribute_BAO_ContributionRecur extends CRM_Contribute_DAO_ContributionRecur {
 
@@ -323,7 +323,7 @@ SELECT r.payment_processor_id
   }
 
   /**
-   * Get list of recurring contribution of contact Ids.
+   * @deprecated Get list of recurring contribution of contact Ids.
    *
    * @param int $contactId
    *   Contact ID.
@@ -333,6 +333,7 @@ SELECT r.payment_processor_id
    *
    */
   public static function getRecurContributions($contactId) {
+    Civi::log()->warning('Deprecated function, use ContributionRecur.get API instead', array('civi.tag' => 'deprecated'));
     $params = array();
     $recurDAO = new CRM_Contribute_DAO_ContributionRecur();
     $recurDAO->contact_id = $contactId;
@@ -347,8 +348,6 @@ SELECT r.payment_processor_id
       $params[$recurDAO->id]['next_sched_contribution_date'] = $recurDAO->next_sched_contribution_date;
       $params[$recurDAO->id]['amount'] = $recurDAO->amount;
       $params[$recurDAO->id]['currency'] = $recurDAO->currency;
-      $params[$recurDAO->id]['failure_count'] = $recurDAO->failure_count;
-      $params[$recurDAO->id]['failure_retry_date'] = $recurDAO->failure_retry_date;
       $params[$recurDAO->id]['frequency_unit'] = $recurDAO->frequency_unit;
       $params[$recurDAO->id]['frequency_interval'] = $recurDAO->frequency_interval;
       $params[$recurDAO->id]['installments'] = $recurDAO->installments;
@@ -476,7 +475,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
       $cid = CRM_Utils_Request::retrieve('cid', 'Integer');
       $mid = CRM_Utils_Request::retrieve('mid', 'Integer');
       $qfkey = CRM_Utils_Request::retrieve('key', 'String');
-      $context = CRM_Utils_Request::retrieve('context', 'String');
+      $context = CRM_Utils_Request::retrieve('context', 'Alphanumeric');
       if ($cid) {
         switch ($context) {
           case 'contribution':

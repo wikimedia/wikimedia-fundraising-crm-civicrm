@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 
 /**
@@ -2161,7 +2161,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       //else (for contribution), use configured SCT default value
       $SCTDefaultValue = CRM_Core_OptionGroup::getDefaultValue("soft_credit_type");
       if ($field['field_type'] == 'Membership') {
-        $SCTDefaultValue = CRM_Core_OptionGroup::getValue('soft_credit_type', 'Gift', 'name');
+        $SCTDefaultValue = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_ContributionSoft', 'soft_credit_type_id', 'gift');
       }
       $form->addElement('hidden', 'sct_default_id', $SCTDefaultValue, array('id' => 'sct_default_id'));
     }
@@ -2242,6 +2242,14 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
     elseif ($fieldName == 'activity_duration') {
       $form->add('text', $name, $title, $attributes, $required);
       $form->addRule($name, ts('Please enter the duration as number of minutes (integers only).'), 'positiveInteger');
+    }
+    elseif ($fieldName == 'case_status') {
+      $form->add('select', $name, $title,
+        array(
+          '' => ts('- select -'),
+        ) + CRM_Case_BAO_Case::buildOptions('case_status_id', 'create'),
+        $required
+      );
     }
     else {
       if (substr($fieldName, 0, 3) === 'is_' or substr($fieldName, 0, 7) === 'do_not_') {
@@ -2508,23 +2516,28 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       }
     }
 
-    //Handling Contribution Part of the batch profile
+    // Handling Contribution Part of the batch profile
     if (CRM_Core_Permission::access('CiviContribute') && $component == 'Contribute') {
       self::setComponentDefaults($fields, $componentId, $component, $defaults);
     }
 
-    //Handling Event Participation Part of the batch profile
+    // Handling Event Participation Part of the batch profile
     if (CRM_Core_Permission::access('CiviEvent') && $component == 'Event') {
       self::setComponentDefaults($fields, $componentId, $component, $defaults);
     }
 
-    //Handling membership Part of the batch profile
+    // Handling membership Part of the batch profile
     if (CRM_Core_Permission::access('CiviMember') && $component == 'Membership') {
       self::setComponentDefaults($fields, $componentId, $component, $defaults);
     }
 
-    //Handling Activity Part of the batch profile
+    // Handling Activity Part of the batch profile
     if ($component == 'Activity') {
+      self::setComponentDefaults($fields, $componentId, $component, $defaults);
+    }
+
+    // Handling Case Part of the batch profile
+    if (CRM_Core_Permission::access('CiviCase') && $component == 'Case') {
       self::setComponentDefaults($fields, $componentId, $component, $defaults);
     }
   }
@@ -3028,7 +3041,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
 
         $groupTypeName = "{$customGroups->extends}Type";
         if ($customGroups->extends == 'Participant' && $customGroups->extends_entity_column_id) {
-          $groupTypeName = CRM_Core_OptionGroup::getValue('custom_data_type', $customGroups->extends_entity_column_id, 'value', 'String', 'name');
+          $groupTypeName = CRM_Core_PseudoConstant::getName('CRM_Core_DAO_CustomGroup', 'extends_entity_column_id', $customGroups->extends_entity_column_id);
         }
 
         foreach (explode(CRM_Core_DAO::VALUE_SEPARATOR, $customGroups->extends_entity_column_value) as $val) {
@@ -3173,7 +3186,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    */
   public static function setComponentDefaults(&$fields, $componentId, $component, &$defaults, $isStandalone = FALSE) {
     if (!$componentId ||
-      !in_array($component, array('Contribute', 'Membership', 'Event', 'Activity'))
+      !in_array($component, array('Contribute', 'Membership', 'Event', 'Activity', 'Case'))
     ) {
       return;
     }
@@ -3202,6 +3215,12 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
         $componentBAO = 'CRM_Activity_BAO_Activity';
         $componentBAOName = 'Activity';
         $componentSubType = array('activity_type_id');
+        break;
+
+      case 'Case':
+        $componentBAO = 'CRM_Case_BAO_Case';
+        $componentBAOName = 'Case';
+        $componentSubType = array('case_type_id');
         break;
     }
 
@@ -3241,6 +3260,9 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       }
       elseif ($name == 'membership_status') {
         $defaults[$fldName] = $values['status_id'];
+      }
+      elseif ($name == 'case_status') {
+        $defaults[$fldName] = $values['case_status_id'];
       }
       elseif (CRM_Core_BAO_CustomField::getKeyID($name, TRUE) !== array(NULL, NULL)) {
         if (empty($formattedGroupTree)) {

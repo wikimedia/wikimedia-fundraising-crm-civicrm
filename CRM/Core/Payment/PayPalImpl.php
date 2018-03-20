@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@ use Civi\Payment\Exception\PaymentProcessorException;
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2017
+ * @copyright CiviCRM LLC (c) 2004-2018
  */
 
 /**
@@ -702,15 +702,33 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
     if (is_numeric($lastParam)) {
       $params['processor_id'] = $lastParam;
     }
-    if (civicrm_api3('PaymentProcessor', 'getvalue', array(
-        'id' => $params['processor_id'],
-        'return' => 'class_name')
-      ) == 'Payment_PayPalImpl') {
-      $paypalIPN = new CRM_Core_Payment_PayPalIPN($params);
+    $result = civicrm_api3('PaymentProcessor', 'get', array(
+      'sequential' => 1,
+      'id' => $params['processor_id'],
+      'api.PaymentProcessorType.getvalue' => array('return' => "name"),
+    ));
+    if (!$result['count']) {
+      throw new CRM_Core_Exception("Could not find a processor with the given processor_id value '{$params['processor_id']}'.");
     }
-    else {
-      $paypalIPN = new CRM_Core_Payment_PayPalProIPN($params);
+
+    $paymentProcessorType = CRM_Utils_Array::value('api.PaymentProcessorType.getvalue', $result['values'][0]);
+    switch ($paymentProcessorType) {
+      case 'PayPal':
+        // "PayPal - Website Payments Pro"
+        $paypalIPN = new CRM_Core_Payment_PayPalProIPN($params);
+        break;
+
+      case 'PayPal_Standard':
+        // "PayPal - Website Payments Standard"
+        $paypalIPN = new CRM_Core_Payment_PayPalIPN($params);
+        break;
+
+      default:
+        // If we don't have PayPal Standard or PayPal Pro, something's wrong.
+        // Log an error and exit.
+        throw new CRM_Core_Exception("The processor_id value '{$params['processor_id']}' is for a processor of type '{$paymentProcessorType}', which is invalid in this context.");
     }
+
     $paypalIPN->main();
   }
 
@@ -976,6 +994,14 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
       $url = $this->_paymentProcessor['url_api'] . 'nvp';
     }
 
+    $p = array();
+    foreach ($args as $n => $v) {
+      $p[] = "$n=" . urlencode($v);
+    }
+
+    //NVPRequest for submitting to server
+    $nvpreq = implode('&', $p);
+
     if (!function_exists('curl_init')) {
       CRM_Core_Error::fatal("curl functions NOT available.");
     }
@@ -991,14 +1017,6 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
 
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_POST, 1);
-
-    $p = array();
-    foreach ($args as $n => $v) {
-      $p[] = "$n=" . urlencode($v);
-    }
-
-    //NVPRequest for submitting to server
-    $nvpreq = implode('&', $p);
 
     //setting the nvpreq as POST FIELD to curl
     curl_setopt($ch, CURLOPT_POSTFIELDS, $nvpreq);
@@ -1021,9 +1039,9 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
       curl_close($ch);
     }
 
-    if (strtolower($result['ack']) != 'success' &&
-      strtolower($result['ack']) != 'successwithwarning'
-    ) {
+    $outcome = strtolower(CRM_Utils_Array::value('ack', $result));
+
+    if ($outcome != 'success' && $outcome != 'successwithwarning') {
       throw new PaymentProcessorException("{$result['l_shortmessage0']} {$result['l_longmessage0']}");
       $e = CRM_Core_Error::singleton();
       $e->push($result['l_errorcode0'],

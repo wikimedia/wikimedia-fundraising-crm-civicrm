@@ -332,23 +332,28 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
         if (isset($_FILES[$elementName])) {
             return $_FILES[$elementName];
         } elseif (false !== ($pos = strpos($elementName, '['))) {
-            $base  = str_replace(
-                        array('\\', '\''), array('\\\\', '\\\''),
-                        substr($elementName, 0, $pos)
-                    );
-            $idx   = "['" . str_replace(
-                        array('\\', '\'', ']', '['), array('\\\\', '\\\'', '', "']['"),
-                        substr($elementName, $pos + 1, -1)
-                     ) . "']";
-            $props = array('name', 'type', 'size', 'tmp_name', 'error');
-            $code  = "if (!isset(\$_FILES['{$base}']['name']{$idx})) {\n" .
-                     "    return null;\n" .
-                     "} else {\n" .
-                     "    \$value = array();\n";
-            foreach ($props as $prop) {
-                $code .= "    \$value['{$prop}'] = \$_FILES['{$base}']['{$prop}']{$idx};\n";
+          $tokens = explode('[', str_replace(']', '', $elementName));
+            $base   = array_shift($tokens);
+            $value  = array();
+            if (!isset($_FILES[$base]['name'])) {
+              return null;
             }
-            return eval($code . "    return \$value;\n}\n");
+
+            $props = ['name', 'type', 'size', 'tmp_name', 'error'];
+            foreach ($props as $key) {
+              $value[$key] = $_FILES[$base][$key];
+            }
+
+            do {
+              $token = array_shift($tokens);
+              if (!isset($value['name'][$token])) {
+                return null;
+              }
+              foreach ($props as $key) {
+                $value[$key] = $value[$key][$token];
+              }
+            } while (!empty($tokens));
+            return $value;
         } else {
             return null;
         }
