@@ -1228,7 +1228,10 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
             $locations[$moniker][$blockName][$cnt] = $value;
             // Fix address display
             if ($blockName == 'address') {
+              // temp fix - aim for https://issues.civicrm.org/jira/browse/CRM-21786
+              $value['skip_geocode'] = TRUE;
               CRM_Core_BAO_Address::fixAddress($value);
+              unset($value['skip_geocode']);
               $locations[$moniker][$blockName][$cnt]['display'] = CRM_Utils_Address::format($value);
             }
 
@@ -1445,7 +1448,6 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
     $otherTree = CRM_Core_BAO_CustomGroup::getTree($main['contact_type'], NULL, $otherId, -1,
       CRM_Utils_Array::value('contact_sub_type', $other), NULL, TRUE, NULL, TRUE, $checkPermissions
     );
-    CRM_Core_DAO::freeResult();
 
     foreach ($otherTree as $gid => $group) {
       $foundField = FALSE;
@@ -1963,6 +1965,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
           $otherId,
         'subject' => ts('Contact ID %1 has been merged into Contact ID %2 and deleted.', $params),
         'target_contact_id' => $otherId,
+        'assignee_id' => $mainId,
         'activity_type_id' => 'Contact Deleted by Merge',
         'parent_id' => $activity['id'],
         'status_id' => 'Completed',
@@ -2318,8 +2321,6 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
       // pair may have been flipped, so make sure we delete using both orders
       CRM_Core_BAO_PrevNextCache::deletePair($mainId, $otherId, $cacheKeyString, TRUE);
     }
-
-    CRM_Core_DAO::freeResult();
   }
 
 }
