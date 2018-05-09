@@ -85,13 +85,6 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
     $this->_limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this);
     $this->_context = CRM_Utils_Request::retrieve('context', 'Alphanumeric', $this, FALSE, 'search');
 
-    /*
-     * WMF HACK: "force" causes a search with null criteria.  Disable until this is fixed.
-     */
-    if ( $this->_context === "search" && CRM_Utils_Request::retrieve('qfKey', 'String') === NULL ) {
-      $this->_force = false;
-    }
-
     $this->assign("context", $this->_context);
 
     // get user submitted values
