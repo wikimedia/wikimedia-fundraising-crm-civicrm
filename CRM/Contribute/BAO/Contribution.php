@@ -4783,6 +4783,8 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
    *   Credit Note Id.
    */
   public static function createCreditNoteId() {
+    // hack fix for performance
+    return NULL;
     $prefixValue = Civi::settings()->get('contribution_invoice_settings');
 
     $creditNoteNum = CRM_Core_DAO::singleValueQuery("SELECT count(creditnote_id) as creditnote_number FROM civicrm_contribution");
