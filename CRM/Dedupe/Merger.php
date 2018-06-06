@@ -1042,7 +1042,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
       ),
       'email' => array(
         'label' => 'Email',
-        'displayField' => 'email',
+        'displayField' => 'display',
         'sortString' => 'location_type_id',
         'hasLocation' => TRUE,
         'hasType' => FALSE,
@@ -1241,6 +1241,10 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
               CRM_Core_BAO_Address::fixAddress($value);
               unset($value['skip_geocode']);
               $locations[$moniker][$blockName][$cnt]['display'] = CRM_Utils_Address::format($value);
+            }
+            // Fix email display
+            elseif ($blockName == 'email') {
+              $locations[$moniker][$blockName][$cnt]['display'] = CRM_Utils_Mail::format($value);
             }
 
             $cnt++;
