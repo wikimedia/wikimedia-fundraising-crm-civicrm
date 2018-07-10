@@ -49,6 +49,13 @@ require_once 'CRM/Core/I18n.php';
 class CRM_Core_DAO extends DB_DataObject {
 
   /**
+   * How many times has this instance been cloned.
+   *
+   * @var int
+   */
+  protected $resultCopies = 0;
+
+  /**
    * @var null
    * @deprecated
    */
@@ -119,11 +126,20 @@ class CRM_Core_DAO extends DB_DataObject {
     $this->__table = $this->getTableName();
   }
 
+  public function __clone() {
+    if (!empty($this->_DB_resultid)) {
+      $this->resultCopies++;
+    }
+  }
+
   /**
    * Class destructor.
    */
   public function __destruct() {
-    $this->free();
+    if ($this->resultCopies === 0) {
+      $this->free();
+    }
+    $this->resultCopies--;
   }
 
   /**
@@ -2002,6 +2018,8 @@ SELECT contact_id
    * @param null $string
    *
    * @return string
+   * @deprecated
+   * @see CRM_Utils_SQL_TempTable
    */
   public static function createTempTableName($prefix = 'civicrm', $addRandomString = TRUE, $string = NULL) {
     $tableName = $prefix . "_temp";
