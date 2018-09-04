@@ -359,7 +359,7 @@ class CRM_Activity_Selector_Activity extends CRM_Core_Selector_Base implements C
       'rowCount' => 0,
       'sort' => NULL,
     );
-    return CRM_Activity_BAO_Activity::deprecatedGetActivitiesCount($params);
+    return CRM_Activity_BAO_Activity::getActivitiesCount($params);
   }
 
   /**

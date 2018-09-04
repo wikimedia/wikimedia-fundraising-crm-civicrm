@@ -2883,7 +2883,7 @@ INNER JOIN  civicrm_option_group grp ON ( grp.id = val.option_group_id AND grp.n
     $activities = CRM_Activity_BAO_Activity::getActivities($params);
 
     // Add total.
-    $params['total'] = CRM_Activity_BAO_Activity::deprecatedGetActivitiesCount($params);
+    $params['total'] = CRM_Activity_BAO_Activity::getActivitiesCount($params);
 
     // Format params and add links.
     $contactActivities = array();

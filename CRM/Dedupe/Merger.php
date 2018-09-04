@@ -619,8 +619,11 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
       }
       $key1 = CRM_Utils_Array::value($key, $mainEvs);
       $key2 = CRM_Utils_Array::value($key, $otherEvs);
-      // CRM-17556 Get all non-empty fields, to make comparison easier
-      if (!empty($key1) || !empty($key2)) {
+      // We wish to retain '0' as it has a different meaning than NULL on a checkbox.
+      // However I can't think of a case where an empty string is more meaningful than null
+      // or where it would be FALSE or something else nullish.
+      $valuesToIgnore = [NULL, '', []];
+      if (!in_array($key1, $valuesToIgnore, TRUE) || !in_array($key2, $valuesToIgnore, TRUE)) {
         $result['custom'][] = $key;
       }
     }
@@ -1225,7 +1228,10 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
             $locations[$moniker][$blockName][$cnt] = $value;
             // Fix address display
             if ($blockName == 'address') {
+              // temp fix - aim for https://issues.civicrm.org/jira/browse/CRM-21786
+              $value['skip_geocode'] = TRUE;
               CRM_Core_BAO_Address::fixAddress($value);
+              unset($value['skip_geocode']);
               $locations[$moniker][$blockName][$cnt]['display'] = CRM_Utils_Address::format($value);
             }
             // Fix email display
@@ -1941,6 +1947,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
           $otherId,
         'subject' => ts('Contact ID %1 has been merged into Contact ID %2 and deleted.', $params),
         'target_contact_id' => $otherId,
+        'assignee_id' => $mainId,
         'activity_type_id' => 'Contact Deleted by Merge',
         'parent_id' => $activity['id'],
         'status_id' => 'Completed',

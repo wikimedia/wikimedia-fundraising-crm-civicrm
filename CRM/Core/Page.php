@@ -215,7 +215,12 @@ class CRM_Core_Page {
     $config = CRM_Core_Config::singleton();
 
     // Intermittent alert to admins
-    CRM_Utils_Check::singleton()->showPeriodicAlerts();
+    // T138334 / CRM-19101
+    // These checks are extra slow as a result of us being behind a firewall
+    // Turning off the versionCheck scheduled job disabled some from running
+    // during a user session but the extension check persisted.
+    // Am falling back on hackery.
+    // CRM_Utils_Check::singleton()->showPeriodicAlerts();
 
     if ($this->useLivePageJS && Civi::settings()->get('ajaxPopupsEnabled')) {
       CRM_Core_Resources::singleton()->addScriptFile('civicrm', 'js/crm.livePage.js', 1, 'html-header');

@@ -467,6 +467,9 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
     list($outputColumns, $headerRows, $sqlColumns, $metadata) = self::getExportStructureArrays($returnProperties, $processor);
 
     $limitReached = FALSE;
+    // T120892 I couldn't quite bring myself to put this inside the loop in case an infinite loop
+    // happened for some reason - which I can't think of - sensible or paranoid?
+    set_time_limit(ini_get('max_execution_time') + 600);
     while (!$limitReached) {
       $limitQuery = "{$queryString} LIMIT {$offset}, {$rowCount}";
       $iterationDAO = CRM_Core_DAO::executeQuery($limitQuery);
