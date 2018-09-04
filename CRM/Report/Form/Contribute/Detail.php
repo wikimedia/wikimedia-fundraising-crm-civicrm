@@ -747,7 +747,6 @@ UNION ALL
 SELECT civicrm_contact_id, civicrm_contact_sort_name, civicrm_contribution_total_amount, civicrm_contribution_currency
 FROM   civireport_contribution_detail_temp2
 WHERE  civicrm_contribution_contribution_id={$row['civicrm_contribution_contribution_id']}";
-        $this->addToDeveloperTab($query);
         $dao = CRM_Core_DAO::executeQuery($query);
         $string = '';
         $separator = ($this->_outputMode !== 'csv') ? "<br/>" : ' ';
@@ -770,7 +769,6 @@ WHERE  civicrm_contribution_contribution_id={$row['civicrm_contribution_contribu
 SELECT civicrm_contact_id, civicrm_contact_sort_name
 FROM   civireport_contribution_detail_temp1
 WHERE  civicrm_contribution_contribution_id={$row['civicrm_contribution_contribution_id']}";
-        $this->addToDeveloperTab($query);
         $dao = CRM_Core_DAO::executeQuery($query);
         $string = '';
         while ($dao->fetch()) {
@@ -926,6 +924,10 @@ WHERE  civicrm_contribution_contribution_id={$row['civicrm_contribution_contribu
       {$this->_aclFrom}
     ";
 
+    //Join temp table if report is filtered by group. This is specific to 'notin' operator and covered in unit test(ref dev/core#212)
+    if (!empty($this->_params['gid_op']) && $this->_params['gid_op'] == 'notin') {
+      $this->joinGroupTempTable('civicrm_contact', 'id', $this->_aliases['civicrm_contact']);
+    }
     $this->appendAdditionalFromJoins();
   }
 

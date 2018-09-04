@@ -331,7 +331,7 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
         $updateLogConn = TRUE;
       }
       if (!empty($alterSql)) {
-        CRM_Core_DAO::executeQuery("ALTER TABLE {$this->db}.{$logTable} " . implode(', ', $alterSql));
+        CRM_Core_DAO::executeQuery("ALTER TABLE {$this->db}.{$logTable} " . implode(', ', $alterSql), [], TRUE, NULL, FALSE, FALSE);
       }
     }
     if ($updateLogConn) {
@@ -945,7 +945,7 @@ COLS;
    * but this is the only entity currently available...
    */
   public function getLogTablesForContact() {
-    $tables = array_keys(CRM_Dedupe_Merger::cidRefs());
+    $tables = array_keys(CRM_Core_DAO::getReferencesToContactTable());
     return array_intersect($tables, $this->tables);
   }
 

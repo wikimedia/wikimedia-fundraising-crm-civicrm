@@ -300,7 +300,7 @@ class CRM_Core_Menu {
   public static function store($truncate = TRUE) {
     // first clean up the db
     if ($truncate) {
-      $query = 'DELETE FROM civicrm_menu';
+      $query = 'TRUNCATE civicrm_menu';
       CRM_Core_DAO::executeQuery($query);
     }
     $menuArray = self::items($truncate);
@@ -317,7 +317,7 @@ class CRM_Core_Menu {
       $menu->find(TRUE);
 
       if (!CRM_Core_Config::isUpgradeMode() ||
-        CRM_Core_DAO::checkFieldExists('civicrm_menu', 'module_data', FALSE)
+        CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_menu', 'module_data', FALSE)
       ) {
         // Move unrecognized fields to $module_data.
         $module_data = array();

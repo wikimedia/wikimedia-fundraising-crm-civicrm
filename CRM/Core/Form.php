@@ -1589,6 +1589,7 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
         return $this->addEntityRef($name, $label, $props, $required);
 
       case 'Password':
+        $props['size'] = isset($props['size']) ? $props['size'] : 60;
         return $this->add('password', $name, $label, $props, $required);
 
       // Check datatypes of fields
@@ -2068,7 +2069,7 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
       $validUser = CRM_Contact_BAO_Contact_Utils::validChecksum($tempID, $userChecksum);
       if ($validUser) {
         CRM_Core_Resources::singleton()->addVars('coreForm', array('contact_id' => (int) $tempID));
-        CRM_Core_Resources::singleton()->addVars('coreForm', array('checksum' => (int) $tempID));
+        CRM_Core_Resources::singleton()->addVars('coreForm', array('checksum' => $userChecksum));
         return $tempID;
       }
     }

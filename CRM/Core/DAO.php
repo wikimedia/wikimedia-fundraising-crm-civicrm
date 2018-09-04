@@ -849,6 +849,9 @@ class CRM_Core_DAO extends DB_DataObject {
   /**
    * Check if there is a given column in a specific table.
    *
+   * @deprecated
+   * @see CRM_Core_BAO_SchemaHandler::checkIfFieldExists
+   *
    * @param string $tableName
    * @param string $columnName
    * @param bool $i18nRewrite
@@ -858,16 +861,7 @@ class CRM_Core_DAO extends DB_DataObject {
    *   true if exists, else false
    */
   public static function checkFieldExists($tableName, $columnName, $i18nRewrite = TRUE) {
-    $query = "
-SHOW COLUMNS
-FROM $tableName
-LIKE %1
-";
-    $params = array(1 => array($columnName, 'String'));
-    $dao = CRM_Core_DAO::executeQuery($query, $params, TRUE, NULL, FALSE, $i18nRewrite);
-    $result = $dao->fetch() ? TRUE : FALSE;
-    $dao->free();
-    return $result;
+    return CRM_Core_BAO_SchemaHandler::checkIfFieldExists($tableName, $columnName, $i18nRewrite);
   }
 
   /**
@@ -1112,6 +1106,29 @@ FROM   civicrm_domain
       $result[] = $this->toArray();
     }
     return $result;
+  }
+
+  /**
+   * Return the results as PHP generator.
+   *
+   * @param string $type
+   *   Whether the generator yields 'dao' objects or 'array's.
+   */
+  public function fetchGenerator($type = 'dao') {
+    while ($this->fetch()) {
+      switch ($type) {
+        case 'dao':
+          yield $this;
+          break;
+
+        case 'array':
+          yield $this->toArray();
+          break;
+
+        default:
+          throw new \RuntimeException("Invalid record type ($type)");
+      }
+    }
   }
 
   /**
@@ -2266,6 +2283,54 @@ SELECT contact_id
       }
     }
     return $refsFound;
+  }
+
+  /**
+   * Get all references to contact table.
+   *
+   * This includes core tables, custom group tables, tables added by the merge
+   * hook and  the entity_tag table.
+   *
+   * Refer to CRM-17454 for information on the danger of querying the information
+   * schema to derive this.
+   */
+  public static function getReferencesToContactTable() {
+    if (isset(\Civi::$statics[__CLASS__]) && isset(\Civi::$statics[__CLASS__]['contact_references'])) {
+      return \Civi::$statics[__CLASS__]['contact_references'];
+    }
+    $contactReferences = [];
+    $coreReferences = CRM_Core_DAO::getReferencesToTable('civicrm_contact');
+    foreach ($coreReferences as $coreReference) {
+      if (!is_a($coreReference, 'CRM_Core_Reference_Dynamic')) {
+        $contactReferences[$coreReference->getReferenceTable()][] = $coreReference->getReferenceKey();
+      }
+    }
+    self::appendCustomTablesExtendingContacts($contactReferences);
+
+    // FixME for time being adding below line statically as no Foreign key constraint defined for table 'civicrm_entity_tag'
+    $contactReferences['civicrm_entity_tag'][] = 'entity_id';
+    \Civi::$statics[__CLASS__]['contact_references'] = $contactReferences;
+    return \Civi::$statics[__CLASS__]['contact_references'];
+  }
+
+  /**
+   * Add custom tables that extend contacts to the list of contact references.
+   *
+   * CRM_Core_BAO_CustomGroup::getAllCustomGroupsByBaseEntity seems like a safe-ish
+   * function to be sure all are retrieved & we don't miss subtypes or inactive or multiples
+   * - the down side is it is not cached.
+   *
+   * Further changes should be include tests in the CRM_Core_MergerTest class
+   * to ensure that disabled, subtype, multiple etc groups are still captured.
+   *
+   * @param array $cidRefs
+   */
+  public static function appendCustomTablesExtendingContacts(&$cidRefs) {
+    $customValueTables = CRM_Core_BAO_CustomGroup::getAllCustomGroupsByBaseEntity('Contact');
+    $customValueTables->find();
+    while ($customValueTables->fetch()) {
+      $cidRefs[$customValueTables->table_name] = array('entity_id');
+    }
   }
 
   /**
