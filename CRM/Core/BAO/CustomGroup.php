@@ -553,13 +553,14 @@ ORDER BY civicrm_custom_group.weight,
     $cacheKey = "CRM_Core_DAO_CustomGroup_Query " . md5($cacheString);
     $multipleFieldGroupCacheKey = "CRM_Core_DAO_CustomGroup_QueryMultipleFields " . md5($cacheString);
     $cache = CRM_Utils_Cache::singleton();
-    $tablesWithEntityData = array();
+
+    $groupTree = NULL;
     if ($fromCache) {
       $groupTree = $cache->get($cacheKey);
       $multipleFieldGroups = $cache->get($multipleFieldGroupCacheKey);
     }
 
-    if (empty($groupTree)) {
+    if ($groupTree === NULL) {
       $groupTree = $multipleFieldGroups = array();
       $crmDAO = CRM_Core_DAO::executeQuery($queryString, $params);
       $customValueTables = array();
