@@ -582,7 +582,13 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
       $prevNext = Civi::service('prevnext');
       $cacheKey = $this->buildPrevNextCache($sort);
       $cids = $prevNext->fetch($cacheKey, $offset, $rowCount);
-      $resultSet = $this->_query->getCachedContacts($cids, $includeContactIds)->fetchGenerator();
+      if (!empty($cids)) {
+        $resultSet = $this->_query->getCachedContacts($cids, $includeContactIds)
+          ->fetchGenerator();
+      }
+      else {
+        $resultSet = [];
+      }
     }
     else {
       $resultSet = $this->_query->searchQuery($offset, $rowCount, $sort, FALSE, $includeContactIds)->fetchGenerator();
