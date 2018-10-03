@@ -832,6 +832,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
           unset($dupePairs[$index]);
           continue;
         }
+        watchdog("civicrm_merge_debug", "Deduping contacts {$dupes['dstID']} and {$dupes['srcID']}");
         CRM_Utils_Hook::merge('flip', $dupes, $dupes['dstID'], $dupes['srcID']);
         $mainId = $dupes['dstID'];
         $otherId = $dupes['srcID'];
