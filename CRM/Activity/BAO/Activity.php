@@ -749,7 +749,7 @@ class CRM_Activity_BAO_Activity extends CRM_Activity_DAO_Activity {
     foreach ($result['values'] as $id => $activity) {
 
       $activities[$id] = array();
-      $isBulkActivity = (!$bulkActivityTypeID || ($bulkActivityTypeID != $activity['activity_type_id']));
+      $isBulkActivity = (!$bulkActivityTypeID || ($bulkActivityTypeID === $activity['activity_type_id']));
       foreach ($mappingParams as $apiKey => $expectedName) {
         if (in_array($apiKey, array('assignee_contact_name', 'target_contact_name'))) {
           $activities[$id][$expectedName] = CRM_Utils_Array::value($apiKey, $activity, array());
