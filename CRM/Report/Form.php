@@ -1155,8 +1155,10 @@ class CRM_Report_Form extends CRM_Core_Form {
    * @return string
    */
   public function createTemporaryTable($identifier, $sql, $isTrueTemporary = TRUE) {
+    $name = CRM_Utils_SQL_TempTable::build()->setUtf8(TRUE)->setDurable(($isTrueTemporary !== TRUE))->createWithQuery($sql)->getName();
+    // The TempTable build routine adds the next line - we output it to help developers see what has happened.
+    $sql = 'CREATE ' . ($isTrueTemporary ? 'TEMPORARY ' : '') . "TABLE $name DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci " . $sql;
     $this->addToDeveloperTab($sql);
-    $name = CRM_Utils_SQL_TempTable::build()->setUtf8(TRUE)->setDurable($isTrueTemporary)->createWithQuery($sql)->getName();
     $this->temporaryTables[$identifier] = ['temporary' => $isTrueTemporary, 'name' => $name];
     return $name;
   }
@@ -3693,11 +3695,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
         WHERE smartgroup_contact.group_id IN ({$smartGroups}) ";
     }
 
-    $this->groupTempTable = CRM_Utils_SQL_TempTable::build()->setCategory('rptgrp')->setId(date('Ymd_') . uniqid())->getName();
-    $this->executeReportQuery("
-      CREATE TEMPORARY TABLE $this->groupTempTable $this->_databaseAttributes
-      $query
-    ");
+    $this->groupTempTable = $this->createTemporaryTable('rptgrp', $query);
     CRM_Core_DAO::executeQuery("ALTER TABLE $this->groupTempTable ADD INDEX i_id(id)");
   }
 
