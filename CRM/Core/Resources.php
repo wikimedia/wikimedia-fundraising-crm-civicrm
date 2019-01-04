@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 5                                                  |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2018                                |
+  | Copyright CiviCRM LLC (c) 2004-2019                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -37,7 +37,7 @@
  * should incorporte services for aggregation, minimization, etc.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  * $Id$
  *
  */
@@ -115,13 +115,7 @@ class CRM_Core_Resources {
       self::$_singleton = $instance;
     }
     if (self::$_singleton === NULL) {
-      $sys = CRM_Extension_System::singleton();
-      $cache = Civi::cache('js_strings');
-      self::$_singleton = new CRM_Core_Resources(
-        $sys->getMapper(),
-        $cache,
-        CRM_Core_Config::isUpgradeMode() ? NULL : 'resCacheCode'
-      );
+      self::$_singleton = Civi::service('resources');
     }
     return self::$_singleton;
   }
@@ -609,7 +603,11 @@ class CRM_Core_Resources {
 
       $tsLocale = CRM_Core_I18n::getLocale();
       // Dynamic localization script
-      $this->addScriptUrl(CRM_Utils_System::url('civicrm/ajax/l10n-js/' . $tsLocale, array('r' => $this->getCacheCode())), $jsWeight++, $region);
+      $args = [
+        'r' => $this->getCacheCode(),
+        'cid' => CRM_Core_Session::getLoggedInContactID(),
+      ];
+      $this->addScriptUrl(CRM_Utils_System::url('civicrm/ajax/l10n-js/' . $tsLocale, $args, FALSE, NULL, FALSE), $jsWeight++, $region);
 
       // Add global settings
       $settings = array(
@@ -617,6 +615,10 @@ class CRM_Core_Resources {
           'isFrontend' => $config->userFrameworkFrontend,
         ),
       );
+      $contactID = CRM_Core_Session::getLoggedInContactID();
+      if ($contactID) {
+        $settings['config']['menuCacheCode'] = CRM_Core_BAO_Navigation::getCacheKey($contactID);
+      }
       // Disable profile creation if user lacks permission
       if (!CRM_Core_Permission::check('edit all contacts') && !CRM_Core_Permission::check('add contacts')) {
         $settings['config']['entityRef']['contactCreate'] = FALSE;
@@ -691,6 +693,7 @@ class CRM_Core_Resources {
       ),
       'ajaxPopupsEnabled' => self::singleton()->ajaxPopupsEnabled,
       'allowAlertAutodismissal' => (bool) Civi::settings()->get('allow_alert_autodismissal'),
+      'resourceCacheCode' => self::singleton()->getCacheCode(),
     );
     print CRM_Core_Smarty::singleton()->fetchWith('CRM/common/l10n.js.tpl', $vars);
     CRM_Utils_System::civiExit();
@@ -725,8 +728,8 @@ class CRM_Core_Resources {
       "bower_components/datatables/media/css/jquery.dataTables.min.css",
       "bower_components/jquery-validation/dist/jquery.validate.min.js",
       "packages/jquery/plugins/jquery.ui.datepicker.validation.min.js",
-      "js/crm.datepicker.js",
       "js/Common.js",
+      "js/crm.datepicker.js",
       "js/crm.ajax.js",
       "js/wysiwyg/crm.wysiwyg.js",
     );
@@ -794,7 +797,8 @@ class CRM_Core_Resources {
     ) {
       return TRUE;
     }
-    return strpos(CRM_Utils_System::getUrlPath(), 'civicrm/ajax') === 0;
+    $url = CRM_Utils_System::getUrlPath();
+    return (strpos($url, 'civicrm/ajax') === 0) || (strpos($url, 'civicrm/angular') === 0);
   }
 
   /**
@@ -837,18 +841,18 @@ class CRM_Core_Resources {
       array('key' => 'status_id', 'value' => ts('Activity Status')),
     );
 
-    $filters['contact'] = array(
-      array('key' => 'contact_type', 'value' => ts('Contact Type')),
-      array('key' => 'group', 'value' => ts('Group'), 'entity' => 'group_contact'),
-      array('key' => 'tag', 'value' => ts('Tag'), 'entity' => 'entity_tag'),
-      array('key' => 'state_province', 'value' => ts('State/Province'), 'entity' => 'address'),
-      array('key' => 'country', 'value' => ts('Country'), 'entity' => 'address'),
-      array('key' => 'gender_id', 'value' => ts('Gender')),
-      array('key' => 'is_deceased', 'value' => ts('Deceased')),
-      array('key' => 'contact_id', 'value' => ts('Contact ID'), 'type' => 'text'),
-      array('key' => 'external_identifier', 'value' => ts('External ID'), 'type' => 'text'),
-      array('key' => 'source', 'value' => ts('Contact Source'), 'type' => 'text'),
-    );
+    $filters['contact'] = [
+      ['key' => 'contact_type', 'value' => ts('Contact Type')],
+      ['key' => 'group', 'value' => ts('Group'), 'entity' => 'group_contact'],
+      ['key' => 'tag', 'value' => ts('Tag'), 'entity' => 'entity_tag'],
+      ['key' => 'state_province', 'value' => ts('State/Province'), 'entity' => 'address'],
+      ['key' => 'country', 'value' => ts('Country'), 'entity' => 'address'],
+      ['key' => 'gender_id', 'value' => ts('Gender'), 'condition' => ['contact_type' => 'Individual']],
+      ['key' => 'is_deceased', 'value' => ts('Deceased'), 'condition' => ['contact_type' => 'Individual']],
+      ['key' => 'contact_id', 'value' => ts('Contact ID'), 'type' => 'text'],
+      ['key' => 'external_identifier', 'value' => ts('External ID'), 'type' => 'text'],
+      ['key' => 'source', 'value' => ts('Contact Source'), 'type' => 'text'],
+    ];
 
     if (in_array('CiviCase', $config->enableComponents)) {
       $filters['case'] = array(
@@ -868,6 +872,41 @@ class CRM_Core_Resources {
         $filter['key'] = 'contact_id.' . $filter['key'];
         $filters['case'][] = $filter;
       }
+    }
+
+    if (in_array('CiviCampaign', $config->enableComponents)) {
+      $filters['campaign'] = [
+        ['key' => 'campaign_type_id', 'value' => ts('Campaign Type')],
+        ['key' => 'status_id', 'value' => ts('Status')],
+        [
+          'key' => 'start_date',
+          'value' => ts('Start Date'),
+          'options' => [
+            ['key' => '{">":"now"}', 'value' => ts('Upcoming')],
+            [
+              'key' => '{"BETWEEN":["now - 3 month","now"]}',
+              'value' => ts('Past 3 Months'),
+            ],
+            [
+              'key' => '{"BETWEEN":["now - 6 month","now"]}',
+              'value' => ts('Past 6 Months'),
+            ],
+            [
+              'key' => '{"BETWEEN":["now - 1 year","now"]}',
+              'value' => ts('Past Year'),
+            ],
+          ],
+        ],
+        [
+          'key' => 'end_date',
+          'value' => ts('End Date'),
+          'options' => [
+            ['key' => '{">":"now"}', 'value' => ts('In the future')],
+            ['key' => '{"<":"now"}', 'value' => ts('In the past')],
+            ['key' => '{"IS NULL":"1"}', 'value' => ts('Not set')],
+          ],
+        ],
+      ];
     }
 
     CRM_Utils_Hook::entityRefFilters($filters);

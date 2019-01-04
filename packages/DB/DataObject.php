@@ -2415,22 +2415,16 @@ class DB_DataObject extends DB_DataObject_Overload
             $result = $DB->query($string);
           }
           catch (PEAR_Exception $e) {
-            if ($tries == 0) {
-              // The original sin was what triggered the retry. Sometimes the retry fails because mysql has done an internal rollback
-              // of previous queries in the transaction so it has essentially failed to recover from the deadlock. If we can't
-              // recover we should return the original error.
-              $firstError = $e;
-            }
             // CRM-21489 If we have caught a DB lock - let it go around the loop until our tries limit is hit.
             // else rethrow the exception. The 2 locks we are looking at are mysql code 1205 (lock) and
             // 1213 (deadlock).
             $dbErrorMessage = $e->getCause()->getUserInfo();
             if (!stristr($dbErrorMessage, 'nativecode=1205') && !stristr($dbErrorMessage, 'nativecode=1213')) {
-              throw $firstError;
+              throw $e;
             }
             $message = (stristr($dbErrorMessage, 'nativecode=1213') ? 'Database deadlock encountered' : 'Database lock encountered');
             if (($tries + 1) === $maxTries) {
-              throw new CRM_Core_Exception($message, 0, array('sql' => $string, 'trace' => $firstError->getTrace()));
+              throw new CRM_Core_Exception($message, 0, array('sql' => $string, 'trace' => $e->getTrace()));
             }
             CRM_Core_Error::debug_log_message("Retrying after $message hit on attempt " . ($tries + 1) . ' at query : ' . $string);
             continue;
@@ -3773,14 +3767,13 @@ class DB_DataObject extends DB_DataObject_Overload
             // at this point if you have set something to an object, and it's not expected
             // the Validate will probably break!!... - rightly so! (your design is broken,
             // so issuing a runtime error like PEAR_Error is probably not appropriate..
-
             if ($val & DB_DATAOBJECT_STR) {
-                $ret[$key] = Validate::string($this->$key, VALIDATE_PUNCTUATION . VALIDATE_NAME);
-                continue;
+              $ret[$key] = Validate::string($this->$key, VALIDATE_PUNCTUATION . VALIDATE_NAME);
+              continue;
             }
             if ($val & DB_DATAOBJECT_INT) {
-                $ret[$key] = Validate::number($this->$key, array('decimal' => '.'));
-                continue;
+              $ret[$key] = Validate::number($this->$key, array('decimal' => '.'));
+              continue;
             }
         }
         // if any of the results are false or an object (eg. PEAR_Error).. then return the array..

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -32,7 +32,7 @@
  * The default values in general, should reflect production values (minimizes chances of screwing up)
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 
 require_once 'Log.php';
@@ -270,7 +270,6 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    * @return string
    */
   public static function environment($env = NULL, $reset = FALSE) {
-    static $environment;
     if ($env) {
       $environment = $env;
     }
@@ -349,18 +348,22 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    */
   public static function clearDBCache() {
     $queries = array(
-      'DELETE FROM civicrm_acl_cache',
-      'DELETE FROM civicrm_acl_contact_cache',
-      'DELETE FROM civicrm_cache',
-      'DELETE FROM civicrm_prevnext_cache',
+      'TRUNCATE TABLE civicrm_acl_cache',
+      'TRUNCATE TABLE civicrm_acl_contact_cache',
+      'TRUNCATE TABLE civicrm_cache',
+      'TRUNCATE TABLE civicrm_prevnext_cache',
       'UPDATE civicrm_group SET cache_date = NULL',
-      'DELETE FROM civicrm_group_contact_cache',
-      'DELETE FROM civicrm_menu',
+      'TRUNCATE TABLE civicrm_group_contact_cache',
+      'TRUNCATE TABLE civicrm_menu',
       'UPDATE civicrm_setting SET value = NULL WHERE name="navigation" AND contact_id IS NOT NULL',
     );
 
     foreach ($queries as $query) {
       CRM_Core_DAO::executeQuery($query);
+    }
+
+    if ($adapter = CRM_Utils_Constant::value('CIVICRM_BAO_CACHE_ADAPTER')) {
+      return $adapter::clearDBCache();
     }
 
     // also delete all the import and export temp tables

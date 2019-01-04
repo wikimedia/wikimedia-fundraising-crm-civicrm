@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  * $Id$
  *
  */
@@ -1486,8 +1486,8 @@ class CRM_Core_Permission {
 
     $permissions['message_template'] = array(
       'get' => array('access CiviCRM'),
-      'create' => array('edit message templates', 'edit user-driven message templates', 'edit system workflow message templates'),
-      'update' => array('edit message templates', 'edit user-driven message templates', 'edit system workflow message templates'),
+      'create' => array(array('edit message templates', 'edit user-driven message templates', 'edit system workflow message templates')),
+      'update' => array(array('edit message templates', 'edit user-driven message templates', 'edit system workflow message templates')),
     );
 
     $permissions['report_template']['update'] = 'save Report Criteria';

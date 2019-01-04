@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 class CRM_Report_Form_Activity extends CRM_Report_Form {
   protected $_selectAliasesTotal = array();
@@ -66,9 +66,6 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
     $campaignEnabled = in_array("CiviCampaign", $config->enableComponents);
     $caseEnabled = in_array("CiviCase", $config->enableComponents);
     if ($campaignEnabled) {
-      $getCampaigns = CRM_Campaign_BAO_Campaign::getPermissionedCampaigns(NULL, NULL, TRUE, FALSE, TRUE);
-      $this->activeCampaigns = $getCampaigns['campaigns'];
-      asort($this->activeCampaigns);
       $this->engagementLevels = CRM_Campaign_PseudoConstant::engagementLevel();
     }
 
@@ -345,18 +342,9 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
         'operator' => 'like',
         'type' => CRM_Utils_Type::T_STRING,
       );
-      if (!empty($this->activeCampaigns)) {
-        $this->_columns['civicrm_activity']['fields']['campaign_id'] = array(
-          'title' => ts('Campaign'),
-          'default' => 'false',
-        );
-        $this->_columns['civicrm_activity']['filters']['campaign_id'] = array(
-          'title' => ts('Campaign'),
-          'type' => CRM_Utils_Type::T_INT,
-          'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-          'options' => $this->activeCampaigns,
-        );
-      }
+      // If we have campaigns enabled, add those elements to both the fields, filters.
+      $this->addCampaignFields('civicrm_activity');
+
       if (!empty($this->engagementLevels)) {
         $this->_columns['civicrm_activity']['fields']['engagement_level'] = array(
           'title' => ts('Engagement Index'),
@@ -693,11 +681,13 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
     $new_having = ' addtogroup_contact_id';
     $having = str_ireplace(' civicrm_contact_contact_target_id', $new_having, $this->_having);
     $query = "$select
-FROM {$this->temporaryTables['activity_temp_table']} tar
+FROM {$this->temporaryTables['activity_temp_table']['name']} tar
 GROUP BY civicrm_activity_id $having {$this->_orderBy}";
     $select = 'AS addtogroup_contact_id';
     $query = str_ireplace('AS civicrm_contact_contact_target_id', $select, $query);
+    CRM_Core_DAO::disableFullGroupByMode();
     $dao = $this->executeReportQuery($query);
+    CRM_Core_DAO::reenableFullGroupByMode();
 
     $contactIDs = array();
     // Add resulting contacts to group
@@ -1031,7 +1021,7 @@ GROUP BY civicrm_activity_id $having {$this->_orderBy}";
 
       if (array_key_exists('civicrm_activity_campaign_id', $row)) {
         if ($value = $row['civicrm_activity_campaign_id']) {
-          $rows[$rowNum]['civicrm_activity_campaign_id'] = $this->activeCampaigns[$value];
+          $rows[$rowNum]['civicrm_activity_campaign_id'] = $this->campaigns[$value];
           $entryFound = TRUE;
         }
       }
@@ -1080,7 +1070,7 @@ GROUP BY civicrm_activity_id $having {$this->_orderBy}";
       $this->_select = CRM_Contact_BAO_Query::appendAnyValueToSelect($ifnulls, $sectionAliases);
 
       $query = $this->_select .
-        ", count(DISTINCT civicrm_activity_id) as ct from {$this->temporaryTables['activity_temp_table']} group by " .
+        ", count(DISTINCT civicrm_activity_id) as ct from {$this->temporaryTables['activity_temp_table']['name']} group by " .
         implode(", ", $sectionAliases);
 
       // initialize array of total counts

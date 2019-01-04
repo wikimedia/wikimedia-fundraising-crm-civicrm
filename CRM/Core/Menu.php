@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  * This file contains the various menus of the CiviCRM module
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 
 require_once 'CRM/Core/I18n.php';
@@ -300,7 +300,7 @@ class CRM_Core_Menu {
   public static function store($truncate = TRUE) {
     // first clean up the db
     if ($truncate) {
-      $query = 'DELETE FROM civicrm_menu';
+      $query = 'TRUNCATE civicrm_menu';
       CRM_Core_DAO::executeQuery($query);
     }
     $menuArray = self::items($truncate);

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 class CRM_Dedupe_Merger {
 
@@ -832,7 +832,6 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
           unset($dupePairs[$index]);
           continue;
         }
-        watchdog("civicrm_merge_debug", "Deduping contacts {$dupes['dstID']} and {$dupes['srcID']}");
         CRM_Utils_Hook::merge('flip', $dupes, $dupes['dstID'], $dupes['srcID']);
         $mainId = $dupes['dstID'];
         $otherId = $dupes['srcID'];
@@ -1229,10 +1228,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
             $locations[$moniker][$blockName][$cnt] = $value;
             // Fix address display
             if ($blockName == 'address') {
-              // temp fix - aim for https://issues.civicrm.org/jira/browse/CRM-21786
-              $value['skip_geocode'] = TRUE;
               CRM_Core_BAO_Address::fixAddress($value);
-              unset($value['skip_geocode']);
               $locations[$moniker][$blockName][$cnt]['display'] = CRM_Utils_Address::format($value);
             }
             // Fix email display
@@ -1948,7 +1944,6 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
           $otherId,
         'subject' => ts('Contact ID %1 has been merged into Contact ID %2 and deleted.', $params),
         'target_contact_id' => $otherId,
-        'assignee_id' => $mainId,
         'activity_type_id' => 'Contact Deleted by Merge',
         'parent_id' => $activity['id'],
         'status_id' => 'Completed',

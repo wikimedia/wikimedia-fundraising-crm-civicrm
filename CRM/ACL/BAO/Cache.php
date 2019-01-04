@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 
 /**
@@ -161,11 +161,11 @@ WHERE  modified_date IS NULL
     // CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache"); // Transaction-safe
     if (CRM_Core_Transaction::isActive()) {
       CRM_Core_Transaction::addCallback(CRM_Core_Transaction::PHASE_POST_COMMIT, function () {
-        CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache");
+        CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache");
       });
     }
     else {
-      CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache");
+      CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache");
     }
   }
 

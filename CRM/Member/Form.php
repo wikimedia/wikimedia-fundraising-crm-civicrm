@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 
 /**
@@ -37,6 +37,7 @@
  */
 class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
 
+  use CRM_Core_Form_EntityFormTrait;
   /**
    * The id of the object being edited / created
    *
@@ -120,6 +121,24 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
    * @var array
    */
   protected $_params = array();
+
+  /**
+   * Fields for the entity to be assigned to the template.
+   *
+   * Fields may have keys
+   *  - name (required to show in tpl from the array)
+   *  - description (optional, will appear below the field)
+   *  - not-auto-addable - this class will not attempt to add the field using addField.
+   *    (this will be automatically set if the field does not have html in it's metadata
+   *    or is not a core field on the form's entity).
+   *  - help (option) add help to the field - e.g ['id' => 'id-source', 'file' => 'CRM/Contact/Form/Contact']]
+   *  - template - use a field specific template to render this field
+   *  - required
+   *  - is_freeze (field should be frozen).
+   *
+   * @var array
+   */
+  protected $entityFields = [];
 
   public function preProcess() {
     // Check for edit permission.

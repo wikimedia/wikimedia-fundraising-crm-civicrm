@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 
 /**
@@ -439,7 +439,7 @@ class CRM_UF_Form_Field extends CRM_Core_Form {
     $attributes = CRM_Core_DAO::getAttribute('CRM_Core_DAO_UFField');
 
     // weight
-    $this->add('text', 'weight', ts('Order'), $attributes['weight'], TRUE);
+    $this->add('number', 'weight', ts('Order'), $attributes['weight'], TRUE);
     $this->addRule('weight', ts('is a numeric field'), 'numeric');
 
     $this->add('textarea', 'help_pre', ts('Field Pre Help'), $attributes['help_pre']);

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  * $Id$
  *
  */
@@ -108,9 +108,7 @@ class CRM_Member_Page_Tab extends CRM_Core_Page {
         $paymentObject = CRM_Financial_BAO_PaymentProcessor::getProcessorForEntity(
           $membership[$dao->id]['membership_id'], 'membership', 'obj');
         if (!empty($paymentObject)) {
-          // @todo - get this working with syntax style $paymentObject->supports(array
-          //('updateSubscriptionBillingInfo'));
-          $isUpdateBilling = $paymentObject->isSupported('updateSubscriptionBillingInfo');
+          $isUpdateBilling = $paymentObject->supports('updateSubscriptionBillingInfo');
         }
 
         // @todo - get this working with syntax style $paymentObject->supports(array

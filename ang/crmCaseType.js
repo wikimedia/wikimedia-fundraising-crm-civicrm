@@ -76,6 +76,7 @@
             }];
             reqs.relTypes = ['RelationshipType', 'get', {
               sequential: 1,
+              is_active: 1,
               options: {
                 sort: CRM.crmCaseType.REL_TYPE_CNAME,
                 limit: 0
@@ -315,7 +316,8 @@
       _.each($scope.caseType.definition.activitySets, function (set) {
         _.each(set.activityTypes, function (type, name) {
           var isDefaultAssigneeTypeUndefined = _.isUndefined(type.default_assignee_type);
-          type.label = $scope.activityTypes[type.name].label;
+          var typeDefinition = $scope.activityTypes[type.name];
+          type.label = (typeDefinition && typeDefinition.label) || type.name;
 
           if (isDefaultAssigneeTypeUndefined) {
             type.default_assignee_type = defaultAssigneeDefaultValue.value;
@@ -355,7 +357,8 @@
     }
 
     function addActivityToSet(activitySet, activityTypeName) {
-      var activity = {
+      activitySet.activityTypes = activitySet.activityTypes || [];
+	    var activity = {
           name: activityTypeName,
           label: $scope.activityTypes[activityTypeName].label,
           status: 'Scheduled',

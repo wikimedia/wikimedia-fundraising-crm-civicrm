@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 
 require_once 'Mail/mime.php';
@@ -353,7 +353,7 @@ WHERE  email = %2
                         WHERE $jobTable.id = $job");
     $dao->fetch();
 
-    $component = new CRM_Mailing_BAO_Component();
+    $component = new CRM_Mailing_BAO_MailingComponent();
 
     if ($is_domain) {
       $component->id = $dao->optout_id;

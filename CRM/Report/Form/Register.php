@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  * $Id$
  *
  */
@@ -101,7 +101,7 @@ class CRM_Report_Form_Register extends CRM_Core_Form {
     $this->add('text', 'label', ts('Title'), array('size' => 40), TRUE);
     $this->add('text', 'value', ts('URL'), array('size' => 40), TRUE);
     $this->add('text', 'name', ts('Class'), array('size' => 40), TRUE);
-    $element = $this->add('text', 'weight', ts('Order'), array('size' => 4), TRUE);
+    $element = $this->add('number', 'weight', ts('Order'), array('size' => 4), TRUE);
     // $element->freeze( );
     $this->add('text', 'description', ts('Description'), array('size' => 40), TRUE);
 

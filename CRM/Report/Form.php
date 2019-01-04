@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 5                                                  |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2018                                |
+  | Copyright CiviCRM LLC (c) 2004-2019                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -1145,21 +1145,20 @@ class CRM_Report_Form extends CRM_Core_Form {
    *
    * This function creates a table AND adds the details to the developer tab & $this->>temporary tables.
    *
-   * @todo improve presentation on the developer tab since CREATE TEMPORARY is removed.
-   *
    * @param string $identifier
    * @param $sql
-   * @param bool $isTrueTemporary
-   *   Is this a mysql temporary table or temporary in a less technical sense.
    *
    * @return string
    */
-  public function createTemporaryTable($identifier, $sql, $isTrueTemporary = TRUE) {
-    $name = CRM_Utils_SQL_TempTable::build()->setUtf8(TRUE)->setDurable(($isTrueTemporary !== TRUE))->createWithQuery($sql)->getName();
+  public function createTemporaryTable($identifier, $sql) {
+    $tempTable = CRM_Utils_SQL_TempTable::build()->setUtf8(TRUE)->createWithQuery($sql);
+    $name = $tempTable->getName();
+    // Developers may force tables to be durable to assist in debugging so lets check.
+    $isNotTrueTemporary = $tempTable->isDurable();
     // The TempTable build routine adds the next line - we output it to help developers see what has happened.
-    $sql = 'CREATE ' . ($isTrueTemporary ? 'TEMPORARY ' : '') . "TABLE $name DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci " . $sql;
+    $sql = 'CREATE ' . ($isNotTrueTemporary ? '' : 'TEMPORARY ') . "TABLE $name DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci " . $sql;
     $this->addToDeveloperTab($sql);
-    $this->temporaryTables[$identifier] = ['temporary' => $isTrueTemporary, 'name' => $name];
+    $this->temporaryTables[$identifier] = ['temporary' => !$isNotTrueTemporary, 'name' => $name];
     return $name;
   }
 
@@ -1634,6 +1633,7 @@ class CRM_Report_Form extends CRM_Core_Form {
           )),
         ),
       );
+      unset($actions['report_instance.delete']);
     }
 
     if (!$this->_csvSupported) {
@@ -2451,8 +2451,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
    * @return mixed
    */
   protected function alterLocationTypeID($value, &$row, $selectedfield, $criteriaFieldName) {
-    $values = $this->getLocationTypeOptions();
-    return CRM_Utils_Array::value($value, $values);
+    return CRM_Core_PseudoConstant::getLabel('CRM_Core_DAO_Address', 'location_type_id', $value);
   }
 
   /**
@@ -2866,7 +2865,16 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
     $this->storeGroupByArray();
 
     if (!empty($this->_groupByArray)) {
-      $this->_groupBy = CRM_Contact_BAO_Query::getGroupByFromSelectColumns($this->_selectClauses, $this->_groupByArray);
+      if ($this->optimisedForOnlyFullGroupBy) {
+        // We should probably deprecate this code path. What happens here is that
+        // the group by is amended to reflect the select columns. This often breaks the
+        // results. Retrofitting group strict group by onto existing report classes
+        // went badly.
+        $this->_groupBy = CRM_Contact_BAO_Query::getGroupByFromSelectColumns($this->_selectClauses, $this->_groupByArray);
+      }
+      else {
+        $this->_groupBy = ' GROUP BY ' . implode($this->_groupByArray);
+      }
     }
   }
 
@@ -3934,7 +3942,7 @@ ORDER BY cg.weight, cf.weight";
           $curFilters[$fieldName]['type'] = CRM_Utils_Type::T_STRING;
 
           $options = CRM_Core_PseudoConstant::get('CRM_Core_BAO_CustomField', 'custom_' . $customDAO->cf_id, array(), 'search');
-          if ($options !== FALSE) {
+          if ((is_array($options) && count($options) != 0) || (!is_array($options) && $options !== FALSE)) {
             $curFilters[$fieldName]['operatorType'] = CRM_Core_BAO_CustomField::isSerialized($customDAO) ? CRM_Report_Form::OP_MULTISELECT_SEPARATOR : CRM_Report_Form::OP_MULTISELECT;
             $curFilters[$fieldName]['options'] = $options;
           }
@@ -4250,6 +4258,47 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
   }
 
   /**
+   * Add campaign fields.
+   *
+   * @param bool $groupBy
+   *   Add GroupBy? Not appropriate for detail report.
+   * @param bool $orderBy
+   *   Add OrderBy? Not appropriate for detail report.
+   * @param bool $filters
+   *
+   */
+  public function addCampaignFields($entityTable = 'civicrm_contribution', $groupBy = FALSE, $orderBy = FALSE, $filters = TRUE) {
+    // Check if CiviCampaign is a) enabled and b) has active campaigns
+    $config = CRM_Core_Config::singleton();
+    $campaignEnabled = in_array('CiviCampaign', $config->enableComponents);
+    if ($campaignEnabled) {
+      $getCampaigns = CRM_Campaign_BAO_Campaign::getPermissionedCampaigns(NULL, NULL, FALSE, FALSE, TRUE);
+      // If we have a campaign, build out the relevant elements
+      if (!empty($getCampaigns['campaigns'])) {
+        $this->campaigns = $getCampaigns['campaigns'];
+        asort($this->campaigns);
+        $this->_columns[$entityTable]['fields']['campaign_id'] = array('title' => ts('Campaign'), 'default' => 'false');
+        if ($filters) {
+          $this->_columns[$entityTable]['filters']['campaign_id'] = array(
+            'title' => ts('Campaign'),
+            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+            'options' => $this->campaigns,
+            'type' => CRM_Utils_Type::T_INT,
+          );
+        }
+
+        if ($groupBy) {
+          $this->_columns[$entityTable]['group_bys']['campaign_id'] = array('title' => ts('Campaign'));
+        }
+
+        if ($orderBy) {
+          $this->_columns[$entityTable]['order_bys']['campaign_id'] = array('title' => ts('Campaign'));
+        }
+      }
+    }
+  }
+
+  /**
    * Add address fields.
    *
    * @deprecated - use getAddressColumns which is a more accurate description
@@ -4497,6 +4546,18 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
         $entryFound = TRUE;
       }
     }
+
+    // Handle employer id
+    if (array_key_exists('civicrm_contact_employer_id', $row)) {
+      $employerId = $row['civicrm_contact_employer_id'];
+      if ($employerId) {
+        $rows[$rowNum]['civicrm_contact_employer_id'] = CRM_Contact_BAO_Contact::displayName($employerId);
+        $rows[$rowNum]['civicrm_contact_employer_id_link'] = CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid=' . $employerId, $this->_absoluteUrl);
+        $rows[$rowNum]['civicrm_contact_employer_id_hover'] = ts('View Contact Summary for Employer.');
+        $entryFound = TRUE;
+      }
+    }
+
     return $entryFound;
   }
 
@@ -4764,15 +4825,20 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
       'is_opt_out' => array(),
       'is_deceased' => array(),
       'preferred_language' => array(),
+      'employer_id' => array(
+        'title' => ts('Current Employer'),
+      ),
     );
   }
 
   /**
    * Get a standard set of contact filters.
    *
+   * @param array $defaults
+   *
    * @return array
    */
-  public function getBasicContactFilters() {
+  public function getBasicContactFilters($defaults = array()) {
     return array(
       'sort_name' => array(
         'title' => ts('Contact Name'),
@@ -4808,7 +4874,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
       'is_deceased' => array(
         'title' => ts('Deceased'),
         'type' => CRM_Utils_Type::T_BOOLEAN,
-        'default' => 0,
+        'default' => CRM_Utils_Array::value('deceased', $defaults, 0),
       ),
       'do_not_email' => array(
         'title' => ts('Do not email'),
@@ -5510,12 +5576,6 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
         'type' => 1,
         'is_order_bys' => TRUE,
         'is_filters' => TRUE,
-        'is_fields' => TRUE,
-      ),
-      $options['prefix'] . 'street_name' => array(
-        'name' => 'street_name',
-        'title' => ts($options['prefix_label'] . 'Street Name'),
-        'type' => 1,
         'is_fields' => TRUE,
       ),
       $options['prefix'] . 'street_unit' => array(

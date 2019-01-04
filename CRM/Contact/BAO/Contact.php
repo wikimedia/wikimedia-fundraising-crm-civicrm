@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2018                                |
+ | Copyright CiviCRM LLC (c) 2004-2019                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2018
+ * @copyright CiviCRM LLC (c) 2004-2019
  */
 class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
 
@@ -379,9 +379,6 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
       }
       else {
         $contactId = $contact->id;
-        if (isset($note['contact_id'])) {
-          $contactId = $note['contact_id'];
-        }
         //if logged in user, overwrite contactId
         if ($userID) {
           $contactId = $userID;
@@ -1149,7 +1146,7 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
         $statusMsg = ts('Image could not be uploaded due to invalid type extension.');
       }
       if ($opType == 'status') {
-        CRM_Core_Session::setStatus($statusMsg, 'Sorry', 'error');
+        CRM_Core_Session::setStatus($statusMsg, ts('Error'), 'error');
       }
       // FIXME: additional support for fatal, bounce etc could be added.
       return FALSE;
@@ -1448,7 +1445,7 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
             'name' => 'tag',
           ),
           'note' => array(
-            'title' => ts('Note(s)'),
+            'title' => ts('Note'),
             'name' => 'note',
           ),
           'communication_style_id' => array(
@@ -2032,8 +2029,10 @@ ORDER BY civicrm_email.is_primary DESC";
       CRM_Contact_BAO_GroupContact::create($params['group'], $contactID, $visibility, $method);
     }
 
-    if (!empty($fields['tag'])) {
-      CRM_Core_BAO_EntityTag::create($params['tag'], 'civicrm_contact', $contactID);
+    if (!empty($fields['tag']) && array_key_exists('tag', $params)) {
+      // Convert comma separated form values from select2 v3
+      $tags = is_array($params['tag']) ? $params['tag'] : array_fill_keys(array_filter(explode(',', $params['tag'])), 1);
+      CRM_Core_BAO_EntityTag::create($tags, 'civicrm_contact', $contactID);
     }
 
     //to add profile in default group
@@ -2551,7 +2550,6 @@ LEFT JOIN civicrm_email    ON ( civicrm_contact.id = civicrm_email.contact_id )
     if ($dao->fetch()) {
       $email = $dao->email;
     }
-    $dao->free();
     return $email;
   }
 
@@ -2579,7 +2577,6 @@ AND       civicrm_openid.is_primary = 1";
     if ($dao->fetch()) {
       $openId = $dao->openid;
     }
-    $dao->free();
     return $openId;
   }
 
@@ -2730,7 +2727,7 @@ AND       civicrm_openid.is_primary = 1";
           'caseId' => NULL,
           'context' => 'activity',
         );
-        return CRM_Activity_BAO_Activity::getActivitiesCount($input);
+        return CRM_Activity_BAO_Activity::deprecatedGetActivitiesCount($input);
 
       case 'mailing':
         $params = array('contact_id' => $contactId);
@@ -3557,7 +3554,6 @@ LEFT JOIN civicrm_address ON ( civicrm_address.contact_id = civicrm_contact.id )
           $dao->save();
         }
       }
-      $dao->free();
     }
     CRM_Utils_Hook::post('delete', $type, $id, $obj);
     $obj->free();
@@ -3644,6 +3640,18 @@ LEFT JOIN civicrm_address ON ( civicrm_address.contact_id = civicrm_contact.id )
       }
     }
     return FALSE;
+  }
+
+  /**
+   * Checks permission to create new contacts from entityRef widget
+   *
+   * Note: other components must return an array of links from this function,
+   * but Contacts are given special treatment - the links are in javascript already.
+   *
+   * @return bool
+   */
+  public static function entityRefCreateLinks() {
+    return CRM_Core_Permission::check([['profile create', 'profile listings and forms']]);
   }
 
 }
