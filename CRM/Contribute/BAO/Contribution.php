@@ -485,9 +485,13 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
    * @param array $ids
    *   The array that holds all the db ids.
    *
-   * @return CRM_Contribute_BAO_Contribution
+   * @return \CRM_Contribute_BAO_Contribution
+   * @throws \CRM_Core_Exception
    */
   public static function create(&$params, $ids = array()) {
+    $contributionID = CRM_Utils_Array::value('contribution', $ids, CRM_Utils_Array::value('id', $params));
+    $action = $contributionID ? 'edit' : 'create';
+
     $dateFields = array('receive_date', 'cancel_date', 'receipt_date', 'thankyou_date', 'revenue_recognition_date');
     foreach ($dateFields as $df) {
       if (isset($params[$df])) {
@@ -510,7 +514,7 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
     if (!empty($params['custom']) &&
       is_array($params['custom'])
     ) {
-      CRM_Core_BAO_CustomValueTable::store($params['custom'], 'civicrm_contribution', $contribution->id);
+      CRM_Core_BAO_CustomValueTable::store($params['custom'], 'civicrm_contribution', $contribution->id, $action);
     }
 
     $session = CRM_Core_Session::singleton();
@@ -4741,6 +4745,8 @@ WHERE ft.is_payment = 1
    *   Credit Note Id.
    */
   public static function createCreditNoteId() {
+    // hack fix for performance
+    return NULL;
     $prefixValue = Civi::settings()->get('contribution_invoice_settings');
 
     $creditNoteNum = CRM_Core_DAO::singleValueQuery("SELECT count(creditnote_id) as creditnote_number FROM civicrm_contribution WHERE creditnote_id IS NOT NULL");
