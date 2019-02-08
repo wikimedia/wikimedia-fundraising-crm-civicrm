@@ -88,23 +88,25 @@ class CRM_Contribute_Page_Tab extends CRM_Core_Page {
         unset($links[CRM_Core_Action::UPDATE]);
         return $links;
       }*/
-      if (is_object($paymentProcessorObj) && $paymentProcessorObj->supports('cancelRecurring')) {
-        unset($links[CRM_Core_Action::DISABLE]['extra'], $links[CRM_Core_Action::DISABLE]['ref']);
-        $links[CRM_Core_Action::DISABLE]['url'] = "civicrm/contribute/unsubscribe";
-        $links[CRM_Core_Action::DISABLE]['qs'] = "reset=1&crid=%%crid%%&cid=%%cid%%&context={$context}";
-      }
+      if (is_object($paymentProcessorObj)) {
+        if ($paymentProcessorObj->supports('cancelRecurring')) {
+          unset($links[CRM_Core_Action::DISABLE]['extra'], $links[CRM_Core_Action::DISABLE]['ref']);
+          $links[CRM_Core_Action::DISABLE]['url'] = "civicrm/contribute/unsubscribe";
+          $links[CRM_Core_Action::DISABLE]['qs'] = "reset=1&crid=%%crid%%&cid=%%cid%%&context={$context}";
+        }
 
-      if ($paymentProcessorObj->supports('UpdateSubscriptionBillingInfo')) {
-        $links[CRM_Core_Action::RENEW] = array(
-          'name' => ts('Change Billing Details'),
-          'title' => ts('Change Billing Details'),
-          'url' => 'civicrm/contribute/updatebilling',
-          'qs' => "reset=1&crid=%%crid%%&cid=%%cid%%&context={$context}",
-        );
-      }
+        if ($paymentProcessorObj->supports('UpdateSubscriptionBillingInfo')) {
+          $links[CRM_Core_Action::RENEW] = [
+            'name' => ts('Change Billing Details'),
+            'title' => ts('Change Billing Details'),
+            'url' => 'civicrm/contribute/updatebilling',
+            'qs' => "reset=1&crid=%%crid%%&cid=%%cid%%&context={$context}",
+          ];
+        }
 
-      if (!$paymentProcessorObj->supports('ChangeSubscriptionAmount') && !$paymentProcessorObj->supports('EditRecurringContribution')) {
-        unset($links[CRM_Core_Action::UPDATE]);
+        if (!$paymentProcessorObj->supports('ChangeSubscriptionAmount') && !$paymentProcessorObj->supports('EditRecurringContribution')) {
+          unset($links[CRM_Core_Action::UPDATE]);
+        }
       }
       return $links;
     }
