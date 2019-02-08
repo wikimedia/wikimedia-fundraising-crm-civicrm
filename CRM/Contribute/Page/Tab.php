@@ -81,12 +81,14 @@ class CRM_Contribute_Page_Tab extends CRM_Core_Page {
     if ($recurID) {
       $links = self::$_links;
       $paymentProcessorObj = CRM_Financial_BAO_PaymentProcessor::getProcessorForEntity($recurID, 'recur', 'obj');
-      if (!is_object($paymentProcessorObj)) {
+      // FIXME: update old recurring records with payment processor IDs,
+      // update code to add processor IDs to new records, and undo this hack!
+      /*if (!is_object($paymentProcessorObj)) {
         unset($links[CRM_Core_Action::DISABLE]);
         unset($links[CRM_Core_Action::UPDATE]);
         return $links;
-      }
-      if ($paymentProcessorObj->supports('cancelRecurring')) {
+      }*/
+      if (is_object($paymentProcessorObj) && $paymentProcessorObj->supports('cancelRecurring')) {
         unset($links[CRM_Core_Action::DISABLE]['extra'], $links[CRM_Core_Action::DISABLE]['ref']);
         $links[CRM_Core_Action::DISABLE]['url'] = "civicrm/contribute/unsubscribe";
         $links[CRM_Core_Action::DISABLE]['qs'] = "reset=1&crid=%%crid%%&cid=%%cid%%&context={$context}";
