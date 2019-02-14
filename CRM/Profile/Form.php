@@ -180,6 +180,15 @@ class CRM_Profile_Form extends CRM_Core_Form {
   protected $_session = NULL;
 
   /**
+   * @param $form
+   *
+   * @return bool
+   */
+  protected static function isUpdateExistingContactById($form) {
+    return $form->_isUpdateDupe == 1 && $form->_id;
+  }
+
+  /**
    * Explicitly declare the entity api name.
    */
   public function getDefaultEntity() {
@@ -938,13 +947,18 @@ class CRM_Profile_Form extends CRM_Core_Form {
         $exceptions = array($form->_session->get('userID'));
       }
 
-      $ids = CRM_Contact_BAO_Contact::getDuplicateContacts(
-        $fields, $ctype,
-        ($form->_context === 'dialog' ? 'Supervised' : 'Unsupervised'),
-        $exceptions,
-        FALSE,
-        $form->_ruleGroupID
-      );
+      if (self::isUpdateExistingContactById($form)) {
+        $ids = null;
+      }
+      else {
+        $ids = CRM_Contact_BAO_Contact::getDuplicateContacts(
+          $fields, $ctype,
+          ($form->_context === 'dialog' ? 'Supervised' : 'Unsupervised'),
+          $exceptions,
+          FALSE,
+          $form->_ruleGroupID
+        );
+      }
       if ($ids) {
         if ($form->_isUpdateDupe == 2) {
           CRM_Core_Session::setStatus(ts('Note: this contact may be a duplicate of an existing record.'), ts('Possible Duplicate Detected'), 'alert');
