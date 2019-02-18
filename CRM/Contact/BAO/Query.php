@@ -5127,24 +5127,10 @@ SELECT COUNT( conts.total_amount ) as total_count,
 
     $orderBy = 'ORDER BY civicrm_contribution_total_amount_count DESC';
     $groupBy = 'GROUP BY currency, civicrm_contribution.total_amount';
-    $modeSQL = "$select, SUBSTRING_INDEX(GROUP_CONCAT(conts.total_amount
-      ORDER BY conts.civicrm_contribution_total_amount_count DESC SEPARATOR ';'), ';', 1) as amount,
-      MAX(conts.civicrm_contribution_total_amount_count) as civicrm_contribution_total_amount_count
-      FROM ($innerQuery
-      $groupBy $orderBy) as conts
-      GROUP BY currency";
-
-    $summary['total']['mode'] = CRM_Contribute_BAO_Contribution::computeStats('mode', $modeSQL);
-
-    $medianSQL = "{$from} {$completedWhere}";
-    $summary['total']['median'] = CRM_Contribute_BAO_Contribution::computeStats('median', $medianSQL, 'civicrm_contribution');
-    $summary['total']['currencyCount'] = count($summary['total']['median']);
 
     if (!empty($summary['total']['amount'])) {
       $summary['total']['amount'] = implode(',&nbsp;', $summary['total']['amount']);
       $summary['total']['avg'] = implode(',&nbsp;', $summary['total']['avg']);
-      $summary['total']['mode'] = implode(',&nbsp;', $summary['total']['mode']);
-      $summary['total']['median'] = implode(',&nbsp;', $summary['total']['median']);
     }
     else {
       $summary['total']['amount'] = $summary['total']['avg'] = $summary['total']['median'] = 0;
