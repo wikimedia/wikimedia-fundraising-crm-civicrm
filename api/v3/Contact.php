@@ -1165,12 +1165,14 @@ function _civicrm_api3_contact_deprecation() {
  * @throws API_Exception
  */
 function civicrm_api3_contact_merge($params) {
-  if (($result = CRM_Dedupe_Merger::merge(array(
-      array(
-        'srcID' => $params['to_remove_id'],
-        'dstID' => $params['to_keep_id'],
-      ),
-    ), array(), $params['mode'])) != FALSE) {
+  if (($result = CRM_Dedupe_Merger::merge(
+      [['srcID' => $params['to_remove_id'], 'dstID' => $params['to_keep_id']]],
+      [],
+      $params['mode'],
+      FALSE,
+      CRM_Utils_Array::value('check_permissions', $params)
+    )) != FALSE) {
+
     return civicrm_api3_create_success($result, $params);
   }
   throw new API_Exception('Merge failed');
