@@ -36,7 +36,7 @@
  */
 class CRM_ACL_BAO_Cache extends CRM_ACL_DAO_Cache {
 
-  static $_cache = NULL;
+  public static $_cache = NULL;
 
   /**
    * @param int $id
@@ -45,7 +45,7 @@ class CRM_ACL_BAO_Cache extends CRM_ACL_DAO_Cache {
    */
   public static function &build($id) {
     if (!self::$_cache) {
-      self::$_cache = array();
+      self::$_cache = [];
     }
 
     if (array_key_exists($id, self::$_cache)) {
@@ -75,7 +75,7 @@ SELECT acl_id
   FROM civicrm_acl_cache
  WHERE contact_id = %1
 ";
-    $params = array(1 => array($id, 'Integer'));
+    $params = [1 => [$id, 'Integer']];
 
     if ($id == 0) {
       $query .= " OR contact_id IS NULL";
@@ -83,7 +83,7 @@ SELECT acl_id
 
     $dao = CRM_Core_DAO::executeQuery($query, $params);
 
-    $cache = array();
+    $cache = [];
     while ($dao->fetch()) {
       $cache[$dao->acl_id] = 1;
     }
@@ -122,7 +122,7 @@ SELECT acl_id
 DELETE FROM civicrm_acl_cache
 WHERE contact_id = %1
 ";
-    $params = array(1 => array($id, 'Integer'));
+    $params = [1 => [$id, 'Integer']];
     CRM_Core_DAO::executeQuery($query, $params);
   }
 
@@ -154,18 +154,23 @@ FROM   civicrm_acl_cache
 WHERE  modified_date IS NULL
    OR  (modified_date <= %1)
 ";
-    $params = array(1 => array(CRM_Contact_BAO_GroupContactCache::getCacheInvalidDateTime(), 'String'));
+    $params = [
+      1 => [
+        CRM_Contact_BAO_GroupContactCache::getCacheInvalidDateTime(),
+        'String',
+      ],
+    ];
     CRM_Core_DAO::singleValueQuery($query, $params);
 
     // CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache"); // No, force-commits transaction
     // CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache"); // Transaction-safe
     if (CRM_Core_Transaction::isActive()) {
       CRM_Core_Transaction::addCallback(CRM_Core_Transaction::PHASE_POST_COMMIT, function () {
-        CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache");
+        CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache");
       });
     }
     else {
-      CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache");
+      CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache");
     }
   }
 

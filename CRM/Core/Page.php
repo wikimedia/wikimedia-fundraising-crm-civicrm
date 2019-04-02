@@ -98,14 +98,14 @@ class CRM_Core_Page {
    *
    * @var array
    */
-  public $ajaxResponse = array();
+  public $ajaxResponse = [];
 
   /**
    * Url path used to reach this page
    *
    * @var array
    */
-  public $urlPath = array();
+  public $urlPath = [];
 
   /**
    * Should crm.livePage.js be added to the page?
@@ -144,7 +144,7 @@ class CRM_Core_Page {
         $this->_print = CRM_Core_Smarty::PRINT_NOFORM;
       }
       // Support 'json' as well as legacy value '6'
-      elseif (in_array($_REQUEST['snippet'], array(CRM_Core_Smarty::PRINT_JSON, 6))) {
+      elseif (in_array($_REQUEST['snippet'], [CRM_Core_Smarty::PRINT_JSON, 6])) {
         $this->_print = CRM_Core_Smarty::PRINT_JSON;
       }
       else {
@@ -177,12 +177,12 @@ class CRM_Core_Page {
     CRM_Utils_Hook::pageRun($this);
 
     if ($this->_print) {
-      if (in_array($this->_print, array(
+      if (in_array($this->_print, [
         CRM_Core_Smarty::PRINT_SNIPPET,
         CRM_Core_Smarty::PRINT_PDF,
         CRM_Core_Smarty::PRINT_NOFORM,
         CRM_Core_Smarty::PRINT_JSON,
-      ))) {
+      ])) {
         $content = self::$_template->fetch('CRM/common/snippet.tpl');
       }
       else {
@@ -199,7 +199,7 @@ class CRM_Core_Page {
 
       if ($this->_print == CRM_Core_Smarty::PRINT_PDF) {
         CRM_Utils_PDF_Utils::html2pdf($content, "{$this->_name}.pdf", FALSE,
-          array('paper_size' => 'a3', 'orientation' => 'landscape')
+          ['paper_size' => 'a3', 'orientation' => 'landscape']
         );
       }
       elseif ($this->_print == CRM_Core_Smarty::PRINT_JSON) {
@@ -215,12 +215,7 @@ class CRM_Core_Page {
     $config = CRM_Core_Config::singleton();
 
     // Intermittent alert to admins
-    // T138334 / CRM-19101
-    // These checks are extra slow as a result of us being behind a firewall
-    // Turning off the versionCheck scheduled job disabled some from running
-    // during a user session but the extension check persisted.
-    // Am falling back on hackery.
-    // CRM_Utils_Check::singleton()->showPeriodicAlerts();
+    CRM_Utils_Check::singleton()->showPeriodicAlerts();
 
     if ($this->useLivePageJS && Civi::settings()->get('ajaxPopupsEnabled')) {
       CRM_Core_Resources::singleton()->addScriptFile('civicrm', 'js/crm.livePage.js', 1, 'html-header');
@@ -322,10 +317,10 @@ class CRM_Core_Page {
   public function getTemplateFileName() {
     return strtr(
       CRM_Utils_System::getClassName($this),
-      array(
+      [
         '_' => DIRECTORY_SEPARATOR,
         '\\' => DIRECTORY_SEPARATOR,
-      )
+      ]
     ) . '.tpl';
   }
 
@@ -425,8 +420,8 @@ class CRM_Core_Page {
    * @throws \CiviCRM_API3_Exception
    */
   protected function assignFieldMetadataToTemplate($entity) {
-    $fields = civicrm_api3($entity, 'getfields', array('action' => 'get'));
-    $dateFields = array();
+    $fields = civicrm_api3($entity, 'getfields', ['action' => 'get']);
+    $dateFields = [];
     foreach ($fields['values'] as $fieldName => $fieldMetaData) {
       if (isset($fieldMetaData['html']) && CRM_Utils_Array::value('type', $fieldMetaData['html']) == 'Select Date') {
         $dateFields[$fieldName] = CRM_Utils_Date::addDateMetadataToField($fieldMetaData, $fieldMetaData);
