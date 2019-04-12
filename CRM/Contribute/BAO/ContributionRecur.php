@@ -37,7 +37,7 @@ class CRM_Contribute_BAO_ContributionRecur extends CRM_Contribute_DAO_Contributi
    *
    * @var array
    */
-  private static $inactiveStatuses = ['Cancelled', 'Chargeback', 'Refunded', 'Completed'];
+  private static $inactiveStatuses = ['Cancelled', 'Chargeback', 'Refunded'];
 
   /**
    * Create recurring contribution.
