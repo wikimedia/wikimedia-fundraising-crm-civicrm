@@ -300,6 +300,7 @@ function _civicrm_api3_activity_get_spec(&$params) {
 function civicrm_api3_activity_get($params) {
   $options = _civicrm_api3_get_options_from_params($params, FALSE, 'Activity', 'get');
   $sql = CRM_Utils_SQL_Select::fragment();
+  _civicrm_activity_get_handleSourceContactNameOrderBy($params, $options, $sql);
 
   _civicrm_api3_activity_get_extraFilters($params, $sql);
 
@@ -334,6 +335,41 @@ function civicrm_api3_activity_get($params) {
   $activities = _civicrm_api3_activity_get_formatResult($params, $activities, $options);
   //legacy custom data get - so previous formatted response is still returned too
   return civicrm_api3_create_success($activities, $params, 'Activity', 'get');
+}
+
+/**
+ * Handle source_contact_name as a sort parameter.
+ *
+ * This is passed from the activity selector - e.g search results or contact tab.
+ *
+ * It's a non-standard handling but this api already handles variations on handling source_contact
+ * as a filter & as a field so it's in keeping with that. Source contact has a one-one relationship
+ * with activity table.
+ *
+ * Test coverage in CRM_Activity_BAO_ActivtiyTest::testGetActivitiesforContactSummaryWithSortOptions
+ *
+ * @param array $params
+ * @param array $options
+ * @param CRM_Utils_SQL_Select $sql
+ */
+function _civicrm_activity_get_handleSourceContactNameOrderBy(&$params, &$options, $sql) {
+  $sourceContactID = CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_ActivityContact', 'record_type_id', 'Activity Source');
+  if (!empty($options['sort']) && in_array($options['sort'], [
+      'source_contact_name',
+      'source_contact_name desc',
+      'source_contact_name asc'
+    ])) {
+    $order = substr($options['sort'], -4) === 'desc' ? 'desc' : 'asc';
+    $sql->join(
+      'source_contact',
+      "LEFT JOIN
+      civicrm_activity_contact ac ON (ac.activity_id = a.id AND record_type_id = #sourceContactID)
+       LEFT JOIN civicrm_contact c ON c.id = ac.contact_id",
+      ['sourceContactID' => $sourceContactID]
+    );
+    $sql->orderBy("c.display_name $order");
+    unset($options['sort'], $params['options']['sort']);
+  }
 }
 
 /**
@@ -608,8 +644,10 @@ function _civicrm_api3_activity_fill_activity_contact_names(&$activities, $param
       'activity_id',
       'record_type_id',
       'contact_id.display_name',
+      'contact_id.sort_name',
       'contact_id',
     ],
+    'options' => ['limit' => 0],
     'check_permissions' => !empty($params['check_permissions']),
   ];
   if (count($activityContactTypes) < 3) {
@@ -622,10 +660,12 @@ function _civicrm_api3_activity_fill_activity_contact_names(&$activities, $param
     if (in_array($recordType, ['target', 'assignee'])) {
       $activities[$activityContact['activity_id']][$recordType . '_contact_id'][] = $contactID;
       $activities[$activityContact['activity_id']][$recordType . '_contact_name'][$contactID] = isset($activityContact['contact_id.display_name']) ? $activityContact['contact_id.display_name'] : '';
+      $activities[$activityContact['activity_id']][$recordType . '_contact_sort_name'][$contactID] = isset($activityContact['contact_id.sort_name']) ? $activityContact['contact_id.sort_name'] : '';
     }
     else {
       $activities[$activityContact['activity_id']]['source_contact_id'] = $contactID;
       $activities[$activityContact['activity_id']]['source_contact_name'] = isset($activityContact['contact_id.display_name']) ? $activityContact['contact_id.display_name'] : '';
+      $activities[$activityContact['activity_id']]['source_contact_sort_name'] = isset($activityContact['contact_id.sort_name']) ? $activityContact['contact_id.sort_name'] : '';
     }
   }
 }
