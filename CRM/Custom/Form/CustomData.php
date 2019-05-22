@@ -196,7 +196,7 @@ class CRM_Custom_Form_CustomData {
    *
    * @return array
    */
-  public static function setGroupTree(&$form, $subType, $gid, $onlySubType = NULL, $getCachedTree = TRUE) {
+  public static function setGroupTree(&$form, $subType, $gid, $onlySubType = NULL, $getCachedTree = FALSE) {
     $singleRecord = NULL;
     if (!empty($form->_groupCount) && !empty($form->_multiRecordDisplay) && $form->_multiRecordDisplay == 'single') {
       $singleRecord = $form->_groupCount;
