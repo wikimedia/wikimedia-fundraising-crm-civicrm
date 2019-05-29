@@ -406,7 +406,7 @@ WHERE (pn.cacheKey $op %1 OR pn.cacheKey $op %2)
       $validFieldsForRetrieval = civicrm_api3('Contact', 'getfields', ['action' => 'get'])['values'];
       if (!empty($criteria)) {
         $contacts = civicrm_api3('Contact', 'get', array_merge([
-          'options' => ['limit' => 0],
+          'options' => ['limit' => $searchLimit],
           'return' => 'id',
           'check_permissions' => TRUE,
         ], array_intersect_key($criteria['contact'], $validFieldsForRetrieval)));
