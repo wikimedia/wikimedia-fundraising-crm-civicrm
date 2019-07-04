@@ -779,4 +779,47 @@ MODIFY      {$columnName} varchar( $length )
     }
   }
 
+  /**
+   * Get the sql to alter an individual field.
+   *
+   * This will need to have an ALTER TABLE statement appended but by getting
+   * by individual field we can do one or many.
+   *
+   * @param array $params
+   * @param bool $indexExist
+   *
+   * @return string
+   */
+  public static function getFieldAlterSQL($params, $indexExist) {
+    $sql = '';
+    switch ($params['operation']) {
+      case 'add':
+        $separator = "\n";
+        $sql .= self::buildFieldSQL($params, $separator, "ADD COLUMN ");
+        $separator = ",\n";
+        $sql .= self::buildPrimaryKeySQL($params, $separator, "ADD PRIMARY KEY ");
+        $sql .= self::buildSearchIndexSQL($params, $separator, "ADD INDEX ");
+        $sql .= self::buildForeignKeySQL($params, $separator, "ADD ", $params['table_name']);
+        break;
+
+      case 'modify':
+        $separator = "\n";
+        $sql .= self::buildFieldSQL($params, $separator, "MODIFY ");
+        $separator = ",\n";
+        $sql .= self::buildSearchIndexSQL($params, $separator, "ADD INDEX ", $indexExist);
+        break;
+
+      case 'delete':
+        $sql .= " DROP COLUMN `{$params['name']}`";
+        if (!empty($params['primary'])) {
+          $sql .= ", DROP PRIMARY KEY";
+        }
+        if (!empty($params['fk_table_name'])) {
+          $sql .= ", DROP FOREIGN KEY FK_{$params['fkName']}";
+        }
+        break;
+    }
+    return $sql;
+  }
+
 }

@@ -2538,4 +2538,333 @@ WHERE cf.id = %1 AND cg.is_multiple = 1";
     }
   }
 
+  /**
+   * Create several fields at once in a mysql efficient way.
+   *
+   * https://lab.civicrm.org/dev/core/issues/1093
+   *
+   * The intention is that apiv4 would expose any BAO with bulkCreate as a new action.
+   *
+   * Note that in the first instance this supports 'create' only. It's possible edit
+   * is fine in the same function - just treading slowly.
+   *
+   * @param array $bulkParams
+   *   Array of arrays as would be passed into create
+   * @param array $defaults
+   *  Default parameters to be be merged into each of the params.
+   */
+  public static function bulkCreate($bulkParams, $defaults) {
+    $sql = [];
+    $customFields = [];
+    foreach ($bulkParams as $fieldParams) {
+      $params = array_merge($defaults, $fieldParams);
+      $customField = self::createCustomFieldRecord($params);
+      // Only doing 'add' for now - so hard coded & no indexExists.
+      $fieldSQL = self::getAlterFieldSQL($customField, 'add', $params);
+      $sql[$params['table_name']][] = $fieldSQL;
+      $customFields[] = $customField;
+    }
+    foreach ($sql as $tableName => $statements) {
+      // CRM-7007: do not i18n-rewrite this query
+      CRM_Core_DAO::executeQuery("ALTER TABLE $tableName " . implode(', ', $statements), [], TRUE, NULL, FALSE, FALSE);
+      Civi::service('sql_triggers')->rebuild($params['table_name'], TRUE);
+    }
+
+    CRM_Utils_System::flushCache();
+    foreach ($customFields as $customField) {
+      CRM_Utils_Hook::post('create', 'CustomField', $customField->id, $customField);
+    }
+  }
+
+  /**
+   * @param CRM_Core_DAO_CustomField $field
+   * @param string $operation
+   * @param array $params
+   * @param bool $indexExist
+   *
+   * @return bool
+   */
+  public static function getAlterFieldSQL($field, $operation, &$params, $indexExist = FALSE) {
+    $params = self::prepareCreateParams($field, $operation);
+    // lets suppress the required flag, since that can cause sql issue
+    $params['required'] = FALSE;
+
+    return CRM_Core_BAO_SchemaHandler::getFieldAlterSQL($params, $indexExist);
+  }
+
+  /**
+   * @param CRM_Core_DAO_CustomField $field
+   * @param 'add|modify' $operation
+   *
+   * @return array
+   */
+  protected static function prepareCreateParams($field, $operation) {
+    $tableName = CRM_Core_DAO::getFieldValue(
+      'CRM_Core_DAO_CustomGroup',
+      $field->custom_group_id,
+      'table_name'
+    );
+
+    $params = [
+      'table_name' => $tableName,
+      'operation' => $operation,
+      'name' => $field->column_name,
+      'type' => CRM_Core_BAO_CustomValueTable::fieldToSQLType(
+        $field->data_type,
+        $field->text_length
+      ),
+      'required' => $field->is_required,
+      'searchable' => $field->is_searchable,
+    ];
+
+    if ($operation == 'delete') {
+      $fkName = "{$tableName}_{$field->column_name}";
+      if (strlen($fkName) >= 48) {
+        $fkName = substr($fkName, 0, 32) . '_' . substr(md5($fkName), 0, 16);
+      }
+      $params['fkName'] = $fkName;
+    }
+    if ($field->data_type == 'Country' && $field->html_type == 'Select Country') {
+      $params['fk_table_name'] = 'civicrm_country';
+      $params['fk_field_name'] = 'id';
+      $params['fk_attributes'] = 'ON DELETE SET NULL';
+    }
+    elseif ($field->data_type == 'Country' && $field->html_type == 'Multi-Select Country') {
+      $params['type'] = 'varchar(255)';
+    }
+    elseif ($field->data_type == 'StateProvince' && $field->html_type == 'Select State/Province') {
+      $params['fk_table_name'] = 'civicrm_state_province';
+      $params['fk_field_name'] = 'id';
+      $params['fk_attributes'] = 'ON DELETE SET NULL';
+    }
+    elseif ($field->data_type == 'StateProvince' && $field->html_type == 'Multi-Select State/Province') {
+      $params['type'] = 'varchar(255)';
+    }
+    elseif ($field->data_type == 'File') {
+      $params['fk_table_name'] = 'civicrm_file';
+      $params['fk_field_name'] = 'id';
+      $params['fk_attributes'] = 'ON DELETE SET NULL';
+    }
+    elseif ($field->data_type == 'ContactReference') {
+      $params['fk_table_name'] = 'civicrm_contact';
+      $params['fk_field_name'] = 'id';
+      $params['fk_attributes'] = 'ON DELETE SET NULL';
+    }
+    if (isset($field->default_value)) {
+      $params['default'] = "'{$field->default_value}'";
+    }
+    return $params;
+  }
+
+  /**
+   * Create database entry for custom field and related option groups.
+   *
+   * @param array $params
+   *
+   * @return CRM_Core_DAO_CustomField
+   */
+  protected static function createCustomFieldRecord($params) {
+    $transaction = new CRM_Core_Transaction();
+    $params = self::prepareCreate($params);
+
+    $customField = new CRM_Core_DAO_CustomField();
+    $customField->copyValues($params);
+    $customField->save();
+
+    //create/drop the index when we toggle the is_searchable flag
+    $op = empty($params['id']) ? 'add' : 'modify';
+    if ($op !== 'modify') {
+      if ($params['is_append_field_id_to_column_name']) {
+        $params['column_name'] .= "_{$customField->id}";
+      }
+      $customField->column_name = $params['column_name'];
+      $customField->save();
+    }
+
+    // complete transaction - note that any table alterations include an implicit commit so this is largely meaningless.
+    $transaction->commit();
+
+    // make sure all values are present in the object for further processing
+    $customField->find(TRUE);
+    return $customField;
+  }
+
+  /**
+   * Prepare for the create operation.
+   *
+   * Munge params, create the option values if needed.
+   *
+   * This could be called by a single create or a batchCreate.
+   *
+   * @param array $params
+   *
+   * @return array
+   */
+  protected static function prepareCreate($params) {
+    $op = empty($params['id']) ? 'create' : 'edit';
+    CRM_Utils_Hook::pre($op, 'CustomField', CRM_Utils_Array::value('id', $params), $params);
+    $params['is_append_field_id_to_column_name'] = !isset($params['column_name']);
+    if ($op === 'create') {
+      CRM_Core_DAO::setCreateDefaults($params, self::getDefaults());
+      if (!isset($params['column_name'])) {
+        // if add mode & column_name not present, calculate it.
+        $params['column_name'] = strtolower(CRM_Utils_String::munge($params['label'], '_', 32));
+      }
+      if (!isset($params['name'])) {
+        $params['name'] = CRM_Utils_String::munge($params['label'], '_', 64);
+      }
+    }
+    else {
+      $params['column_name'] = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomField',
+        $params['id'],
+        'column_name'
+      );
+    }
+
+    switch (CRM_Utils_Array::value('html_type', $params)) {
+      case 'Select Date':
+        if (empty($params['date_format'])) {
+          $config = CRM_Core_Config::singleton();
+          $params['date_format'] = $config->dateInputFormat;
+        }
+        break;
+
+      case 'CheckBox':
+      case 'Multi-Select':
+        if (isset($params['default_checkbox_option'])) {
+          $tempArray = array_keys($params['default_checkbox_option']);
+          $defaultArray = [];
+          foreach ($tempArray as $k => $v) {
+            if ($params['option_value'][$v]) {
+              $defaultArray[] = $params['option_value'][$v];
+            }
+          }
+
+          if (!empty($defaultArray)) {
+            // also add the separator before and after the value per new convention (CRM-1604)
+            $params['default_value'] = CRM_Core_DAO::VALUE_SEPARATOR . implode(CRM_Core_DAO::VALUE_SEPARATOR, $defaultArray) . CRM_Core_DAO::VALUE_SEPARATOR;
+          }
+        }
+        else {
+          if (!empty($params['default_option']) && isset($params['option_value'][$params['default_option']])
+          ) {
+            $params['default_value'] = $params['option_value'][$params['default_option']];
+          }
+        }
+        break;
+    }
+
+    $htmlType = CRM_Utils_Array::value('html_type', $params);
+    $dataType = CRM_Utils_Array::value('data_type', $params);
+    $allowedOptionTypes = ['String', 'Int', 'Float', 'Money'];
+
+    // create any option group & values if required
+    if ($htmlType != 'Text' && in_array($dataType, $allowedOptionTypes)
+    ) {
+      //CRM-16659: if option_value then create an option group for this custom field.
+      if ($params['option_type'] == 1 && (empty($params['option_group_id']) || !empty($params['option_value']))) {
+        // first create an option group for this custom group
+        $optionGroup = new CRM_Core_DAO_OptionGroup();
+        $optionGroup->name = "{$params['column_name']}_" . date('YmdHis');
+        $optionGroup->title = $params['label'];
+        $optionGroup->is_active = 1;
+        // Don't set reserved as it's not a built-in option group and may be useful for other custom fields.
+        $optionGroup->is_reserved = 0;
+        $optionGroup->data_type = $dataType;
+        $optionGroup->save();
+        $params['option_group_id'] = $optionGroup->id;
+        if (!empty($params['option_value']) && is_array($params['option_value'])) {
+          foreach ($params['option_value'] as $k => $v) {
+            self::createOptionValue($params, $v, $optionGroup, $k, $dataType);
+          }
+        }
+      }
+    }
+
+    // check for orphan option groups
+    if (!empty($params['option_group_id'])) {
+      if (!empty($params['id'])) {
+        self::fixOptionGroups($params['id'], $params['option_group_id']);
+      }
+
+      // if we do not have a default value
+      // retrieve it from one of the other custom fields which use this option group
+      if (empty($params['default_value'])) {
+        //don't insert only value separator as default value, CRM-4579
+        $defaultValue = self::getOptionGroupDefault($params['option_group_id'],
+          $htmlType
+        );
+
+        if (!CRM_Utils_System::isNull(explode(CRM_Core_DAO::VALUE_SEPARATOR,
+          $defaultValue
+        ))
+        ) {
+          $params['default_value'] = $defaultValue;
+        }
+      }
+    }
+
+    // since we need to save option group id :)
+    if (!isset($params['attributes']) && strtolower($htmlType) == 'textarea') {
+      $params['attributes'] = 'rows=4, cols=60';
+    }
+    return $params;
+  }
+
+  /**
+   * Create an option value for a custom field option group ID.
+   *
+   * @param array $params
+   * @param string $value
+   * @param \CRM_Core_DAO_OptionGroup $optionGroup
+   * @param string $optionName
+   * @param string $dataType
+   */
+  protected static function createOptionValue(&$params, $value, CRM_Core_DAO_OptionGroup $optionGroup, $optionName, $dataType) {
+    if (strlen(trim($value))) {
+      $optionValue = new CRM_Core_DAO_OptionValue();
+      $optionValue->option_group_id = $optionGroup->id;
+      $optionValue->label = $params['option_label'][$optionName];
+      $optionValue->name = CRM_Utils_String::titleToVar($params['option_label'][$optionName]);
+      switch ($dataType) {
+        case 'Money':
+          $optionValue->value = CRM_Utils_Rule::cleanMoney($value);
+          break;
+
+        case 'Int':
+          $optionValue->value = intval($value);
+          break;
+
+        case 'Float':
+          $optionValue->value = floatval($value);
+          break;
+
+        default:
+          $optionValue->value = trim($value);
+      }
+
+      $optionValue->weight = $params['option_weight'][$optionName];
+      $optionValue->is_active = CRM_Utils_Array::value($optionName, $params['option_status'], FALSE);
+      $optionValue->save();
+    }
+  }
+
+  /**
+   * Get defaults for new entity.
+   *
+   * @return array
+   */
+  public static function getDefaults() {
+    return [
+      'is_required' => FALSE,
+      'is_searchable' => FALSE,
+      'in_selector' => FALSE,
+      'is_search_range' => FALSE,
+      //CRM-15792 - Custom field gets disabled if is_active not set
+      // this would ideally be a mysql default.
+      'is_active' => TRUE,
+      'is_view' => FALSE,
+    ];
+  }
+
 }
