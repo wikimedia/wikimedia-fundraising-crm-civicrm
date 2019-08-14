@@ -404,6 +404,7 @@ class CRM_Contact_Import_Form_MapField extends CRM_Import_Form_MapField {
       $sel = &$this->addElement('hierselect', "mapper[$i]", ts('Mapper for Field %1', array(1 => $i)), NULL);
       $jsSet = FALSE;
       if ($this->get('savedMapping')) {
+        $mappingName = array_values($mappingName);
         if (isset($mappingName[$i])) {
           if ($mappingName[$i] != ts('- do not import -')) {
 
