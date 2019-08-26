@@ -2303,6 +2303,7 @@ class DB_DataObject extends DB_DataObject_Overload
         // change the connection and results charsets to UTF-8 if we're using MySQL 4.1+
         $civicrmConfig = CRM_Core_Config::singleton();
         $this->query("/*!40101 SET NAMES utf8 */");
+        $this->query("/*!50503 SET NAMES utf8mb4 */");
 
         if (!empty($_DB_DATAOBJECT['CONFIG']['debug'])) {
             $this->debug(serialize($_DB_DATAOBJECT['CONNECTIONS']), "CONNECT",5);
@@ -2468,8 +2469,9 @@ class DB_DataObject extends DB_DataObject_Overload
             }
             return $this->raiseError($result);
         }
-
-        $action = strtolower(substr(trim($string),0,6));
+        // Strip any prepended comments
+        $queryString = (substr($string, 0, 2) === '/*') ? substr($string, strpos($string, '*/') + 2) : $string;
+        $action = strtolower(substr(trim($queryString),0,6));
 
         if (!empty($_DB_DATAOBJECT['CONFIG']['debug']) || defined('CIVICRM_DEBUG_LOG_QUERY')) {
           $timeTaken = sprintf("%0.6f", microtime(TRUE) - $time);

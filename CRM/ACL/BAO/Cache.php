@@ -34,7 +34,7 @@
 /**
  *  Access Control Cache.
  */
-class CRM_ACL_BAO_Cache extends CRM_ACL_DAO_Cache {
+class CRM_ACL_BAO_Cache extends CRM_ACL_DAO_ACLCache {
 
   public static $_cache = NULL;
 
@@ -96,7 +96,7 @@ SELECT acl_id
    */
   public static function store($id, &$cache) {
     foreach ($cache as $aclID => $data) {
-      $dao = new CRM_ACL_DAO_Cache();
+      $dao = new CRM_ACL_BAO_Cache();
       if ($id) {
         $dao->contact_id = $id;
       }
@@ -166,11 +166,11 @@ WHERE  modified_date IS NULL
     // CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache"); // Transaction-safe
     if (CRM_Core_Transaction::isActive()) {
       CRM_Core_Transaction::addCallback(CRM_Core_Transaction::PHASE_POST_COMMIT, function () {
-        CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache");
+        CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache");
       });
     }
     else {
-      CRM_Core_DAO::singleValueQuery("DELETE FROM civicrm_acl_contact_cache");
+      CRM_Core_DAO::singleValueQuery("TRUNCATE TABLE civicrm_acl_contact_cache");
     }
   }
 

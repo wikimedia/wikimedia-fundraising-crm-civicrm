@@ -1148,29 +1148,20 @@ class DB_common extends PEAR
      */
     function modifyQuery($query)
     {
-        /**
-         * WMF hack:
-         * Insert diagnostic info such as requesting user.
-         *
-         * Have not found a function to efficiently get uf username.
-         * Not sure if query begin time is already reported by mysql, or would be useful.
-         */
-        global $installType;
-        if ( isset( $installType ) ) {
-            $prefix = "/* Civi utils not available during installation */";
-        }
-        else {
-            global $user;
-            if (empty($user)) {
-                $prefix = '';
+        // This section of code may run hundreds or thousands of times in a given request.
+        // Consequently, it is micro-optimized to use single lookup in typical case.
+        if (!isset(Civi::$statics['db_common_dispatcher'])) {
+            if (class_exists('Civi\Core\Container') && \Civi\Core\Container::isContainerBooted()) {
+                Civi::$statics['db_common_dispatcher'] = Civi\Core\Container::singleton()->get('dispatcher');
             }
             else {
-                $prefix = "/* https://civicrm.wikimedia.org/user/{$user->uid} */ ";
+                return $query;
             }
         }
-        $query = $prefix . $query;
 
-        return $query;
+        $e = new \Civi\Core\Event\QueryEvent($query);
+        Civi::$statics['db_common_dispatcher']->dispatch('civi.db.query', $e);
+        return $e->query;
     }
 
     // }}}

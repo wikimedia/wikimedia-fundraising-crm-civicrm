@@ -348,13 +348,13 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    */
   public static function clearDBCache() {
     $queries = [
-      'DELETE FROM civicrm_acl_cache',
-      'DELETE FROM civicrm_acl_contact_cache',
-      'DELETE FROM civicrm_cache',
-      'DELETE FROM civicrm_prevnext_cache',
+      'TRUNCATE TABLE civicrm_acl_cache',
+      'TRUNCATE TABLE civicrm_acl_contact_cache',
+      'TRUNCATE TABLE civicrm_cache',
+      'TRUNCATE TABLE civicrm_prevnext_cache',
       'UPDATE civicrm_group SET cache_date = NULL',
-      'DELETE FROM civicrm_group_contact_cache',
-      'DELETE FROM civicrm_menu',
+      'TRUNCATE TABLE civicrm_group_contact_cache',
+      'TRUNCATE TABLE civicrm_menu',
       'UPDATE civicrm_setting SET value = NULL WHERE name="navigation" AND contact_id IS NOT NULL',
     ];
 
@@ -471,6 +471,7 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    * @deprecated
    */
   public function addressSequence() {
+    CRM_Core_Error::deprecatedFunctionWarning('CRM_Utils_Address::sequence(Civi::settings()->get(\'address_format\')');
     return CRM_Utils_Address::sequence(Civi::settings()->get('address_format'));
   }
 
@@ -478,6 +479,7 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    * @deprecated
    */
   public function defaultContactCountry() {
+    CRM_Core_Error::deprecatedFunctionWarning('CRM_Core_BAO_Country::defaultContactCountry');
     return CRM_Core_BAO_Country::defaultContactCountry();
   }
 
@@ -485,6 +487,7 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    * @deprecated
    */
   public function defaultContactCountryName() {
+    CRM_Core_Error::deprecatedFunctionWarning('CRM_Core_BAO_Country::defaultContactCountryName');
     return CRM_Core_BAO_Country::defaultContactCountryName();
   }
 
@@ -496,6 +499,7 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    * @return string
    */
   public function defaultCurrencySymbol($defaultCurrency = NULL) {
+    CRM_Core_Error::deprecatedFunctionWarning('CRM_Core_BAO_Country::defaultCurrencySymbol');
     return CRM_Core_BAO_Country::defaultCurrencySymbol($defaultCurrency);
   }
 

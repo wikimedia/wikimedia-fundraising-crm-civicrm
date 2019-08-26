@@ -67,7 +67,7 @@ class CRM_Core_Page {
    * so the display routine needs to not do any work. (The
    * parent object takes care of the display)
    *
-   * @var boolean
+   * @var bool
    */
   protected $_embedded = FALSE;
 
@@ -75,7 +75,7 @@ class CRM_Core_Page {
    * Are we in print mode? if so we need to modify the display
    * functionality to do a minimal display :)
    *
-   * @var boolean
+   * @var bool
    */
   protected $_print = FALSE;
 
@@ -214,13 +214,12 @@ class CRM_Core_Page {
 
     $config = CRM_Core_Config::singleton();
 
+    // @fixme this is probably the wrong place for this.  It is required by jsortable.tpl which is inherited from many page templates.
+    //   So we have to add it here to deprecate $config->defaultCurrencySymbol
+    $this->assign('defaultCurrencySymbol', CRM_Core_BAO_Country::defaultCurrencySymbol());
+
     // Intermittent alert to admins
-    // T138334 / CRM-19101
-    // These checks are extra slow as a result of us being behind a firewall
-    // Turning off the versionCheck scheduled job disabled some from running
-    // during a user session but the extension check persisted.
-    // Am falling back on hackery.
-    // CRM_Utils_Check::singleton()->showPeriodicAlerts();
+    CRM_Utils_Check::singleton()->showPeriodicAlerts();
 
     if ($this->useLivePageJS && Civi::settings()->get('ajaxPopupsEnabled')) {
       CRM_Core_Resources::singleton()->addScriptFile('civicrm', 'js/crm.livePage.js', 1, 'html-header');
