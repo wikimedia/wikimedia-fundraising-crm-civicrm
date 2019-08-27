@@ -2539,6 +2539,21 @@ WHERE cf.id = %1 AND cg.is_multiple = 1";
   }
 
   /**
+   * Temporary wrappeer for bulkCreate.
+   *
+   * During upstreaming the bulkCreate function it was enhanced to support
+   * update & consequently renamed bulkSave.
+   *
+   * This introduces the new FN name so we can switch wmf_civicrm.module over.
+   *
+   * @param $bulkParams
+   * @param $defaults
+   */
+  public static function bulkSave($bulkParams, $defaults) {
+    return self::bulkCreate($bulkParams, $defaults);
+  }
+
+  /**
    * Create several fields at once in a mysql efficient way.
    *
    * https://lab.civicrm.org/dev/core/issues/1093
