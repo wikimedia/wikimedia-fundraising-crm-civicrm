@@ -943,7 +943,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
    * @return array
    */
   public static function getInactiveStatuses() {
-    return ['Cancelled', 'Failed', 'Completed'];
+    return ['Cancelled', 'Failed'];
   }
 
   /**
