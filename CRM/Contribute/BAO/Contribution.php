@@ -4701,6 +4701,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
    *   Credit Note Id.
    */
   public static function createCreditNoteId() {
+    return 'null';
     $prefixValue = Civi::settings()->get('contribution_invoice_settings');
 
     $creditNoteNum = CRM_Core_DAO::singleValueQuery("SELECT count(creditnote_id) as creditnote_number FROM civicrm_contribution WHERE creditnote_id IS NOT NULL");
