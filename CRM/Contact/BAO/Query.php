@@ -3589,6 +3589,16 @@ WHERE  $smartGroupClause
       return;
     }
 
+    if (is_array($value)) {
+      list($qillop, $qillVal) = CRM_Contact_BAO_Query::buildQillForFieldValue(NULL, $name, $value, $op);
+      $this->_qill[$grouping][] = ts("%1 %2 %3", [
+        1 => ts('Email'),
+        2 => $qillop,
+        3 => $qillVal,
+      ]);
+      $this->_where[$grouping][] = self::buildClause('civicrm_email.email', $op, $value, 'String');
+      return;
+    }
     $n = trim($value);
     if ($n) {
       if (substr($n, 0, 1) == '"' &&
