@@ -936,4 +936,26 @@ class CRM_Utils_String {
     return array_values(array_unique($result));
   }
 
+  /**
+   * Core update Uses xkerman/restricted-unserialize to unserialize a string of data.
+   *
+   * This is just using allowed_classes as a more minimal fix for prod deploy.
+   *:
+   * @param string|NULL $string
+   *
+   * @return mixed
+   * @throws CRM_Core_Exception
+   */
+  public static function unserialize($string) {
+    if (!is_string($string)) {
+      return FALSE;
+    }
+    try {
+      return unserialize($string, ['allowed_classes' => FALSE]);
+    }
+    catch (UnserializeFailedException $e) {
+      throw new CRM_Core_Exception($e->getMessage());
+    }
+  }
+
 }
