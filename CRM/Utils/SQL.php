@@ -147,7 +147,8 @@ class CRM_Utils_SQL {
    */
   public static function supportsMultipleLocks() {
     if (!defined('CIVICRM_SUPPORT_MULTIPLE_LOCKS')) {
-      return FALSE;
+      // This check is now gone upstream. Also needs to be gone for jenkins
+      // return FALSE;
     }
     static $isSupportLocks = NULL;
     if (!isset($isSupportLocks)) {
