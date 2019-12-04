@@ -1,6 +1,7 @@
 <?php
 namespace Civi\Api4\Generic\Traits;
 
+use Civi\Api4\Utils\HtmlUtils;
 use CRM_Utils_Array as UtilsArray;
 use Civi\Api4\Utils\FormattingUtil;
 use Civi\Api4\Query\Api4SelectQuery;
@@ -28,7 +29,7 @@ trait DAOActionTrait {
     foreach ($fields as $key => $field) {
       $name = $field['name'];
       if (property_exists($bao, $name)) {
-        $values[$name] = $bao->$name;
+        $values[$name] = isset($bao->$name) ? $bao->$name : NULL;
       }
     }
     return $values;
@@ -44,7 +45,11 @@ trait DAOActionTrait {
     $query->orderBy = $this->getOrderBy();
     $query->limit = $this->getLimit();
     $query->offset = $this->getOffset();
-    return $query->run();
+    $result = $query->run();
+    if (is_array($result)) {
+      HtmlUtils::singleton()->decodeRows($result);
+    }
+    return $result;
   }
 
   /**

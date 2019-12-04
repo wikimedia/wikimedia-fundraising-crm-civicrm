@@ -285,6 +285,22 @@ class FieldSpec {
   }
 
   /**
+   * @param array $permission
+   * @return $this
+   */
+  public function setPermission($permission) {
+    $this->permission = $permission;
+    return $this;
+  }
+
+  /**
+   * @return array
+   */
+  public function getPermission() {
+    return $this->permission;
+  }
+
+  /**
    * @return string
    */
   public function getFkEntity() {
