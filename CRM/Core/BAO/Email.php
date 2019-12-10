@@ -84,13 +84,13 @@ class CRM_Core_BAO_Email extends CRM_Core_DAO_Email {
      *  are about to reset it to avoid contaminating the changelog if logging is enabled
      * (only 1 email address can have is_bulkmail = true)
      */
-    if ($email->is_bulkmail != 'null' && !empty($params['contact_id']) && !self::isMultipleBulkMail()) {
+    if (($email->is_bulkmail && $email->is_bulkmail !== 'null') && !empty($params['contact_id']) && !self::isMultipleBulkMail()) {
       $sql = "
 UPDATE civicrm_email
 SET    is_bulkmail = 0
 WHERE  contact_id = {$params['contact_id']}
 ";
-      if ($hook == 'edit') {
+      if ($hook === 'edit') {
         $sql .= " AND id <> {$params['id']}";
       }
       CRM_Core_DAO::executeQuery($sql);
