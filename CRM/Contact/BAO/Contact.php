@@ -112,13 +112,13 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
    * @param array $params
    *   (reference) an assoc array of name/value pairs.
    *
-   * @return CRM_Contact_BAO_Contact|CRM_Core_Error|NULL
+   * @return CRM_Contact_DAO_Contact|CRM_Core_Error|NULL
    *   Created or updated contact object or error object.
    *   (error objects are being phased out in favour of exceptions)
    */
   public static function add(&$params) {
     $contact = new CRM_Contact_DAO_Contact();
-
+    $contactID = CRM_Utils_Array::value('contact_id', $params);
     if (empty($params)) {
       return NULL;
     }
@@ -160,7 +160,7 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
 
     $allNull = $contact->copyValues($params);
 
-    $contact->id = CRM_Utils_Array::value('contact_id', $params);
+    $contact->id = $contactID;
 
     if ($contact->contact_type == 'Individual') {
       $allNull = FALSE;
@@ -199,7 +199,7 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
     // Even if we don't need $employerId, it's important to call getFieldValue() before
     // the contact is saved because we want the existing value to be cached.
     // createCurrentEmployerRelationship() needs the old value not the updated one. CRM-10788
-    $employerId = empty($contact->id) ? NULL : CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $contact->id, 'employer_id');
+    $employerId = (!$contactID || $contact->contact_type !== 'Individual') ? NULL : CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $contact->id, 'employer_id');
 
     if (!$allNull) {
       $contact->save();
@@ -228,8 +228,8 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
       }
     }
 
-    // Update cached employer name.
-    if ($contact->contact_type == 'Organization') {
+    // Update cached employer name if the name of an existing organization is being updated.
+    if ($contact->contact_type === 'Organization' && !empty($params['organization_name']) && !$contactID) {
       CRM_Contact_BAO_Contact_Utils::updateCurrentEmployer($contact->id);
     }
 
