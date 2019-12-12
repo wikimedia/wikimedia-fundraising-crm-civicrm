@@ -229,7 +229,7 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
     }
 
     // Update cached employer name if the name of an existing organization is being updated.
-    if ($contact->contact_type === 'Organization' && !empty($params['organization_name']) && !$contactID) {
+    if ($contact->contact_type === 'Organization' && !empty($params['organization_name']) && $contactID) {
       CRM_Contact_BAO_Contact_Utils::updateCurrentEmployer($contact->id);
     }
 
