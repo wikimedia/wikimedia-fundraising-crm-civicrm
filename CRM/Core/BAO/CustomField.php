@@ -1,34 +1,18 @@
 <?php
 /*
-  +--------------------------------------------------------------------+
-  | CiviCRM version 5                                                  |
-  +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2019                                |
-  +--------------------------------------------------------------------+
-  | This file is a part of CiviCRM.                                    |
-  |                                                                    |
-  | CiviCRM is free software; you can copy, modify, and distribute it  |
-  | under the terms of the GNU Affero General Public License           |
-  | Version 3, 19 November 2007 and the CiviCRM Licensing Exception.   |
-  |                                                                    |
-  | CiviCRM is distributed in the hope that it will be useful, but     |
-  | WITHOUT ANY WARRANTY; without even the implied warranty of         |
-  | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
-  | See the GNU Affero General Public License for more details.        |
-  |                                                                    |
-  | You should have received a copy of the GNU Affero General Public   |
-  | License and the CiviCRM Licensing Exception along                  |
-  | with this program; if not, contact CiviCRM LLC                     |
-  | at info[AT]civicrm[DOT]org. If you have questions about the        |
-  | GNU Affero General Public License or the licensing of CiviCRM,     |
-  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
-  +--------------------------------------------------------------------+
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
  */
 
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2019
+ * @copyright CiviCRM LLC https://civicrm.org/licensing
  */
 
 /**
@@ -159,6 +143,9 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
     CRM_Utils_Hook::post(($op === 'add' ? 'create' : 'edit'), 'CustomField', $customField->id, $customField);
 
     CRM_Utils_System::flushCache();
+    // Flush caches is not aggressive about clearing the specific cache we know we want to clear
+    // so do it manually. Ideally we wouldn't need to clear others...
+    Civi::cache('metadata')->clear();
 
     return $customField;
   }
@@ -176,7 +163,7 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
    *  Default parameters to be be merged into each of the params.
    */
   public static function bulkSave($bulkParams, $defaults = []) {
-    $sql = $tables = $customFields = [];
+    $addedColumns = $sql = $tables = $customFields = [];
     foreach ($bulkParams as $index => $fieldParams) {
       $params = array_merge($defaults, $fieldParams);
       $customField = self::createCustomFieldRecord($params);
@@ -194,11 +181,19 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
         $params['table_name'] = $tables[$params['custom_group_id']];
       }
       $sql[$params['table_name']][] = $fieldSQL;
+      $addedColumns[$params['table_name']][] = $customField->name;
       $customFields[$index] = $customField;
     }
+
     foreach ($sql as $tableName => $statements) {
       // CRM-7007: do not i18n-rewrite this query
       CRM_Core_DAO::executeQuery("ALTER TABLE $tableName " . implode(', ', $statements), [], TRUE, NULL, FALSE, FALSE);
+
+      if (CRM_Core_Config::singleton()->logging) {
+        $logging = new CRM_Logging_Schema();
+        $logging->fixSchemaDifferencesFor($tableName, ['ADD' => $addedColumns[$tableName]]);
+      }
+
       Civi::service('sql_triggers')->rebuild($params['table_name'], TRUE);
     }
     CRM_Utils_System::flushCache();
@@ -264,34 +259,35 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
     if (!$this->id) {
       return FALSE;
     }
-    if (!$this->data_type || !$this->custom_group_id) {
-      $this->find(TRUE);
-    }
+    $cacheKey = "CRM_Core_BAO_CustomField_getOptions_{$this->id}_$context";
+    $cache = CRM_Utils_Cache::singleton();
+    $options = $cache->get($cacheKey);
+    if (!isset($options)) {
+      if (!$this->data_type || !$this->custom_group_id) {
+        $this->find(TRUE);
+      }
 
-    // This will hold the list of options in format key => label
-    $options = [];
+      // This will hold the list of options in format key => label
+      $options = [];
 
-    if (!empty($this->option_group_id)) {
-      $options = CRM_Core_OptionGroup::valuesByID(
-        $this->option_group_id,
-        FALSE,
-        FALSE,
-        FALSE,
-        'label',
-        !($context == 'validate' || $context == 'get')
-      );
+      if (!empty($this->option_group_id)) {
+        $options = CRM_Core_OptionGroup::valuesByID(
+        $this->option_group_id, FALSE, FALSE, FALSE, 'label', !($context == 'validate' || $context == 'get')
+        );
+      }
+      elseif ($this->data_type === 'StateProvince') {
+        $options = CRM_Core_PseudoConstant::stateProvince();
+      }
+      elseif ($this->data_type === 'Country') {
+        $options = $context == 'validate' ? CRM_Core_PseudoConstant::countryIsoCode() : CRM_Core_PseudoConstant::country();
+      }
+      elseif ($this->data_type === 'Boolean') {
+        $options = $context == 'validate' ? array(0, 1) : CRM_Core_SelectValues::boolean();
+      }
+      CRM_Utils_Hook::customFieldOptions($this->id, $options, FALSE);
+      CRM_Utils_Hook::fieldOptions($this->getEntity(), "custom_{$this->id}", $options, array('context' => $context));
+      $cache->set($cacheKey, $options);
     }
-    elseif ($this->data_type === 'StateProvince') {
-      $options = CRM_Core_PseudoConstant::stateProvince();
-    }
-    elseif ($this->data_type === 'Country') {
-      $options = $context == 'validate' ? CRM_Core_PseudoConstant::countryIsoCode() : CRM_Core_PseudoConstant::country();
-    }
-    elseif ($this->data_type === 'Boolean') {
-      $options = $context == 'validate' ? array(0, 1) : CRM_Core_SelectValues::boolean();
-    }
-    CRM_Utils_Hook::customFieldOptions($this->id, $options, FALSE);
-    CRM_Utils_Hook::fieldOptions($this->getEntity(), "custom_{$this->id}", $options, array('context' => $context));
     return $options;
   }
 
@@ -595,6 +591,9 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
         (!empty($values['is_multiple']) && !$withMultiple)
       ) {
         continue;
+      }
+      if (!empty($values['text_length'])) {
+        $values['maxlength'] = (int) $values['text_length'];
       }
 
       /* generate the key for the fields array */
@@ -1050,14 +1049,15 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
    * @param int $entityId
    *
    * @return string
-   * @throws \Exception
+   *
+   * @throws \CRM_Core_Exception
    */
   public static function displayValue($value, $field, $entityId = NULL) {
     $field = is_array($field) ? $field['id'] : $field;
     $fieldId = is_object($field) ? $field->id : (int) str_replace('custom_', '', $field);
 
     if (!$fieldId) {
-      throw new Exception('CRM_Core_BAO_CustomField::displayValue requires a field id');
+      throw new CRM_Core_Exception('CRM_Core_BAO_CustomField::displayValue requires a field id');
     }
 
     if (!is_a($field, 'CRM_Core_BAO_CustomField')) {
@@ -2595,15 +2595,15 @@ WHERE cf.id = %1 AND cg.is_multiple = 1";
   /**
    * Does this field store a serialized string?
    *
-   * @param array $field
+   * @param array|object $field
    *
    * @return bool
    */
   public static function isSerialized($field) {
     // Fields retrieved via api are an array, or from the dao are an object. We'll accept either.
-    $field = (array) $field;
+    $html_type = is_object($field) ? $field->html_type : $field['html_type'];
     // FIXME: Currently the only way to know if data is serialized is by looking at the html_type. It would be cleaner to decouple this.
-    return ($field['html_type'] == 'CheckBox' || strpos($field['html_type'], 'Multi') !== FALSE);
+    return ($html_type === 'CheckBox' || strpos($html_type, 'Multi') !== FALSE);
   }
 
   /**

@@ -1,27 +1,11 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 5                                                  |
- +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2019                                |
- +--------------------------------------------------------------------+
- | This file is a part of CiviCRM.                                    |
+ | Copyright CiviCRM LLC. All rights reserved.                        |
  |                                                                    |
- | CiviCRM is free software; you can copy, modify, and distribute it  |
- | under the terms of the GNU Affero General Public License           |
- | Version 3, 19 November 2007 and the CiviCRM Licensing Exception.   |
- |                                                                    |
- | CiviCRM is distributed in the hope that it will be useful, but     |
- | WITHOUT ANY WARRANTY; without even the implied warranty of         |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
- | See the GNU Affero General Public License for more details.        |
- |                                                                    |
- | You should have received a copy of the GNU Affero General Public   |
- | License and the CiviCRM Licensing Exception along                  |
- | with this program; if not, contact CiviCRM LLC                     |
- | at info[AT]civicrm[DOT]org. If you have questions about the        |
- | GNU Affero General Public License or the licensing of CiviCRM,     |
- | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
  +--------------------------------------------------------------------+
  */
 
@@ -30,7 +14,7 @@
  * uninstalling extensions.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2019
+ * @copyright CiviCRM LLC https://civicrm.org/licensing
  */
 class CRM_Extension_Manager {
   /**
@@ -54,12 +38,12 @@ class CRM_Extension_Manager {
   const STATUS_UNKNOWN = 'unknown';
 
   /**
-   * The extension is fully installed and enabled
+   * The extension is installed but the code is not accessible
    */
   const STATUS_INSTALLED_MISSING = 'installed-missing';
 
   /**
-   * The extension is fully installed and enabled
+   * The extension was installed and is now disabled; the code is not accessible
    */
   const STATUS_DISABLED_MISSING = 'disabled-missing';
 
@@ -215,18 +199,31 @@ class CRM_Extension_Manager {
   /**
    * Add records of the extension to the database -- and enable it
    *
-   * @param array $keys
-   *   List of extension keys.
+   * @param string|array $keys
+   *   One or more extension keys.
    * @throws CRM_Extension_Exception
    */
   public function install($keys) {
+    $keys = (array) $keys;
     $origStatuses = $this->getStatuses();
 
     // TODO: to mitigate the risk of crashing during installation, scan
     // keys/statuses/types before doing anything
 
+    // Check compatibility
+    $incompatible = [];
     foreach ($keys as $key) {
-      // throws Exception
+      if ($this->isIncompatible($key)) {
+        $incompatible[] = $key;
+      }
+    }
+    if ($incompatible) {
+      throw new CRM_Extension_Exception('Cannot install incompatible extension: ' . implode(', ', $incompatible));
+    }
+
+    foreach ($keys as $key) {
+      /** @var CRM_Extension_Info $info */
+      /** @var CRM_Extension_Manager_Base $typeManager */
       list ($info, $typeManager) = $this->_getInfoTypeHandler($key);
 
       switch ($origStatuses[$key]) {
@@ -308,13 +305,14 @@ class CRM_Extension_Manager {
   }
 
   /**
-   * Add records of the extension to the database -- and enable it
+   * Disable extension without removing record from db.
    *
-   * @param array $keys
-   *   List of extension keys.
+   * @param string|array $keys
+   *   One or more extension keys.
    * @throws CRM_Extension_Exception
    */
   public function disable($keys) {
+    $keys = (array) $keys;
     $origStatuses = $this->getStatuses();
 
     // TODO: to mitigate the risk of crashing during installation, scan
@@ -325,7 +323,7 @@ class CRM_Extension_Manager {
     // This munges order, but makes it comparable.
     sort($disableRequirements);
     if ($keys !== $disableRequirements) {
-      throw new CRM_Extension_Exception_DependencyException("Cannot disable extension due dependencies. Consider disabling all these: " . implode(',', $disableRequirements));
+      throw new CRM_Extension_Exception_DependencyException("Cannot disable extension due to dependencies. Consider disabling all these: " . implode(',', $disableRequirements));
     }
 
     foreach ($keys as $key) {
@@ -366,13 +364,12 @@ class CRM_Extension_Manager {
   /**
    * Remove all database references to an extension.
    *
-   * Add records of the extension to the database -- and enable it
-   *
-   * @param array $keys
-   *   List of extension keys.
+   * @param string|array $keys
+   *   One or more extension keys.
    * @throws CRM_Extension_Exception
    */
   public function uninstall($keys) {
+    $keys = (array) $keys;
     $origStatuses = $this->getStatuses();
 
     // TODO: to mitigate the risk of crashing during installation, scan
@@ -421,7 +418,7 @@ class CRM_Extension_Manager {
    * @param $key
    *
    * @return string
-   *   constant (STATUS_INSTALLED, STATUS_DISABLED, STATUS_UNINSTALLED, STATUS_UNKNOWN)
+   *   constant self::STATUS_*
    */
   public function getStatus($key) {
     $statuses = $this->getStatuses();
@@ -434,6 +431,17 @@ class CRM_Extension_Manager {
   }
 
   /**
+   * Check if a given extension is incompatible with this version of CiviCRM
+   *
+   * @param $key
+   * @return bool|array
+   */
+  public function isIncompatible($key) {
+    $info = CRM_Extension_System::getCompatibilityInfo();
+    return $info[$key] ?? FALSE;
+  }
+
+  /**
    * Determine the status of all extensions.
    *
    * @return array
@@ -441,6 +449,8 @@ class CRM_Extension_Manager {
    */
   public function getStatuses() {
     if (!is_array($this->statuses)) {
+      $compat = CRM_Extension_System::getCompatibilityInfo();
+
       $this->statuses = [];
 
       foreach ($this->fullContainer->getKeys() as $key) {
@@ -460,7 +470,10 @@ class CRM_Extension_Manager {
         catch (CRM_Extension_Exception $e) {
           $codeExists = FALSE;
         }
-        if ($dao->is_active) {
+        if (!empty($compat[$dao->full_name]['force-uninstall'])) {
+          $this->statuses[$dao->full_name] = self::STATUS_UNINSTALLED;
+        }
+        elseif ($dao->is_active) {
           $this->statuses[$dao->full_name] = $codeExists ? self::STATUS_INSTALLED : self::STATUS_INSTALLED_MISSING;
         }
         else {
@@ -487,7 +500,7 @@ class CRM_Extension_Manager {
    *
    * @throws CRM_Extension_Exception
    * @return array
-   *   (0 => CRM_Extension_Info, 1 => CRM_Extension_Manager_Interface)
+   *   [CRM_Extension_Info, CRM_Extension_Manager_Interface]
    */
   private function _getInfoTypeHandler($key) {
     // throws Exception
@@ -507,7 +520,7 @@ class CRM_Extension_Manager {
    *
    * @throws CRM_Extension_Exception
    * @return array
-   *   (0 => CRM_Extension_Info, 1 => CRM_Extension_Manager_Interface)
+   *   [CRM_Extension_Info, CRM_Extension_Manager_Interface]
    */
   private function _getMissingInfoTypeHandler($key) {
     $info = $this->createInfoFromDB($key);
@@ -615,11 +628,23 @@ class CRM_Extension_Manager {
    *
    * @param array $keys
    *   List of extensions to install.
+   * @param \CRM_Extension_Info $info
+   *   An extension info object that we should use instead of our local versions (eg. when checking for upgradeability).
+   *
    * @return array
    *   List of extension keys, including dependencies, in order of installation.
+   * @throws \CRM_Extension_Exception
+   * @throws \MJS\TopSort\CircularDependencyException
+   * @throws \MJS\TopSort\ElementNotFoundException
    */
-  public function findInstallRequirements($keys) {
-    $infos = $this->mapper->getAllInfos();
+  public function findInstallRequirements($keys, $info = NULL) {
+    // Use our passed in info, or get the local versions
+    if ($info) {
+      $infos[$info->key] = $info;
+    }
+    else {
+      $infos = $this->mapper->getAllInfos();
+    }
     // array(string $key).
     $todoKeys = array_unique($keys);
     // array(string $key => 1);
@@ -636,10 +661,7 @@ class CRM_Extension_Manager {
       /** @var CRM_Extension_Info $info */
       $info = @$infos[$key];
 
-      if ($this->getStatus($key) === self::STATUS_INSTALLED) {
-        $sorter->add($key, []);
-      }
-      elseif ($info && $info->requires) {
+      if ($info && $info->requires) {
         $sorter->add($key, $info->requires);
         $todoKeys = array_merge($todoKeys, $info->requires);
       }

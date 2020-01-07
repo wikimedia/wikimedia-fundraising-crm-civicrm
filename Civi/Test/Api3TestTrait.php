@@ -22,7 +22,12 @@ trait Api3TestTrait {
    * @return array
    */
   public function versionThreeAndFour() {
-    return [[3], [4]];
+    $r = [[3]];
+    global $civicrm_root;
+    if (file_exists("$civicrm_root/Civi/Api4") || file_exists("$civicrm_root/ext/api4")) {
+      $r[] = [4];
+    }
+    return $r;
   }
 
   /**
@@ -142,6 +147,8 @@ trait Api3TestTrait {
    *   better or worse )
    *
    * @return array|int
+   *
+   * @throws \CRM_Core_Exception
    */
   public function callAPISuccess($entity, $action, $params = [], $checkAgainst = NULL) {
     $params = array_merge([
@@ -315,8 +322,7 @@ trait Api3TestTrait {
       $v4Params['language'] = $language;
     }
     $toRemove = ['option.', 'return', 'api.', 'format.'];
-    $chains = [];
-    $custom = [];
+    $chains = $joins = $custom = [];
     foreach ($v3Params as $key => $val) {
       foreach ($toRemove as $remove) {
         if (strpos($key, $remove) === 0) {
@@ -405,6 +411,13 @@ trait Api3TestTrait {
       case 'get':
         if ($options['return'] && $v3Action !== 'getcount') {
           $v4Params['select'] = array_keys($options['return']);
+          // Convert join syntax
+          foreach ($v4Params['select'] as &$select) {
+            if (strstr($select, '_id.')) {
+              $joins[$select] = explode('.', str_replace('_id.', '.', $select));
+              $select = str_replace('_id.', '.', $select);
+            }
+          }
         }
         if ($options['limit'] && $v4Entity != 'Setting') {
           $v4Params['limit'] = $options['limit'];
@@ -570,15 +583,17 @@ trait Api3TestTrait {
       foreach ($chains as $key => $params) {
         $result[$index][$key] = $this->runApi4LegacyChain($key, $params, $v4Entity, $row, $sequential);
       }
+      // Convert join format
+      foreach ($joins as $api3Key => $api4Path) {
+        $result[$index][$api3Key] = \CRM_Utils_Array::pathGet($result[$index], $api4Path);
+      }
       // Resolve custom field names
       foreach ($custom as $group => $fields) {
-        if (isset($row[$group])) {
-          foreach ($fields as $field => $v3FieldName) {
-            if (isset($row[$group][$field])) {
-              $result[$index][$v3FieldName] = $row[$group][$field];
-            }
+        foreach ($fields as $field => $v3FieldName) {
+          if (isset($row["$group.$field"])) {
+            $result[$index][$v3FieldName] = $row["$group.$field"];
+            unset($result[$index]["$group.$field"]);
           }
-          unset($result[$index][$group]);
         }
       }
     }

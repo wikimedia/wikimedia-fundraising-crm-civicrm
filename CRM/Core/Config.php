@@ -1,27 +1,11 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 5                                                  |
- +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2019                                |
- +--------------------------------------------------------------------+
- | This file is a part of CiviCRM.                                    |
+ | Copyright CiviCRM LLC. All rights reserved.                        |
  |                                                                    |
- | CiviCRM is free software; you can copy, modify, and distribute it  |
- | under the terms of the GNU Affero General Public License           |
- | Version 3, 19 November 2007 and the CiviCRM Licensing Exception.   |
- |                                                                    |
- | CiviCRM is distributed in the hope that it will be useful, but     |
- | WITHOUT ANY WARRANTY; without even the implied warranty of         |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
- | See the GNU Affero General Public License for more details.        |
- |                                                                    |
- | You should have received a copy of the GNU Affero General Public   |
- | License and the CiviCRM Licensing Exception along                  |
- | with this program; if not, contact CiviCRM LLC                     |
- | at info[AT]civicrm[DOT]org. If you have questions about the        |
- | GNU Affero General Public License or the licensing of CiviCRM,     |
- | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
  +--------------------------------------------------------------------+
  */
 
@@ -32,7 +16,7 @@
  * The default values in general, should reflect production values (minimizes chances of screwing up)
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2019
+ * @copyright CiviCRM LLC https://civicrm.org/licensing
  */
 
 require_once 'Log.php';
@@ -348,13 +332,13 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
    */
   public static function clearDBCache() {
     $queries = [
-      'DELETE FROM civicrm_acl_cache',
-      'DELETE FROM civicrm_acl_contact_cache',
-      'DELETE FROM civicrm_cache',
-      'DELETE FROM civicrm_prevnext_cache',
+      'TRUNCATE TABLE civicrm_acl_cache',
+      'TRUNCATE TABLE civicrm_acl_contact_cache',
+      'TRUNCATE TABLE civicrm_cache',
+      'TRUNCATE TABLE civicrm_prevnext_cache',
       'UPDATE civicrm_group SET cache_date = NULL',
-      'DELETE FROM civicrm_group_contact_cache',
-      'DELETE FROM civicrm_menu',
+      'TRUNCATE TABLE civicrm_group_contact_cache',
+      'TRUNCATE TABLE civicrm_menu',
       'UPDATE civicrm_setting SET value = NULL WHERE name="navigation" AND contact_id IS NOT NULL',
     ];
 

@@ -184,6 +184,11 @@ define('DB_ERROR_NOSUCHDB', -27);
 define('DB_ERROR_CONSTRAINT_NOT_NULL',-29);
 
 /**
+ * Invalid view or no permissions
+ */
+define('DB_ERROR_INVALID_VIEW', -100);
+
+/**
  * Database lock timeout exceeded.
  */
 define('DB_ERROR_LOCK_TIMEOUT', -30);
@@ -192,12 +197,7 @@ define('DB_ERROR_LOCK_TIMEOUT', -30);
  * Database deadlock encountered.
  */
 define('DB_ERROR_DEADLOCK', -31);
-/**
- * Invalid view or no permissions
- */
-define('DB_ERROR_INVALID_VIEW', -100);
 /**#@-*/
-
 
 // }}}
 // {{{ prepared statement-related

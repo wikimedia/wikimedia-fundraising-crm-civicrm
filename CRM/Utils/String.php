@@ -1,35 +1,22 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 5                                                  |
- +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2019                                |
- +--------------------------------------------------------------------+
- | This file is a part of CiviCRM.                                    |
+ | Copyright CiviCRM LLC. All rights reserved.                        |
  |                                                                    |
- | CiviCRM is free software; you can copy, modify, and distribute it  |
- | under the terms of the GNU Affero General Public License           |
- | Version 3, 19 November 2007 and the CiviCRM Licensing Exception.   |
- |                                                                    |
- | CiviCRM is distributed in the hope that it will be useful, but     |
- | WITHOUT ANY WARRANTY; without even the implied warranty of         |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
- | See the GNU Affero General Public License for more details.        |
- |                                                                    |
- | You should have received a copy of the GNU Affero General Public   |
- | License and the CiviCRM Licensing Exception along                  |
- | with this program; if not, contact CiviCRM LLC                     |
- | at info[AT]civicrm[DOT]org. If you have questions about the        |
- | GNU Affero General Public License or the licensing of CiviCRM,     |
- | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
  +--------------------------------------------------------------------+
  */
 
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2019
+ * @copyright CiviCRM LLC https://civicrm.org/licensing
  */
+
+use function xKerman\Restricted\unserialize;
+use xKerman\Restricted\UnserializeFailedException;
 
 require_once 'HTML/QuickForm/Rule/Email.php';
 
@@ -937,24 +924,31 @@ class CRM_Utils_String {
   }
 
   /**
-   * Core update Uses xkerman/restricted-unserialize to unserialize a string of data.
+   * Safely unserialize a string of scalar or array values (but not objects!)
    *
-   * This is just using allowed_classes as a more minimal fix for prod deploy.
-   *:
+   * Use `xkerman/restricted-unserialize` to unserialize strings using PHP's
+   * serialization format. `restricted-unserialize` works like PHP's built-in
+   * `unserialize` function except that it does not deserialize object instances,
+   * making it immune to PHP Object Injection {@see https://www.owasp.org/index.php/PHP_Object_Injection}
+   * vulnerabilities.
+   *
+   * Note: When dealing with user inputs, it is generally recommended to use
+   * safe, standard data interchange formats such as JSON rather than PHP's
+   * serialization format when dealing with user input.
+   *
    * @param string|NULL $string
    *
    * @return mixed
-   * @throws CRM_Core_Exception
    */
   public static function unserialize($string) {
     if (!is_string($string)) {
       return FALSE;
     }
     try {
-      return unserialize($string, ['allowed_classes' => FALSE]);
+      return unserialize($string);
     }
     catch (UnserializeFailedException $e) {
-      throw new CRM_Core_Exception($e->getMessage());
+      return FALSE;
     }
   }
 

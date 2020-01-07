@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9
+class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
 {
     public static $files = array (
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
@@ -16,18 +16,25 @@ class ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9
         '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
         '9e4824c5afbdc1482b6025ce3d4dfde8' => __DIR__ . '/..' . '/league/csv/src/functions_include.php',
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
+        'bad842bce63596a608e2623519fb382c' => __DIR__ . '/..' . '/xkerman/restricted-unserialize/src/function.php',
     );
 
     public static $prefixLengthsPsr4 = array (
+        'x' => 
+        array (
+            'xKerman\\Restricted\\' => 19,
+        ),
         'c' => 
         array (
             'cweagans\\Composer\\' => 18,
         ),
         'Z' => 
         array (
-            'Zend\\Validator\\' => 15,
-            'Zend\\Stdlib\\' => 12,
             'Zend\\Escaper\\' => 13,
+        ),
+        'W' => 
+        array (
+            'When\\' => 5,
         ),
         'S' => 
         array (
@@ -39,6 +46,7 @@ class ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9
             'Symfony\\Component\\EventDispatcher\\' => 34,
             'Symfony\\Component\\DependencyInjection\\' => 38,
             'Symfony\\Component\\Config\\' => 25,
+            'Svg\\' => 4,
         ),
         'P' => 
         array (
@@ -83,21 +91,21 @@ class ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9
     );
 
     public static $prefixDirsPsr4 = array (
+        'xKerman\\Restricted\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/xkerman/restricted-unserialize/src',
+        ),
         'cweagans\\Composer\\' => 
         array (
             0 => __DIR__ . '/..' . '/cweagans/composer-patches/src',
         ),
-        'Zend\\Validator\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/zendframework/zend-validator/src',
-        ),
-        'Zend\\Stdlib\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/zendframework/zend-stdlib/src',
-        ),
         'Zend\\Escaper\\' => 
         array (
             0 => __DIR__ . '/..' . '/zendframework/zend-escaper/src',
+        ),
+        'When\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/tplaner/when/src',
         ),
         'Symfony\\Polyfill\\Iconv\\' => 
         array (
@@ -130,6 +138,10 @@ class ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9
         'Symfony\\Component\\Config\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/config',
+        ),
+        'Svg\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phenx/php-svg-lib/src/Svg',
         ),
         'Psr\\SimpleCache\\' => 
         array (
@@ -229,10 +241,6 @@ class ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9
             'System' => 
             array (
                 0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
-            ),
-            'Svg\\' => 
-            array (
-                0 => __DIR__ . '/..' . '/phenx/php-svg-lib/src',
             ),
             'Sabberworm\\CSS' => 
             array (
@@ -468,11 +476,11 @@ class ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9::$prefixesPsr0;
-            $loader->fallbackDirsPsr0 = ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9::$fallbackDirsPsr0;
-            $loader->classMap = ComposerStaticInitbcc20f757ca445d0a2f42b7b789388e9::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$prefixesPsr0;
+            $loader->fallbackDirsPsr0 = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$fallbackDirsPsr0;
+            $loader->classMap = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$classMap;
 
         }, null, ClassLoader::class);
     }
