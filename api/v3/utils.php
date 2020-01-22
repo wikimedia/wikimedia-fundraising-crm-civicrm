@@ -2441,17 +2441,23 @@ function _civicrm_api3_api_resolve_alias($entity, $fieldName, $action = 'create'
  * @return string|array|null
  */
 function _civicrm_api3_deprecation_check($entity, $result = []) {
-  if ($entity) {
+  if ($entity && !isset(\Civi::$statics['deprecation_cache'][$entity])) {
     $apiFile = "api/v3/$entity.php";
+    // This is actually pretty expensive. It goes through all the extensions
+    // looking for an override file.
     if (CRM_Utils_File::isIncludable($apiFile)) {
       require_once $apiFile;
     }
     $lowercase_entity = _civicrm_api_get_entity_name_from_camel($entity);
     $fnName = "_civicrm_api3_{$lowercase_entity}_deprecation";
     if (function_exists($fnName)) {
-      return $fnName($result);
+      \Civi::$statics['deprecation_cache'][$entity] = $fnName($result);
+    }
+    else {
+      \Civi::$statics['deprecation_cache'][$entity] = FALSE;
     }
   }
+  return  $entity ? \Civi::$statics['deprecation_cache'][$entity] : FALSE;
 }
 
 /**

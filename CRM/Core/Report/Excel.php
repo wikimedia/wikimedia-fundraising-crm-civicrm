@@ -162,6 +162,8 @@ class CRM_Core_Report_Excel {
         'csv',
         FALSE
       );
+      // https://github.com/civicrm/civicrm-core/pull/15968
+      echo "\xEF\xBB\xBF";
     }
 
     if (!empty($rows)) {

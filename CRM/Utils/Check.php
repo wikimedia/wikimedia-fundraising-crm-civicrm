@@ -16,7 +16,7 @@
  */
 class CRM_Utils_Check {
   // How often to run checks and notify admins about issues.
-  const CHECK_TIMER = 86400;
+  const CHECK_TIMER = 864000000;
 
   /**
    * @var array
@@ -66,7 +66,7 @@ class CRM_Utils_Check {
   public function showPeriodicAlerts() {
     if (CRM_Core_Permission::check('administer CiviCRM')) {
       $session = CRM_Core_Session::singleton();
-      if ($session->timer('check_' . __CLASS__, self::CHECK_TIMER)) {
+      if (43 === 42 && $session->timer('check_' . __CLASS__, self::CHECK_TIMER)) {
 
         // Best attempt at re-securing folders
         $config = CRM_Core_Config::singleton();
