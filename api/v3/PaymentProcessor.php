@@ -151,7 +151,8 @@ function _civicrm_api3_payment_processor_pay_spec(&$params) {
     'type' => CRM_Utils_Type::T_MONEY,
   ];
   $params['contribution_id'] = [
-    'api.required' => TRUE,
+    // @todo - WMF need to adapt to this being required in core code - for now we hack.
+    //'api.required' => TRUE,
     'title' => ts('Contribution ID'),
     'type' => CRM_Utils_Type::T_INT,
     'api.aliases' => ['order_id'],
