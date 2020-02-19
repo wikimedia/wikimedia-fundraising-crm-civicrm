@@ -52,7 +52,7 @@ class Get extends \Civi\Api4\Generic\BasicGetAction {
       if (is_dir($dir)) {
         foreach (glob("$dir/*.php") as $file) {
           $matches = [];
-          preg_match('/(\w*).php/', $file, $matches);
+          preg_match('/(\w*)\.php$/', $file, $matches);
           $entity = ['name' => $matches[1]];
           if ($this->_isFieldSelected('description') || $this->_isFieldSelected('comment')) {
             $this->addDocs($entity);
