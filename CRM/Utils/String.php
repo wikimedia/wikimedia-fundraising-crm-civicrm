@@ -952,4 +952,37 @@ class CRM_Utils_String {
     }
   }
 
+  /**
+   * Returns the plural form of an English word.
+   *
+   * @param string $str
+   * @return string
+   */
+  public static function pluralize($str) {
+    switch (substr($str, -1)) {
+      case 's':
+        return $str . 'es';
+
+      case 'y':
+        return substr($str, 0, -1) . 'ies';
+
+      default:
+        return $str . 's';
+    }
+  }
+
+  /**
+   * Generic check as to whether any tokens are in the given string.
+   *
+   * It might be a smarty token OR a CiviCRM token. In both cases the
+   * absence of a '{' indicates no token is present.
+   *
+   * @param string $string
+   *
+   * @return bool
+   */
+  public static function stringContainsTokens(string $string) {
+    return strpos($string, '{') !== FALSE;
+  }
+
 }
