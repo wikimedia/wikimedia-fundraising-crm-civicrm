@@ -51,7 +51,7 @@ class CRM_Admin_Form_Generic extends CRM_Core_Form {
    */
   public function buildQuickForm() {
     $filter = $this->getSettingPageFilter();
-    $settings = civicrm_api3('Setting', 'getfields', [])['values'];
+    $settings = \Civi\Core\SettingsMetadata::getMetadata([], NULL, TRUE);
     foreach ($settings as $key => $setting) {
       if (isset($setting['settings_pages'][$filter])) {
         $this->_settings[$key] = $setting;
