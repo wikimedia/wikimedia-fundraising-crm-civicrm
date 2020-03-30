@@ -967,6 +967,9 @@ class CRM_Export_BAO_ExportProcessor {
    */
   public function buildRow($query, $iterationDAO, $outputColumns, $metadata, $paymentDetails, $addPaymentHeader) {
     $paymentTableId = $this->getPaymentTableID();
+    // I'm struggling to replicate this locally to get a good fix but this will get us through
+    // this export & at some point we can do better - see https://lab.civicrm.org/dev/core/-/issues/1678
+    set_time_limit ( 30);
     if ($this->isHouseholdToSkip($iterationDAO->contact_id)) {
       return FALSE;
     }
