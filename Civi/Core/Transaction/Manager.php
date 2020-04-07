@@ -26,7 +26,9 @@ class Manager {
   private $dao;
 
   /**
-   * @var array<Frame> stack of SQL transactions/savepoints
+   * Stack of SQL transactions/savepoints.
+   *
+   * @var \Civi\Core\Transaction\Frame[]
    */
   private $frames = [];
 
@@ -127,7 +129,7 @@ class Manager {
    * @return \Civi\Core\Transaction\Frame
    */
   public function getFrame() {
-    return isset($this->frames[0]) ? $this->frames[0] : NULL;
+    return $this->frames[0] ?? NULL;
   }
 
   /**

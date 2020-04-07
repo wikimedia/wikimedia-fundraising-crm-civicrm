@@ -794,9 +794,8 @@ CREATE TABLE `civicrm_saved_search` (
      `form_values` text    COMMENT 'Submitted form values for this search',
      `mapping_id` int unsigned    COMMENT 'Foreign key to civicrm_mapping used for saved search-builder searches.',
      `search_custom_id` int unsigned    COMMENT 'Foreign key to civicrm_option value table used for saved custom searches.',
-     `where_clause` text    COMMENT 'the sql where clause if a saved search acl',
-     `select_tables` text    COMMENT 'the tables to be included in a select data',
-     `where_tables` text    COMMENT 'the tables to be included in the count statement' 
+     `api_entity` varchar(255)    COMMENT 'Entity name for API based search',
+     `api_params` text    COMMENT 'Parameters for API based search' 
 ,
         PRIMARY KEY (`id`)
  
@@ -1086,7 +1085,7 @@ CREATE TABLE `civicrm_payment_processor_type` (
 
 
      `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Payment Processor Type ID',
-     `name` varchar(64) NOT NULL   COMMENT 'Payment Processor Name.',
+     `name` varchar(64) NOT NULL   COMMENT 'Payment Processor Type Name.',
      `title` varchar(127) NOT NULL   COMMENT 'Payment Processor Type Title.',
      `description` varchar(255)    COMMENT 'Payment Processor Description.',
      `is_active` tinyint   DEFAULT 1 COMMENT 'Is this processor active?',
@@ -1845,7 +1844,6 @@ CREATE TABLE `civicrm_domain` (
      `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Domain ID',
      `name` varchar(64)    COMMENT 'Name of Domain / Organization',
      `description` varchar(255)    COMMENT 'Description of Domain.',
-     `config_backend` text    COMMENT 'Backend configuration.',
      `version` varchar(32)    COMMENT 'The civicrm version this instance is running',
      `contact_id` int unsigned    COMMENT 'FK to Contact ID. This is specifically not an FK to avoid circular constraints',
      `locales` text    COMMENT 'list of locales supported by the current db state (NULL for single-lang install)',
@@ -1874,7 +1872,7 @@ CREATE TABLE `civicrm_email` (
      `contact_id` int unsigned    COMMENT 'FK to Contact ID',
      `location_type_id` int unsigned    COMMENT 'Which Location does this email belong to.',
      `email` varchar(254)    COMMENT 'Email address',
-     `is_primary` tinyint   DEFAULT 0 COMMENT 'Is this the primary?',
+     `is_primary` tinyint   DEFAULT 0 COMMENT 'Is this the primary email address',
      `is_billing` tinyint   DEFAULT 0 COMMENT 'Is this the billing?',
      `on_hold` int unsigned NOT NULL  DEFAULT 0 COMMENT 'Implicit FK to civicrm_option_value where option_group = email_on_hold.',
      `is_bulkmail` tinyint NOT NULL  DEFAULT 0 COMMENT 'Is this address for bulk mail ?',
@@ -2192,7 +2190,7 @@ CREATE TABLE `civicrm_note` (
      `entity_id` int unsigned NOT NULL   COMMENT 'Foreign key to the referenced item.',
      `note` text    COMMENT 'Note and/or Comment.',
      `contact_id` int unsigned    COMMENT 'FK to Contact ID creator',
-     `modified_date` date    COMMENT 'When was this note last modified/edited',
+     `modified_date` timestamp   DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When was this note last modified/edited',
      `subject` varchar(255)    COMMENT 'subject of note description',
      `privacy` varchar(255)    COMMENT 'Foreign Key to Note Privacy Level (which is an option value pair and hence an implicit FK)' 
 ,
@@ -2493,7 +2491,7 @@ CREATE TABLE `civicrm_print_label` (
 
 
      `id` int unsigned NOT NULL AUTO_INCREMENT  ,
-     `title` varchar(255)    COMMENT 'User title for for this label layout',
+     `title` varchar(255)    COMMENT 'User title for this label layout',
      `name` varchar(255)    COMMENT 'variable name/programmatic handle for this field.',
      `description` text    COMMENT 'Description of this label layout',
      `label_format_name` varchar(255)    COMMENT 'This refers to name column of civicrm_option_value row in name_badge option group',
@@ -3216,7 +3214,7 @@ CREATE TABLE `civicrm_report_instance` (
      `description` varchar(255)    COMMENT 'Report Instance description.',
      `permission` varchar(255)    COMMENT 'permission required to be able to run this instance',
      `grouprole` varchar(1024)    COMMENT 'role required to be able to run this instance',
-     `form_values` text    COMMENT 'Submitted form values for this report',
+     `form_values` longtext    COMMENT 'Submitted form values for this report',
      `is_active` tinyint    COMMENT 'Is this entry active?',
      `created_id` int unsigned    COMMENT 'FK to contact table.',
      `owner_id` int unsigned    COMMENT 'FK to contact table.',
@@ -3638,7 +3636,7 @@ CREATE TABLE `civicrm_dashboard_contact` (
      `id` int unsigned NOT NULL AUTO_INCREMENT  ,
      `dashboard_id` int unsigned NOT NULL   COMMENT 'Dashboard ID',
      `contact_id` int unsigned NOT NULL   COMMENT 'Contact ID',
-     `column_no` tinyint   DEFAULT 0 COMMENT 'column no for this widget',
+     `column_no` int   DEFAULT 0 COMMENT 'column no for this widget',
      `is_active` tinyint   DEFAULT 0 COMMENT 'Is this widget active?',
      `weight` int   DEFAULT 0 COMMENT 'Ordering of the widgets.' 
 ,
@@ -3714,7 +3712,7 @@ CREATE TABLE `civicrm_mailing` (
      `open_tracking` tinyint    COMMENT 'Should we track when recipients open/read this mailing?',
      `is_completed` tinyint    COMMENT 'Has at least one job associated with this mailing finished?',
      `msg_template_id` int unsigned    COMMENT 'FK to the message template.',
-     `override_verp` tinyint   DEFAULT 0 COMMENT 'Should we overrite VERP address in Reply-To',
+     `override_verp` tinyint   DEFAULT 0 COMMENT 'Overwrite the VERP address in Reply-To',
      `created_id` int unsigned    COMMENT 'FK to Contact ID who first created this mailing',
      `created_date` timestamp NULL  DEFAULT NULL COMMENT 'Date and time this mailing was created.',
      `modified_date` timestamp NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the mailing (or closely related entity) was created or modified or deleted.',
@@ -3849,7 +3847,7 @@ CREATE TABLE `civicrm_mailing_spool` (
 
      `id` int unsigned NOT NULL AUTO_INCREMENT  ,
      `job_id` int unsigned NOT NULL   COMMENT 'The ID of the Job .',
-     `recipient_email` text    COMMENT 'The email of the receipients this mail is to be sent.',
+     `recipient_email` text    COMMENT 'The email of the recipients this mail is to be sent.',
      `headers` text    COMMENT 'The header information of this mailing .',
      `body` text    COMMENT 'The body of this mailing.',
      `added_at` timestamp NULL  DEFAULT NULL COMMENT 'date on which this job was added.',

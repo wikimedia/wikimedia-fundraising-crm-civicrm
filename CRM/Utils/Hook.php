@@ -160,7 +160,7 @@ abstract class CRM_Utils_Hook {
     // Instead of not calling any hooks we only call those we know to be frequently important - if a particular extension wanted
     // to avoid this they could do an early return on CRM_Core_Config::singleton()->isUpgradeMode
     // Futther discussion is happening at https://lab.civicrm.org/dev/core/issues/1460
-    $upgradeFriendlyHooks = ['civicrm_alterSettingsFolders', 'civicrm_alterSettingsMetaData', 'civicrm_triggerInfo', 'civicrm_alterLogTables', 'civicrm_container', 'civicrm_permission'];
+    $upgradeFriendlyHooks = ['civicrm_alterSettingsFolders', 'civicrm_alterSettingsMetaData', 'civicrm_triggerInfo', 'civicrm_alterLogTables', 'civicrm_container', 'civicrm_permission', 'civicrm_managed'];
     if (CRM_Core_Config::singleton()->isUpgradeMode() && !in_array($fnSuffix, $upgradeFriendlyHooks)) {
       return;
     }
@@ -389,6 +389,36 @@ abstract class CRM_Utils_Hook {
     }
     $event = new \Civi\Core\Event\PostEvent($op, $objectName, $objectId, $objectRef);
     \Civi::dispatcher()->dispatch('hook_civicrm_post', $event);
+    return $event->getReturnValues();
+  }
+
+  /**
+   * This hook is equivalent to post(), except that it is guaranteed to run
+   * outside of any SQL transaction. The objectRef is not modifiable.
+   *
+   * This hook is defined for two cases:
+   *
+   * 1. If the original action runs within a transaction, then the hook fires
+   *    after the transaction commits.
+   * 2. If the original action runs outside a transaction, then the data was
+   *    committed immediately, and we can run the hook immediately.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object if available.
+   *
+   * @return mixed
+   *   based on op. pre-hooks return a boolean or
+   *                           an error message which aborts the operation
+   */
+  public static function postCommit($op, $objectName, $objectId, $objectRef = NULL) {
+    $event = new \Civi\Core\Event\PostEvent($op, $objectName, $objectId, $objectRef);
+    \Civi::dispatcher()->dispatch('hook_civicrm_postCommit', $event);
     return $event->getReturnValues();
   }
 
@@ -2115,32 +2145,6 @@ abstract class CRM_Utils_Hook {
   }
 
   /**
-   * Deprecated: Misnamed version of alterMailer(). Remove post-4.7.x.
-   * Modify or replace the Mailer object used for outgoing mail.
-   *
-   * @param object $mailer
-   *   The default mailer produced by normal configuration; a PEAR "Mail" class (like those returned by Mail::factory)
-   * @param string $driver
-   *   The type of the default mailer (eg "smtp", "sendmail", "mock", "CRM_Mailing_BAO_Spool")
-   * @param array $params
-   *   The default mailer config options
-   *
-   * @return mixed
-   * @see Mail::factory
-   * @deprecated
-   */
-  public static function alterMail(&$mailer, $driver, $params) {
-    // This has been deprecated on the premise it MIGHT be called externally for a long time.
-    // We don't have a clear policy on how much we support external extensions calling internal
-    // hooks (ie. in general we say 'don't call internal functions', but some hooks like pre hooks
-    // are expected to be called externally.
-    // It's really really unlikely anyone uses this - but let's add deprecations for a couple
-    // of releases first.
-    CRM_Core_Error::deprecatedFunctionWarning('CRM_Utils_Hook::alterMailer');
-    return CRM_Utils_Hook::alterMailer($mailer, $driver, $params);
-  }
-
-  /**
    * This hook is called while building the core search query,
    * so hook implementers can provide their own query objects which alters/extends core search.
    *
@@ -2628,6 +2632,38 @@ abstract class CRM_Utils_Hook {
       $IPNData, self::$_nullObject, self::$_nullObject,
       self::$_nullObject, self::$_nullObject, self::$_nullObject,
       'civicrm_postIPNProcess'
+    );
+  }
+
+  /**
+   * Allow extensions to modify the array of acceptable fields to be included on profiles
+   * @param array $fields
+   *   format is [Entity => array of DAO fields]
+   * @return mixed
+   */
+  public static function alterUFFields(&$fields) {
+    return self::singleton()->invoke(['fields'],
+      $fields, self::$_nullObject, self::$_nullObject,
+      self::$_nullObject, self::$_nullObject, self::$_nullObject,
+      'civicrm_alterUFFields'
+    );
+  }
+
+  /**
+   * This hook is called to alter Custom field value before its displayed.
+   *
+   * @param string $displayValue
+   * @param mixed $value
+   * @param int $entityId
+   * @param array $fieldInfo
+   *
+   * @return mixed
+   */
+  public static function alterCustomFieldDisplayValue(&$displayValue, $value, $entityId, $fieldInfo) {
+    return self::singleton()->invoke(
+      ['displayValue', 'value', 'entityId', 'fieldInfo'],
+      $displayValue, $value, $entityId, $fieldInfo, self::$_nullObject,
+      self::$_nullObject, 'civicrm_alterCustomFieldDisplayValue'
     );
   }
 

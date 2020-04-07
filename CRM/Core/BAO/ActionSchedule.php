@@ -57,7 +57,7 @@ class CRM_Core_BAO_ActionSchedule extends CRM_Core_DAO_ActionSchedule {
    */
   public static function getMapping($id) {
     $mappings = self::getMappings();
-    return isset($mappings[$id]) ? $mappings[$id] : NULL;
+    return $mappings[$id] ?? NULL;
   }
 
   /**
@@ -596,7 +596,7 @@ FROM civicrm_action_schedule cas
    *   List of error messages.
    */
   protected static function sendReminderEmail($tokenRow, $schedule, $toContactID) {
-    $toEmail = CRM_Contact_BAO_Contact::getPrimaryEmail($toContactID);
+    $toEmail = CRM_Contact_BAO_Contact::getPrimaryEmail($toContactID, TRUE);
     if (!$toEmail) {
       return ["email_missing" => "Couldn't find recipient's email address."];
     }
@@ -673,7 +673,7 @@ FROM civicrm_action_schedule cas
     //to get primary mobile ph,if not get a first mobile phONE
     if (!empty($toPhoneNumbers)) {
       $toPhoneNumberDetails = reset($toPhoneNumbers);
-      $toPhoneNumber = CRM_Utils_Array::value('phone', $toPhoneNumberDetails);
+      $toPhoneNumber = $toPhoneNumberDetails['phone'] ?? NULL;
       return $toPhoneNumber;
     }
     return NULL;

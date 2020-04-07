@@ -137,17 +137,17 @@ class CRM_Utils_System_Drupal8 extends CRM_Utils_System_DrupalBase {
       // This checks for both username uniqueness and validity.
       $violations = iterator_to_array($user->validate());
       // We only care about violations on the username field; discard the rest.
-      $violations = array_filter($violations, function ($v) {
+      $violations = array_values(array_filter($violations, function ($v) {
         return $v->getPropertyPath() == 'name';
-      });
+      }));
       if (count($violations) > 0) {
         $errors['cms_name'] = (string) $violations[0]->getMessage();
       }
     }
 
     // And if we are given an email address, let's check to see if it already exists.
-    if (!empty($params[$emailName])) {
-      $mail = $params[$emailName];
+    if (!empty($params['mail'])) {
+      $mail = $params['mail'];
 
       $user = entity_create('user');
       $user->setEmail($mail);
@@ -155,9 +155,9 @@ class CRM_Utils_System_Drupal8 extends CRM_Utils_System_DrupalBase {
       // This checks for both email uniqueness.
       $violations = iterator_to_array($user->validate());
       // We only care about violations on the email field; discard the rest.
-      $violations = array_filter($violations, function ($v) {
+      $violations = array_values(array_filter($violations, function ($v) {
         return $v->getPropertyPath() == 'mail';
-      });
+      }));
       if (count($violations) > 0) {
         $errors[$emailName] = (string) $violations[0]->getMessage();
       }
@@ -541,7 +541,7 @@ class CRM_Utils_System_Drupal8 extends CRM_Utils_System_DrupalBase {
     foreach ($module_data as $module_name => $extension) {
       if (!isset($extension->info['hidden']) && $extension->origin != 'core') {
         $extension->schema_version = drupal_get_installed_schema_version($module_name);
-        $modules[] = new CRM_Core_Module('drupal.' . $module_name, ($extension->status == 1 ? TRUE : FALSE));
+        $modules[] = new CRM_Core_Module('drupal.' . $module_name, ($extension->status == 1));
       }
     }
     return $modules;
@@ -761,7 +761,7 @@ class CRM_Utils_System_Drupal8 extends CRM_Utils_System_DrupalBase {
             if ($addLanguagePart && !empty($config['prefixes'][$language])) {
               $url .= $config['prefixes'][$language] . '/';
             }
-            if ($removeLanguagePart) {
+            if ($removeLanguagePart && !empty($config['prefixes'][$language])) {
               $url = str_replace("/" . $config['prefixes'][$language] . "/", '/', $url);
             }
           }
@@ -792,6 +792,15 @@ class CRM_Utils_System_Drupal8 extends CRM_Utils_System_DrupalBase {
     }
 
     return $url;
+  }
+
+  /**
+   * Get role names
+   *
+   * @return array|null
+   */
+  public function getRoleNames() {
+    return user_role_names();
   }
 
 }

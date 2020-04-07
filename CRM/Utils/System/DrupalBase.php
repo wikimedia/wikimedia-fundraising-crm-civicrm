@@ -13,8 +13,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC https://civicrm.org/licensing
- * $Id$
- *
  */
 
 /**
@@ -296,7 +294,7 @@ abstract class CRM_Utils_System_DrupalBase extends CRM_Utils_System_Base {
     $result = [];
     $q = db_query('SELECT name, status FROM {system} WHERE type = \'module\' AND schema_version <> -1');
     foreach ($q as $row) {
-      $result[] = new CRM_Core_Module('drupal.' . $row->name, ($row->status == 1) ? TRUE : FALSE);
+      $result[] = new CRM_Core_Module('drupal.' . $row->name, $row->status == 1);
     }
     return $result;
   }
@@ -661,10 +659,32 @@ abstract class CRM_Utils_System_DrupalBase extends CRM_Utils_System_Base {
 
     // Get the menu for above URL.
     $item = CRM_Core_Menu::get($path);
-    if (!empty(CRM_Utils_Array::value('is_public', $item))) {
-      return TRUE;
+    return !empty($item['is_public']);
+  }
+
+  /**
+   * Start a new session.
+   */
+  public function sessionStart() {
+    if (function_exists('drupal_session_start')) {
+      // https://issues.civicrm.org/jira/browse/CRM-14356
+      if (!(isset($GLOBALS['lazy_session']) && $GLOBALS['lazy_session'] == TRUE)) {
+        drupal_session_start();
+      }
+      $_SESSION = [];
     }
-    return FALSE;
+    else {
+      session_start();
+    }
+  }
+
+  /**
+   * Get role names
+   *
+   * @return array|null
+   */
+  public function getRoleNames() {
+    return array_combine(user_roles(), user_roles());
   }
 
 }

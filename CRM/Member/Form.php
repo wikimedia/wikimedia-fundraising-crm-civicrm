@@ -22,12 +22,6 @@
 class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
 
   use CRM_Core_Form_EntityFormTrait;
-  /**
-   * The id of the object being edited / created
-   *
-   * @var int
-   */
-  public $_id;
 
   /**
    * Membership Type ID
@@ -436,7 +430,7 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
    * @return array
    */
   protected static function getPriceSetDetails($params) {
-    $priceSetID = CRM_Utils_Array::value('price_set_id', $params);
+    $priceSetID = $params['price_set_id'] ?? NULL;
     if ($priceSetID) {
       return CRM_Price_BAO_PriceSet::getSetDetail($priceSetID);
     }
@@ -456,7 +450,7 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
    * @return int
    */
   protected static function getPriceSetID($params) {
-    $priceSetID = CRM_Utils_Array::value('price_set_id', $params);
+    $priceSetID = $params['price_set_id'] ?? NULL;
     if (!$priceSetID) {
       $priceSetDetails = self::getPriceSetDetails($params);
       return key($priceSetDetails);

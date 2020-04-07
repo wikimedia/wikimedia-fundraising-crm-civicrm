@@ -433,7 +433,7 @@ class CRM_Utils_String {
    *   the converted string
    */
   public static function htmlToText($html) {
-    require_once 'packages/html2text/rcube_html2text.php';
+    require_once 'html2text/rcube_html2text.php';
     $token_html = preg_replace('!\{([a-z_.]+)\}!i', 'token:{$1}', $html);
     $converter = new rcube_html2text($token_html);
     $token_text = $converter->get_text();
@@ -836,9 +836,9 @@ class CRM_Utils_String {
    */
   public static function simpleParseUrl($url) {
     $parts = parse_url($url);
-    $host = isset($parts['host']) ? $parts['host'] : '';
+    $host = $parts['host'] ?? '';
     $port = isset($parts['port']) ? ':' . $parts['port'] : '';
-    $path = isset($parts['path']) ? $parts['path'] : '';
+    $path = $parts['path'] ?? '';
     $query = isset($parts['query']) ? '?' . $parts['query'] : '';
     return [
       'host+port' => "$host$port",

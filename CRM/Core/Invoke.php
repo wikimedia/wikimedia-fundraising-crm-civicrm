@@ -238,7 +238,7 @@ class CRM_Core_Invoke {
         $result = $wrapper->run(
           CRM_Utils_Array::value('page_callback', $item),
           CRM_Utils_Array::value('title', $item),
-          isset($pageArgs) ? $pageArgs : NULL
+          $pageArgs ?? NULL
         );
       }
       else {
@@ -248,7 +248,7 @@ class CRM_Core_Invoke {
           $mode = $pageArgs['mode'];
           unset($pageArgs['mode']);
         }
-        $title = CRM_Utils_Array::value('title', $item);
+        $title = $item['title'] ?? NULL;
         if (strstr($item['page_callback'], '_Page') || strstr($item['page_callback'], '\\Page\\')) {
           $object = new $item['page_callback']($title, $mode);
           $object->urlPath = explode('/', $_GET[$config->userFrameworkURLVar]);

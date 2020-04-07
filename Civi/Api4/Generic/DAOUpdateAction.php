@@ -22,9 +22,9 @@
 namespace Civi\Api4\Generic;
 
 /**
- * Update one or more records with new values.
+ * Update one or more $ENTITY with new values.
  *
- * Use the where clause (required) to select them.
+ * Use the `where` clause (required) to select them.
  */
 class DAOUpdateAction extends AbstractUpdateAction {
   use Traits\DAOActionTrait;
@@ -66,13 +66,9 @@ class DAOUpdateAction extends AbstractUpdateAction {
     }
 
     // Batch update 1 or more records based on WHERE clause
-    $items = $this->getObjects();
+    $items = $this->getBatchRecords();
     foreach ($items as &$item) {
       $item = $this->values + $item;
-    }
-
-    if (!$items) {
-      throw new \API_Exception('Cannot ' . $this->getActionName() . ' ' . $this->getEntityName() . ', no records found with ' . $this->whereClauseToString());
     }
 
     $result->exchangeArray($this->writeObjects($items));

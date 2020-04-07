@@ -1,4 +1,12 @@
 {
     "name": "civicrm/civicrm-core:google-code-prettify",
-    "url": "https://github.com/tcollard/google-code-prettify/archive/v1.0.5.zip"
+    "url": "https://github.com/tcollard/google-code-prettify/archive/v1.0.5.zip",
+    "checksum": "8c9c60d8ac2939129e86c5a312b87a882c6d49ad35427cebb56a0f5964402844",
+    "ignore": [
+        "closure-compiler",
+        "js-modules",
+        "tests",
+        "yui-compressor",
+        "Makefile"
+    ]
 }

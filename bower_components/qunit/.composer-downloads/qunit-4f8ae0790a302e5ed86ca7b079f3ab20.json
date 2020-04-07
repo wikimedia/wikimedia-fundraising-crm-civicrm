@@ -1,4 +1,6 @@
 {
     "name": "civicrm/civicrm-core:qunit",
-    "url": "https://github.com/jquery/qunit/archive/v1.10.0.zip"
+    "url": "https://github.com/jquery/qunit/archive/v1.10.0.zip",
+    "checksum": "db0256f7c206a21637010eb0b31fc19a9b7d972c5d7ed639f83dc8b40eab4f9a",
+    "ignore": null
 }

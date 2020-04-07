@@ -145,8 +145,10 @@ function civicrm_api3_attachment_create($params) {
   }
   elseif (is_string($moveFile)) {
     // CRM-17432 Do not use rename() since it will break file permissions.
-    // Also avoid move_uplaoded_file() because the API can use options.move-file.
-    copy($moveFile, $path);
+    // Also avoid move_uploaded_file() because the API can use options.move-file.
+    if (!copy($moveFile, $path)) {
+      throw new API_Exception("Cannot copy uploaded file $moveFile to $path");
+    }
     unlink($moveFile);
   }
 
@@ -336,7 +338,7 @@ function __civicrm_api3_attachment_find($params, $id, $file, $entityFile, $isTru
  * @throws API_Exception validation errors
  */
 function _civicrm_api3_attachment_parse_params($params) {
-  $id = CRM_Utils_Array::value('id', $params, NULL);
+  $id = $params['id'] ?? NULL;
   if ($id && !is_numeric($id)) {
     throw new API_Exception("Malformed id");
   }
@@ -383,7 +385,7 @@ function _civicrm_api3_attachment_parse_params($params) {
 
   $isTrusted = empty($params['check_permissions']);
 
-  $returns = isset($params['return']) ? $params['return'] : [];
+  $returns = $params['return'] ?? [];
   $returns = is_array($returns) ? $returns : [$returns];
   $returnContent = in_array('content', $returns);
 

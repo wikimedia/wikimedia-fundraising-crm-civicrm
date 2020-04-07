@@ -97,13 +97,51 @@ trait CRM_Financial_Form_FrontEndPaymentFormTrait {
     $pps = [];
     if (!empty($this->_paymentProcessors)) {
       foreach ($this->_paymentProcessors as $key => $processor) {
-        $pps[$key] = $processor['title'] ?? $processor['name'];
+        $pps[$key] = $this->getPaymentProcessorTitle($processor);
       }
     }
     if ($this->getPayLaterLabel()) {
       $pps[0] = $this->getPayLaterLabel();
     }
     return $pps;
+  }
+
+  /**
+   * Get the title of the payment processor to display to the user
+   * Note: There is an identical function in CRM_Core_Payment
+   *
+   * @param array $processor
+   *
+   * @return string
+   */
+  protected function getPaymentProcessorTitle($processor) {
+    return $processor['title'] ?? $processor['name'];
+  }
+
+  /**
+   * Adds in either a set of radio buttons or hidden fields to contain the payment processors on a front end form
+   */
+  protected function addPaymentProcessorFieldsToForm() {
+    $paymentProcessors = $this->getProcessors();
+    $optAttributes = [];
+    foreach ($paymentProcessors as $ppKey => $ppval) {
+      if ($ppKey > 0) {
+        $optAttributes[$ppKey]['class'] = 'payment_processor_' . strtolower($this->_paymentProcessors[$ppKey]['payment_processor_type']);
+      }
+      else {
+        $optAttributes[$ppKey]['class'] = 'payment_processor_paylater';
+      }
+    }
+    if (count($paymentProcessors) > 1) {
+      $this->addRadio('payment_processor_id', ts('Payment Method'), $paymentProcessors,
+        NULL, "&nbsp;", FALSE, $optAttributes
+      );
+    }
+    elseif (!empty($paymentProcessors)) {
+      $ppKeys = array_keys($paymentProcessors);
+      $currentPP = array_pop($ppKeys);
+      $this->addElement('hidden', 'payment_processor_id', $currentPP);
+    }
   }
 
 }

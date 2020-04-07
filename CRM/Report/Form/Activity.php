@@ -351,7 +351,8 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
 
   public function preProcess() {
     // Is "Include Case Activities" selected?  If yes, include the case_id as a hidden column
-    $includeCaseActivities = CRM_Utils_Request::retrieveValue('include_case_activities_value', 'Boolean');
+    $formToUse = $this->noController ? NULL : $this;
+    $includeCaseActivities = CRM_Utils_Request::retrieve('include_case_activities_value', 'Boolean', $formToUse);
     if (!empty($includeCaseActivities)) {
       $this->_columns['civicrm_case_activity'] = [
         'dao' => 'CRM_Case_DAO_CaseActivity',
@@ -535,15 +536,15 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
             continue;
           }
           if (CRM_Utils_Array::value('type', $field) & CRM_Utils_Type::T_DATE) {
-            $relative = CRM_Utils_Array::value("{$fieldName}_relative", $this->_params);
-            $from = CRM_Utils_Array::value("{$fieldName}_from", $this->_params);
-            $to = CRM_Utils_Array::value("{$fieldName}_to", $this->_params);
+            $relative = $this->_params["{$fieldName}_relative"] ?? NULL;
+            $from = $this->_params["{$fieldName}_from"] ?? NULL;
+            $to = $this->_params["{$fieldName}_to"] ?? NULL;
 
-            $clause = $this->dateClause($field['name'], $relative, $from, $to, $field['type']);
+            $clause = $this->dateClause($field['dbAlias'], $relative, $from, $to, $field['type']);
           }
           else {
-            $op = CRM_Utils_Array::value("{$fieldName}_op", $this->_params);
-            if ($op && ($op != 'nnll' && $op != 'nll')) {
+            $op = $this->_params["{$fieldName}_op"] ?? NULL;
+            if ($op && !($fieldName == "contact_{$recordType}" && ($op != 'nnll' || $op != 'nll'))) {
               $clause = $this->whereClause($field,
                 $op,
                 CRM_Utils_Array::value("{$fieldName}_value", $this->_params),

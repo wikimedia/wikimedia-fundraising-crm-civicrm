@@ -21,6 +21,12 @@ use CRM_Core_PseudoConstant;
  *
  */
 class PropertyBag implements \ArrayAccess {
+  /**
+   * @var array
+   * - see legacyWarning
+   */
+  public static $legacyWarnings = [];
+
   protected $props = ['default' => []];
 
   protected static $propMap = [
@@ -61,6 +67,7 @@ class PropertyBag implements \ArrayAccess {
     'frequency_interval'          => 'recurFrequencyInterval',
     'recurFrequencyUnit'          => TRUE,
     'frequency_unit'              => 'recurFrequencyUnit',
+    'subscriptionId'              => 'recurProcessorID',
     'recurProcessorID'            => TRUE,
     'transactionID'               => TRUE,
     'transaction_id'              => 'transactionID',
@@ -87,7 +94,9 @@ class PropertyBag implements \ArrayAccess {
   }
 
   /**
-   * @var string Just for unit testing.
+   * Just for unit testing.
+   *
+   * @var string
    */
   public $lastWarning;
 
@@ -98,8 +107,8 @@ class PropertyBag implements \ArrayAccess {
    * @return bool TRUE if we have that value (on our default store)
    */
   public function offsetExists ($offset): bool {
-    $prop = $this->handleLegacyPropNames($offset);
-    return isset($this->props['default'][$prop]);
+    $prop = $this->handleLegacyPropNames($offset, TRUE);
+    return $prop && isset($this->props['default'][$prop]);
   }
 
   /**
@@ -159,26 +168,53 @@ class PropertyBag implements \ArrayAccess {
   }
 
   /**
+   * Log legacy warnings info.
+   *
    * @param string $message
    */
   protected function legacyWarning($message) {
-    $message = "Deprecated code: $message";
+    if (empty(static::$legacyWarnings)) {
+      // First time we have been called.
+      register_shutdown_function([PropertyBag::class, 'writeLegacyWarnings']);
+    }
+    // Store warnings instead of logging immediately, as calls to Civi::log()
+    // can take over half a second to work in some hosting environments.
+    static::$legacyWarnings[$message] = TRUE;
+
+    // For unit tests:
     $this->lastWarning = $message;
-    Civi::log()->warning($message);
+  }
+
+  /**
+   * Save any legacy warnings to log.
+   *
+   * Called as a shutdown function.
+   */
+  public static function writeLegacyWarnings() {
+    if (!empty(static::$legacyWarnings)) {
+      $message = "Civi\\Payment\\PropertyBag related deprecation warnings:\n"
+        . implode("\n", array_keys(static::$legacyWarnings));
+      Civi::log()->warning($message, ['civi.tag' => 'deprecated']);
+    }
   }
 
   /**
    * @param string $prop
+   * @param bool $silent if TRUE return NULL instead of throwing an exception. This is because offsetExists should be safe and not throw exceptions.
    * @return string canonical name.
    * @throws \InvalidArgumentException if prop name not known.
    */
-  protected function handleLegacyPropNames($prop) {
+  protected function handleLegacyPropNames($prop, $silent = FALSE) {
     $newName = static::$propMap[$prop] ?? NULL;
     if ($newName === TRUE) {
       // Good, modern name.
       return $prop;
     }
     if ($newName === NULL) {
+      if ($silent) {
+        // Only for use by offsetExists
+        return;
+      }
       throw new \InvalidArgumentException("Unknown property '$prop'.");
     }
     // Remaining case is legacy name that's been translated.
@@ -250,9 +286,9 @@ class PropertyBag implements \ArrayAccess {
    * @param array $data
    */
   public function mergeLegacyInputParams($data) {
-    $this->legacyWarning("We have merged input params into the property bag for now but please rewrite code to not use this.");
+    $this->legacyWarning('We have merged input params into the property bag for now but please rewrite code to not use this.');
     foreach ($data as $key => $value) {
-      if ($value !== NULL) {
+      if ($value !== NULL && $value !== '') {
         $this->offsetSet($key, $value);
       }
     }

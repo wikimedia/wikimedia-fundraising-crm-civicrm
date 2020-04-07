@@ -88,10 +88,8 @@ class CRM_Utils_Request {
         break;
     }
 
-    if (isset($value) &&
-      (CRM_Utils_Type::validate($value, $type, $abort, $name) === NULL)
-    ) {
-      $value = NULL;
+    if (isset($value)) {
+      $value = CRM_Utils_Type::validate($value, $type, $abort, $name);
     }
 
     if (!isset($value) && $store) {
@@ -224,7 +222,7 @@ class CRM_Utils_Request {
    *   The desired value.
    */
   public static function retrieveComponent($attributes) {
-    $url = CRM_Utils_Array::value('action', $attributes);
+    $url = $attributes['action'] ?? NULL;
     // Whilst the following is a fallible universal test for urlencoded URLs,
     // thankfully the "action" URL has a limited and predictable form and
     // therefore this comparison is sufficient for our purposes.

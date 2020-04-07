@@ -75,7 +75,7 @@ class CRM_Logging_Schema {
     $domain = new CRM_Core_DAO_Domain();
     $domain->find(TRUE);
     if (!(CRM_Core_DAO::checkTriggerViewPermission(FALSE)) && $value) {
-      throw new API_Exception("In order to use this functionality, the installation's database user must have privileges to create triggers (in MySQL 5.0 – and in MySQL 5.1 if binary logging is enabled – this means the SUPER privilege). This install either does not seem to have the required privilege enabled.");
+      throw new API_Exception(ts("In order to use this functionality, the installation's database user must have privileges to create triggers and views (if binary logging is enabled – this means the SUPER privilege). This install does not have the required privilege(s) enabled."));
     }
     return TRUE;
   }
@@ -774,7 +774,7 @@ WHERE  table_schema IN ('{$this->db}', '{$civiDB}')";
     // rewrite the queries into CREATE TABLE queries for log tables:
     $cols = <<<COLS
             ,
-            log_date    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            log_date    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             log_conn_id VARCHAR(17),
             log_user_id INTEGER,
             log_action  ENUM('Initialization', 'Insert', 'Update', 'Delete')

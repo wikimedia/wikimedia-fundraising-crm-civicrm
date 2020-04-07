@@ -788,7 +788,7 @@ class CRM_Contact_BAO_Query {
         elseif (isset($field['where'])) {
           list($tableName, $fieldName) = explode('.', $field['where'], 2);
           if (isset($tableName)) {
-            if (CRM_Utils_Array::value($tableName, self::$_dependencies)) {
+            if (!empty(self::$_dependencies[$tableName])) {
               $this->_tables['civicrm_address'] = 1;
               $this->_select['address_id'] = 'civicrm_address.id as address_id';
               $this->_element['address_id'] = 1;
@@ -946,7 +946,7 @@ class CRM_Contact_BAO_Query {
             GROUP_CONCAT(DISTINCT IF(civicrm_group_contact.status = 'Added', civicrm_group_contact.group_id, '')),
             GROUP_CONCAT(DISTINCT civicrm_group_contact_cache.group_id)
           )
-          as groups";
+          as `groups`";
           $this->_element[$name] = 1;
           $this->_tables['civicrm_group_contact'] = 1;
           $this->_tables['civicrm_group_contact_cache'] = 1;
@@ -1118,7 +1118,7 @@ class CRM_Contact_BAO_Query {
           $elementType = '-' . $elementType;
         }
 
-        $field = CRM_Utils_Array::value($elementName, $this->_fields);
+        $field = $this->_fields[$elementName] ?? NULL;
 
         // hack for profile, add location id
         if (!$field) {
@@ -1127,28 +1127,28 @@ class CRM_Contact_BAO_Query {
             !is_numeric($elementType)
           ) {
             if (is_numeric($name)) {
-              $field = CRM_Utils_Array::value($elementName . "-Primary$elementType", $this->_fields);
+              $field = $this->_fields[$elementName . "-Primary$elementType"] ?? NULL;
             }
             else {
-              $field = CRM_Utils_Array::value($elementName . "-$locationTypeId$elementType", $this->_fields);
+              $field = $this->_fields[$elementName . "-$locationTypeId$elementType"] ?? NULL;
             }
           }
           elseif (is_numeric($name)) {
             //this for phone type to work
             if (in_array($elementName, ['phone', 'phone_ext'])) {
-              $field = CRM_Utils_Array::value($elementName . "-Primary" . $elementType, $this->_fields);
+              $field = $this->_fields[$elementName . "-Primary" . $elementType] ?? NULL;
             }
             else {
-              $field = CRM_Utils_Array::value($elementName . "-Primary", $this->_fields);
+              $field = $this->_fields[$elementName . "-Primary"] ?? NULL;
             }
           }
           else {
             //this is for phone type to work for profile edit
             if (in_array($elementName, ['phone', 'phone_ext'])) {
-              $field = CRM_Utils_Array::value($elementName . "-$locationTypeId$elementType", $this->_fields);
+              $field = $this->_fields[$elementName . "-$locationTypeId$elementType"] ?? NULL;
             }
             else {
-              $field = CRM_Utils_Array::value($elementName . "-$locationTypeId", $this->_fields);
+              $field = $this->_fields[$elementName . "-$locationTypeId"] ?? NULL;
             }
           }
         }
@@ -1791,6 +1791,10 @@ class CRM_Contact_BAO_Query {
       (substr($values[0], 0, 10) === 'financial_') ||
       (substr($values[0], 0, 8) === 'payment_') ||
       (substr($values[0], 0, 11) === 'membership_')
+      // temporary fix for regression https://lab.civicrm.org/dev/core/issues/1551
+      //  ideally the metadata would allow  this field to be parsed below & the special handling would not
+      // be needed.
+      || $values[0] === 'mailing_id'
     ) {
       return;
     }
@@ -2036,7 +2040,7 @@ class CRM_Contact_BAO_Query {
         // check for both id and contact_id
         if ($this->_params[$id][0] == 'id' || $this->_params[$id][0] == 'contact_id') {
           $this->_where[0][] = self::buildClause("contact_a.id", $this->_params[$id][1], $this->_params[$id][2]);
-          $field = CRM_Utils_Array::value('id', $this->_fields);
+          $field = $this->_fields['id'] ?? NULL;
           list($qillop, $qillVal) = CRM_Contact_BAO_Query::buildQillForFieldValue(
             'CRM_Contact_BAO_Contact',
             "contact_a.id",
@@ -2104,11 +2108,11 @@ class CRM_Contact_BAO_Query {
    * @throws Exception
    */
   public function restWhere(&$values) {
-    $name = CRM_Utils_Array::value(0, $values);
-    $op = CRM_Utils_Array::value(1, $values);
-    $value = CRM_Utils_Array::value(2, $values);
-    $grouping = CRM_Utils_Array::value(3, $values);
-    $wildcard = CRM_Utils_Array::value(4, $values);
+    $name = $values[0] ?? NULL;
+    $op = $values[1] ?? NULL;
+    $value = $values[2] ?? NULL;
+    $grouping = $values[3] ?? NULL;
+    $wildcard = $values[4] ?? NULL;
 
     if (isset($grouping) && empty($this->_where[$grouping])) {
       $this->_where[$grouping] = [];
@@ -2127,10 +2131,10 @@ class CRM_Contact_BAO_Query {
       }
     }
 
-    $field = CRM_Utils_Array::value($name, $this->_fields);
+    $field = $this->_fields[$name] ?? NULL;
 
     if (!$field) {
-      $field = CRM_Utils_Array::value($locType[0], $this->_fields);
+      $field = $this->_fields[$locType[0]] ?? NULL;
 
       if (!$field) {
         // Strip any trailing _high & _low that might be appended.
@@ -2889,7 +2893,7 @@ class CRM_Contact_BAO_Query {
     else {
       $contactTypeANDSubType = explode(CRM_Core_DAO::VALUE_SEPARATOR, $value, 2);
       $contactType = $contactTypeANDSubType[0];
-      $subType = CRM_Utils_Array::value(1, $contactTypeANDSubType);
+      $subType = $contactTypeANDSubType[1] ?? NULL;
       if (!empty($subType)) {
         $subTypes[$subType] = 1;
       }
@@ -3487,7 +3491,8 @@ WHERE  $smartGroupClause
     }
     // Replace spaces with wildcards for a LIKE operation
     // UNLESS string contains a comma (this exception is a tiny bit questionable)
-    elseif ($op == 'LIKE' && strpos($value, ',') === FALSE) {
+    // Also need to check if there is space in between sort name.
+    elseif ($op == 'LIKE' && strpos($value, ',') === FALSE && strpos($value, ' ') === TRUE) {
       $value = str_replace(' ', '%', $value);
     }
     $value = CRM_Core_DAO::escapeString(trim($value));
@@ -3898,7 +3903,7 @@ WHERE  $smartGroupClause
 
       $county = CRM_Core_PseudoConstant::county();
       foreach ($value as $id) {
-        $names[] = CRM_Utils_Array::value($id, $county);
+        $names[] = $county[$id] ?? NULL;
       }
     }
     else {
@@ -4054,7 +4059,7 @@ WHERE  $smartGroupClause
     else {
       $this->_where[$grouping][] = "contact_a.{$name} $op $value";
     }
-    $field = CRM_Utils_Array::value($name, $this->_fields);
+    $field = $this->_fields[$name] ?? NULL;
     $op = CRM_Utils_Array::value($op, CRM_Core_SelectValues::getSearchBuilderOperators(), $op);
     $title = $field ? $field['title'] : $name;
     $this->_qill[$grouping][] = "$title $op $value";
@@ -4092,7 +4097,7 @@ WHERE  $smartGroupClause
     $qill = [];
     foreach ($value as $dontCare => $pOption) {
       $clauses[] = " ( contact_a.{$pOption} = 1 ) ";
-      $field = CRM_Utils_Array::value($pOption, $this->_fields);
+      $field = $this->_fields[$pOption] ?? NULL;
       $title = $field ? $field['title'] : $pOption;
       $qill[] = " $title = 1 ";
     }
@@ -4215,7 +4220,7 @@ WHERE  $smartGroupClause
         }
         $this->_qill[$grouping][] = 'Relationship Type(s) ' . $relQill . " $name";
       }
-      else {
+      elseif ($name) {
         $this->_qill[$grouping][] = $name;
       }
     }
@@ -4723,13 +4728,13 @@ civicrm_relationship.start_date > {$today}
       list($from, $to) = CRM_Utils_Date::getFromTo($values, NULL, NULL);
     }
     else {
-      if ($fieldName == $customFieldName . '_to' && CRM_Utils_Array::value($customFieldName . '_from', $formValues)) {
+      if ($fieldName == $customFieldName . '_to' && !empty($formValues[$customFieldName . '_from'])) {
         // Both to & from are set. We only need to acton one, choosing from.
         return;
       }
 
-      $from = CRM_Utils_Array::value($customFieldName . '_from', $formValues, NULL);
-      $to = CRM_Utils_Array::value($customFieldName . '_to', $formValues, NULL);
+      $from = $formValues[$customFieldName . '_from'] ?? NULL;
+      $to = $formValues[$customFieldName . '_to'] ?? NULL;
 
       if (self::isCustomDateField($customFieldName)) {
         list($from, $to) = CRM_Utils_Date::getFromTo(NULL, $from, $to);
@@ -5842,7 +5847,7 @@ AND   displayRelType.is_active = 1
    * @return bool
    */
   public static function caseImportant($op) {
-    return in_array($op, ['LIKE', 'IS NULL', 'IS NOT NULL', 'IS EMPTY', 'IS NOT EMPTY']) ? FALSE : TRUE;
+    return !in_array($op, ['LIKE', 'IS NULL', 'IS NOT NULL', 'IS EMPTY', 'IS NOT EMPTY']);
   }
 
   /**
@@ -6020,7 +6025,7 @@ AND   displayRelType.is_active = 1
             }
 
             $dao->$key = ($usedForAPI) ? $convertedValues : implode(', ', $convertedValues);
-            $realFieldName = CRM_Utils_Array::value('field_name', $this->_pseudoConstantsSelect[$key]);
+            $realFieldName = $this->_pseudoConstantsSelect[$key]['field_name'] ?? NULL;
             if ($usedForAPI && $realFieldName) {
               // normally we would see 2 fields returned for pseudoConstants. An exception is
               // preferred_communication_method where there is no id-variant.
@@ -6312,7 +6317,7 @@ AND   displayRelType.is_active = 1
     $nullableFields = ['contribution_batch_id'];
 
     foreach ($specialFields as $element) {
-      $value = CRM_Utils_Array::value($element, $formValues);
+      $value = $formValues[$element] ?? NULL;
       if ($value) {
         if (is_array($value)) {
           if (in_array($element, array_keys($changeNames))) {
@@ -6402,7 +6407,7 @@ AND   displayRelType.is_active = 1
     foreach ($orderByArray as $orderByClause) {
       $orderByClauseParts = explode(' ', trim($orderByClause));
       $field = $orderByClauseParts[0];
-      $direction = isset($orderByClauseParts[1]) ? $orderByClauseParts[1] : 'asc';
+      $direction = $orderByClauseParts[1] ?? 'asc';
       $fieldSpec = $this->getMetadataForRealField($field);
 
       // This is a hacky add-in for primary address joins. Feel free to iterate as it is unit tested.
@@ -6550,15 +6555,15 @@ AND   displayRelType.is_active = 1
       return FALSE;
     }
 
-    if (!empty($pseudoConstant['optionGroupName']) && CRM_Utils_Array::value($pseudoConstant['optionGroupName'], $this->_returnProperties)) {
+    if (!empty($pseudoConstant['optionGroupName']) && !empty($this->_returnProperties[$pseudoConstant['optionGroupName']])) {
       return TRUE;
     }
-    if (CRM_Utils_Array::value($fieldName, $this->_returnProperties)) {
+    if (!empty($this->_returnProperties[$fieldName])) {
       return TRUE;
     }
     // Is this still required - the above goes off the unique name. Test with things like
     // communication_preferences & prefix_id.
-    if (CRM_Utils_Array::value($field['name'], $this->_returnProperties)) {
+    if (!empty($this->_returnProperties[$field['name']])) {
       return TRUE;
     }
     return FALSE;
@@ -6805,9 +6810,9 @@ AND   displayRelType.is_active = 1
     // if we’re explicitly looking for a certain contact’s contribs, events, etc.
     // and that contact happens to be deleted, set $onlyDeleted to true
     foreach ($this->_params as $values) {
-      $name = CRM_Utils_Array::value(0, $values);
-      $op = CRM_Utils_Array::value(1, $values);
-      $value = CRM_Utils_Array::value(2, $values);
+      $name = $values[0] ?? NULL;
+      $op = $values[1] ?? NULL;
+      $value = $values[2] ?? NULL;
       if ($name == 'contact_id' and $op == '=') {
         if (CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $value, 'is_deleted')) {
           $onlyDeleted = TRUE;
@@ -6896,8 +6901,8 @@ AND   displayRelType.is_active = 1
       // This seems to be the only anomaly.
       $fieldName = 'id';
     }
-    $pseudoField = isset($this->_pseudoConstantsSelect[$fieldName]) ? $this->_pseudoConstantsSelect[$fieldName] : [];
-    $field = isset($this->_fields[$fieldName]) ? $this->_fields[$fieldName] : $pseudoField;
+    $pseudoField = $this->_pseudoConstantsSelect[$fieldName] ?? [];
+    $field = $this->_fields[$fieldName] ?? $pseudoField;
     $field = array_merge($field, $pseudoField);
     if (!empty($field) && empty($field['name'])) {
       // standardising field formatting here - over time we can phase out variants.
@@ -6949,7 +6954,7 @@ AND   displayRelType.is_active = 1
   protected function addPseudoconstantFieldToSelect($name) {
     $field = $this->getMetadataForRealField($name);
     $realFieldName = $field['name'];
-    $pseudoFieldName = CRM_Utils_Array::value('pseudofield_name', $field);
+    $pseudoFieldName = $field['pseudofield_name'] ?? NULL;
     if ($pseudoFieldName) {
       // @todo - we don't really need to build this array now we have metadata more available with getMetadataForField fn.
       $this->_pseudoConstantsSelect[$pseudoFieldName] = [
@@ -7050,7 +7055,7 @@ AND   displayRelType.is_active = 1
    * @param $values
    */
   protected function buildRelativeDateQuery(&$values) {
-    $value = CRM_Utils_Array::value(2, $values);
+    $value = $values[2] ?? NULL;
     if (empty($value)) {
       return;
     }
@@ -7058,7 +7063,7 @@ AND   displayRelType.is_active = 1
     $fieldSpec = $this->_fields[$fieldName];
     $tableName = $fieldSpec['table_name'];
     $filters = CRM_Core_OptionGroup::values('relative_date_filters');
-    $grouping = CRM_Utils_Array::value(3, $values);
+    $grouping = $values[3] ?? NULL;
     // If the table value is already set for a custom field it will be more nuanced than just '1'.
     $this->_tables[$tableName] = $this->_tables[$tableName] ?? 1;
     $this->_whereTables[$tableName] = $this->_whereTables[$tableName] ?? 1;
@@ -7074,22 +7079,22 @@ AND   displayRelType.is_active = 1
       $secondWhere = str_replace('civicrm_contact.', 'contact_a.', $secondWhere);
     }
 
+    $this->_qill[$grouping][] = $this->getQillForRelativeDateRange($dates[0], $dates[1], $fieldSpec['title'], $filters[$value]);
+    if ($fieldName === 'relation_active_period_date') {
+      // Hack this to fix regression https://lab.civicrm.org/dev/core/issues/1592
+      // Not sure the  'right' fix.
+      $this->_where[$grouping] = [self::getRelationshipActivePeriodClauses($dates[0], $dates[1], TRUE)];
+      return;
+    }
+
     if (empty($dates[0])) {
       // ie. no start date we only have end date
       $this->_where[$grouping][] = $secondWhere . " <= '{$dates[1]}'";
-
-      $this->_qill[$grouping][] = ts('%1 is ', [$fieldSpec['title']]) . $filters[$value] . ' (' . ts("to %1", [
-        CRM_Utils_Date::customFormat($dates[1]),
-      ]) . ')';
     }
     elseif (empty($dates[1])) {
 
       // ie. no end date we only have start date
       $this->_where[$grouping][] = $where . " >= '{$dates[0]}'";
-
-      $this->_qill[$grouping][] = ts('%1 is ', [$fieldSpec['title']]) . $filters[$value] . ' (' . ts("from %1", [
-        CRM_Utils_Date::customFormat($dates[0]),
-      ]) . ')';
     }
     else {
       // we have start and end dates.
@@ -7099,11 +7104,6 @@ AND   displayRelType.is_active = 1
       else {
         $this->_where[$grouping][] = $where . " BETWEEN '{$dates[0]}' AND '{$dates[1]}'";
       }
-
-      $this->_qill[$grouping][] = ts('%1 is ', [$fieldSpec['title']]) . $filters[$value] . ' (' . ts("between %1 and %2", [
-        CRM_Utils_Date::customFormat($dates[0]),
-        CRM_Utils_Date::customFormat($dates[1]),
-      ]) . ')';
     }
   }
 
@@ -7229,6 +7229,29 @@ AND   displayRelType.is_active = 1
     if (!isset($this->_whereTables[$fieldSpec['table_name']])) {
       $this->_whereTables[$fieldSpec['table_name']] = 1;
     }
+  }
+
+  /**
+   * Get the qill for the relative date range.
+   *
+   * @param string|null $from
+   * @param string|null $to
+   * @param string $fieldTitle
+   * @param string $relativeRange
+   *
+   * @return string
+   */
+  protected function getQillForRelativeDateRange($from, $to, string $fieldTitle, string $relativeRange): string {
+    if (!$from) {
+      return ts('%1 is ', [$fieldTitle]) . $relativeRange . ' (' . ts('to %1', [CRM_Utils_Date::customFormat($to)]) . ')';
+    }
+    if (!$to) {
+      return ts('%1 is ', [$fieldTitle]) . $relativeRange . ' (' . ts('from %1', [CRM_Utils_Date::customFormat($from)]) . ')';
+    }
+    return ts('%1 is ', [$fieldTitle]) . $relativeRange . ' (' . ts('between %1 and %2', [
+      CRM_Utils_Date::customFormat($from),
+      CRM_Utils_Date::customFormat($to),
+    ]) . ')';
   }
 
 }

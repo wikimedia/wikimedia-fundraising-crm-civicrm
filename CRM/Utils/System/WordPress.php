@@ -417,8 +417,11 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     elseif (defined('ICL_LANGUAGE_CODE')) {
       $language = ICL_LANGUAGE_CODE;
     }
-
-    // TODO: set language variable for others WordPress plugin
+    // Wordpress "standard" single language mode
+    // We still have to check if the function exists as it may not during bootstrap
+    elseif (function_exists('get_locale')) {
+      $language = get_locale();
+    }
 
     if (!empty($language)) {
       return CRM_Core_I18n_PseudoConstant::longForShort(substr($language, 0, 2));
@@ -453,8 +456,8 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
   public function loadBootStrap($params = [], $loadUser = TRUE, $throwError = TRUE, $realPath = NULL) {
     global $wp, $wp_rewrite, $wp_the_query, $wp_query, $wpdb, $current_site, $current_blog, $current_user;
 
-    $name = CRM_Utils_Array::value('name', $params);
-    $pass = CRM_Utils_Array::value('pass', $params);
+    $name = $params['name'] ?? NULL;
+    $pass = $params['pass'] ?? NULL;
 
     if (!defined('WP_USE_THEMES')) {
       define('WP_USE_THEMES', FALSE);
@@ -480,7 +483,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
       CRM_Core_Config::singleton()->userSystem->setMySQLTimeZone();
     }
     require_once $cmsRootPath . DIRECTORY_SEPARATOR . 'wp-includes/pluggable.php';
-    $uid = CRM_Utils_Array::value('uid', $params);
+    $uid = $params['uid'] ?? NULL;
     if (!$uid) {
       $name = $name ? $name : trim(CRM_Utils_Array::value('name', $_REQUEST));
       $pass = $pass ? $pass : trim(CRM_Utils_Array::value('pass', $_REQUEST));
@@ -720,7 +723,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
   public function getLoggedInUfID() {
     $ufID = NULL;
     $current_user = $this->getLoggedInUserObject();
-    return isset($current_user->ID) ? $current_user->ID : NULL;
+    return $current_user->ID ?? NULL;
   }
 
   /**
@@ -835,11 +838,13 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     $contactCreated = 0;
     $contactMatching = 0;
 
-    global $wpdb;
-    $wpUserIds = $wpdb->get_col("SELECT $wpdb->users.ID FROM $wpdb->users");
+    // Previously used the $wpdb global - which means WordPress *must* be bootstrapped.
+    $wpUsers = get_users(array(
+      'blog_id' => get_current_blog_id(),
+      'number' => -1,
+    ));
 
-    foreach ($wpUserIds as $wpUserId) {
-      $wpUserData = get_userdata($wpUserId);
+    foreach ($wpUsers as $wpUserData) {
       $contactCount++;
       if ($match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($wpUserData,
         $wpUserData->$id,
@@ -854,6 +859,9 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
       }
       else {
         $contactMatching++;
+      }
+      if (is_object($match)) {
+        $match->free();
       }
     }
 

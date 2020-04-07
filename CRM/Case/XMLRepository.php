@@ -22,7 +22,8 @@ class CRM_Case_XMLRepository {
   private static $singleton;
 
   /**
-   * @var array<String,SimpleXMLElement>
+   * @var array
+   * <String,SimpleXMLElement>
    */
   protected $xml = [];
 
@@ -93,7 +94,7 @@ class CRM_Case_XMLRepository {
     //  throw new CRM_Core_Exception("Cannot load caseType with malformed name [$caseType]");
     //}
 
-    if (!CRM_Utils_Array::value($caseType, $this->xml)) {
+    if (empty($this->xml[$caseType])) {
       $fileXml = $this->retrieveFile($caseType);
       if ($fileXml) {
         $this->xml[$caseType] = $fileXml;

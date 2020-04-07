@@ -22,15 +22,19 @@
 namespace Civi\Api4\Generic;
 
 use Civi\API\Exception\NotImplementedException;
-use Civi\Api4\Utils\ActionUtil;
 
 /**
- * Get fields for an entity.
+ * Lists information about fields for the $ENTITY entity.
+ *
+ * This field information is also known as "metadata."
+ *
+ * Note that different actions may support different lists of fields.
+ * By default this will fetch the field list relevant to `get`,
+ * but a different list may be returned if you specify another action.
  *
  * @method $this setLoadOptions(bool $value)
  * @method bool getLoadOptions()
  * @method $this setAction(string $value)
- * @method $this addValue(string $value)
  * @method $this setValues(array $values)
  * @method array getValues()
  */
@@ -73,7 +77,7 @@ class BasicGetFieldsAction extends BasicGetAction {
    */
   public function _run(Result $result) {
     try {
-      $actionClass = ActionUtil::getAction($this->getEntityName(), $this->getAction());
+      $actionClass = \Civi\API\Request::create($this->getEntityName(), $this->getAction(), ['version' => 4]);
     }
     catch (NotImplementedException $e) {
     }
@@ -125,6 +129,29 @@ class BasicGetFieldsAction extends BasicGetAction {
       'replace' => 'create',
     ];
     return $sub[$this->action] ?? $this->action;
+  }
+
+  /**
+   * Add an item to the values array
+   * @param string $fieldName
+   * @param mixed $value
+   * @return $this
+   */
+  public function addValue(string $fieldName, $value) {
+    $this->values[$fieldName] = $value;
+    return $this;
+  }
+
+  /**
+   * @param bool $includeCustom
+   * @return $this
+   */
+  public function setIncludeCustom(bool $includeCustom) {
+    // Be forgiving if the param doesn't exist and don't throw an exception
+    if (property_exists($this, 'includeCustom')) {
+      $this->includeCustom = $includeCustom;
+    }
+    return $this;
   }
 
   public function fields() {

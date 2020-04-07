@@ -319,7 +319,7 @@ class CRM_Core_BAO_RecurringEntity extends CRM_Core_DAO_RecurringEntity {
 
     $recursionDates = [];
     if (is_a($this->recursion, 'When\When')) {
-      $initialCount = CRM_Utils_Array::value('start_action_offset', $this->schedule);
+      $initialCount = $this->schedule['start_action_offset'] ?? NULL;
 
       $exRangeStart = $exRangeEnd = NULL;
       if (!empty($this->excludeDateRangeColumns)) {
@@ -586,6 +586,8 @@ class CRM_Core_BAO_RecurringEntity extends CRM_Core_DAO_RecurringEntity {
 
       CRM_Core_BAO_RecurringEntity::quickAdd($object->id, $newObject->id, $entityTable);
     }
+
+    CRM_Utils_Hook::copy(CRM_Core_DAO_AllCoreTables::getBriefName($daoName), $newObject);
     return $newObject;
   }
 
@@ -892,7 +894,7 @@ class CRM_Core_BAO_RecurringEntity extends CRM_Core_DAO_RecurringEntity {
     //For Repeats on:(weekly case)
     if ($formParams['repetition_frequency_unit'] == 'week') {
       if (!empty($formParams['start_action_condition'])) {
-        $repeats_on = CRM_Utils_Array::value('start_action_condition', $formParams);
+        $repeats_on = $formParams['start_action_condition'] ?? NULL;
         $dbParams['start_action_condition'] = implode(",", array_keys($repeats_on));
       }
     }
@@ -1144,7 +1146,7 @@ class CRM_Core_BAO_RecurringEntity extends CRM_Core_DAO_RecurringEntity {
   public static function updateModeLinkedEntity($entityId, $linkedEntityTable, $mainEntityTable) {
     $result = [];
     if ($entityId && $linkedEntityTable && $mainEntityTable) {
-      if (CRM_Utils_Array::value($linkedEntityTable, self::$_tableDAOMapper)) {
+      if (!empty(self::$_tableDAOMapper[$linkedEntityTable])) {
         $dao = self::$_tableDAOMapper[$linkedEntityTable];
       }
       else {

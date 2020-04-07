@@ -118,7 +118,8 @@ class CRM_Core_Smarty extends Smarty {
       }
     }
 
-    $smartyDir = dirname(dirname(__DIR__)) . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . 'Smarty' . DIRECTORY_SEPARATOR;
+    $pkgsDir = Civi::paths()->getVariable('civicrm.packages', 'path');
+    $smartyDir = $pkgsDir . DIRECTORY_SEPARATOR . 'Smarty' . DIRECTORY_SEPARATOR;
     $pluginsDir = __DIR__ . DIRECTORY_SEPARATOR . 'Smarty' . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR;
 
     if ($customPluginsDir) {
@@ -275,7 +276,7 @@ class CRM_Core_Smarty extends Smarty {
     $oldVars = $this->get_template_vars();
     $backupFrame = [];
     foreach ($vars as $key => $value) {
-      $backupFrame[$key] = isset($oldVars[$key]) ? $oldVars[$key] : NULL;
+      $backupFrame[$key] = $oldVars[$key] ?? NULL;
     }
     $this->backupFrames[] = $backupFrame;
 

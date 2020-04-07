@@ -20,9 +20,7 @@
 
 namespace Civi\Api4\Generic\Traits;
 
-use CRM_Utils_Array as UtilsArray;
 use Civi\Api4\Utils\FormattingUtil;
-use Civi\Api4\Query\Api4SelectQuery;
 
 /**
  * @method string getLanguage()
@@ -48,39 +46,36 @@ trait DAOActionTrait {
   }
 
   /**
-   * Extract the true fields from a BAO
+   * Convert saved object to array
    *
-   * (Used by create and update actions)
-   * @param object $bao
+   * Used by create, update & save actions
+   *
+   * @param \CRM_Core_DAO $bao
+   * @param array $input
    * @return array
    */
-  public static function baoToArray($bao) {
-    $fields = $bao->fields();
+  public function baoToArray($bao, $input) {
+    $allFields = array_column($bao->fields(), 'name');
+    if (!empty($this->reload)) {
+      $inputFields = $allFields;
+      $bao->find(TRUE);
+    }
+    else {
+      $inputFields = array_keys($input);
+      // Convert 'null' input to true null
+      foreach ($input as $key => $val) {
+        if ($val === 'null') {
+          $bao->$key = NULL;
+        }
+      }
+    }
     $values = [];
-    foreach ($fields as $key => $field) {
-      $name = $field['name'];
-      if (property_exists($bao, $name)) {
-        $values[$name] = isset($bao->$name) ? $bao->$name : NULL;
+    foreach ($allFields as $field) {
+      if (isset($bao->$field) || in_array($field, $inputFields)) {
+        $values[$field] = $bao->$field ?? NULL;
       }
     }
     return $values;
-  }
-
-  /**
-   * @return array|int
-   */
-  protected function getObjects() {
-    $query = new Api4SelectQuery($this->getEntityName(), $this->getCheckPermissions(), $this->entityFields());
-    $query->select = $this->getSelect();
-    $query->where = $this->getWhere();
-    $query->orderBy = $this->getOrderBy();
-    $query->limit = $this->getLimit();
-    $query->offset = $this->getOffset();
-    $result = $query->run();
-    if (is_array($result)) {
-      \CRM_Utils_API_HTMLInputCoder::singleton()->decodeRows($result);
-    }
-    return $result;
   }
 
   /**
@@ -129,7 +124,7 @@ trait DAOActionTrait {
     $result = [];
 
     foreach ($items as $item) {
-      $entityId = UtilsArray::value('id', $item);
+      $entityId = $item['id'] ?? NULL;
       FormattingUtil::formatWriteParams($item, $this->getEntityName(), $this->entityFields());
       $this->formatCustomParams($item, $entityId);
       $item['check_permissions'] = $this->getCheckPermissions();
@@ -150,7 +145,7 @@ trait DAOActionTrait {
         $createResult = $baoName::$method($item);
       }
       else {
-        $createResult = $this->genericCreateMethod($item);
+        $createResult = $baoName::writeRecord($item);
       }
 
       if (!$createResult) {
@@ -158,36 +153,10 @@ trait DAOActionTrait {
         throw new \API_Exception($errMessage);
       }
 
-      if (!empty($this->reload) && is_a($createResult, 'CRM_Core_DAO')) {
-        $createResult->find(TRUE);
-      }
-
-      // trim back the junk and just get the array:
-      $resultArray = $this->baoToArray($createResult);
-
-      $result[] = $resultArray;
+      $result[] = $this->baoToArray($createResult, $item);
     }
+    FormattingUtil::formatOutputValues($result, $this->entityFields(), $this->getEntityName());
     return $result;
-  }
-
-  /**
-   * Fallback when a BAO does not contain create or add functions
-   *
-   * @param $params
-   * @return mixed
-   */
-  private function genericCreateMethod($params) {
-    $baoName = $this->getBaoName();
-    $hook = empty($params['id']) ? 'create' : 'edit';
-
-    \CRM_Utils_Hook::pre($hook, $this->getEntityName(), UtilsArray::value('id', $params), $params);
-    /** @var \CRM_Core_DAO $instance */
-    $instance = new $baoName();
-    $instance->copyValues($params, TRUE);
-    $instance->save();
-    \CRM_Utils_Hook::post($hook, $this->getEntityName(), $instance->id, $instance);
-
-    return $instance;
   }
 
   /**
@@ -271,7 +240,7 @@ trait DAOActionTrait {
     else {
       // Fixme: decouple from v3
       require_once 'api/v3/utils.php';
-      _civicrm_api3_check_edit_permissions($baoName, ['check_permissions' => 1] + $item);
+      _civicrm_api3_check_edit_permissions($baoName, $item);
     }
   }
 

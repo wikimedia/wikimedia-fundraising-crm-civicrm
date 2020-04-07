@@ -19,42 +19,46 @@ class CRM_Contact_Form_Search_Custom_Group extends CRM_Contact_Form_Search_Custo
   protected $_formValues;
 
   /**
-   * @var CRM_Utils_SQL_TemTable Object
+   * @var \CRM_Utils_SQL_TemTable
    */
   protected $_xGTable = NULL;
 
   /**
-   * @var CRM_Utils_SQL_TempTable object
+   * @var \CRM_Utils_SQL_TempTable
    */
   protected $_iGTable = NULL;
 
   /**
-   * @var string Table Name for xclude Groups
+   * @var string
+   * Table Name for xclude Groups
    */
   protected $_xGTableName = NULL;
 
   /**
-   * @var string Table Name for Inclue Groups
+   * @var string
+   * Table Name for Inclue Groups
    */
   protected $_iGTableName = NULL;
 
   /**
-   * @var CRM_Utils_SQL_TemTable Object
+   * @var \CRM_Utils_SQL_TempTable
    */
   protected $_xTTable = NULL;
 
   /**
-   * @var CRM_Utils_SQL_TempTable object
+   * @var \CRM_Utils_SQL_TempTable
    */
   protected $_iTTable = NULL;
 
   /**
-   * @var string Table Name for xclude Groups
+   * @var string
+   * Table Name for xclude Groups
    */
   protected $_xTTableName = NULL;
 
   /**
-   * @var string Table Name for Inclue Groups
+   * @var string
+   * Table Name for Inclue Groups
    */
   protected $_iTTableName = NULL;
 
@@ -87,7 +91,7 @@ class CRM_Contact_Form_Search_Custom_Group extends CRM_Contact_Form_Search_Custo
     $this->_allSearch = FALSE;
     $this->_groups = FALSE;
     $this->_tags = FALSE;
-    $this->_andOr = CRM_Utils_Array::value('andOr', $this->_formValues);
+    $this->_andOr = $this->_formValues['andOr'] ?? NULL;
     //make easy to check conditions for groups and tags are
     //selected or it is empty search
     if (empty($this->_includeGroups) && empty($this->_excludeGroups) &&

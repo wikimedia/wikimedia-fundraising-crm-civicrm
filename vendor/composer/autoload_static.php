@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
+class ComposerStaticInit68b971c18e1c849a9fbaf9524a8bb88f
 {
     public static $files = array (
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
@@ -12,7 +12,6 @@ class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
         '3919eeb97e98d4648304477f8ef734ba' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
         'a0edc8309cc5e1d60e3047b5df6b7052' => __DIR__ . '/..' . '/guzzlehttp/psr7/src/functions_include.php',
         'c964ee0ededf28c96ebd9db5099ef910' => __DIR__ . '/..' . '/guzzlehttp/promises/src/functions_include.php',
-        '5636a0a89fc28f9cfa8624493b142015' => __DIR__ . '/..' . '/civicrm/civicrm-setup/civicrm-setup-autoload.php',
         '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
         '9e4824c5afbdc1482b6025ce3d4dfde8' => __DIR__ . '/..' . '/league/csv/src/functions_include.php',
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
@@ -59,7 +58,7 @@ class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
         ),
         'M' => 
         array (
-            'MimeType\\' => 9,
+            'MimeTyper\\' => 10,
             'MJS\\TopSort\\Tests\\' => 18,
             'MJS\\TopSort\\' => 12,
         ),
@@ -85,6 +84,7 @@ class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
         'C' => 
         array (
             'Civi\\Cxn\\Rpc\\' => 13,
+            'Civi\\' => 5,
             'Cache\\TagInterop\\' => 17,
             'Cache\\IntegrationTests\\' => 23,
         ),
@@ -167,9 +167,9 @@ class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
         array (
             0 => __DIR__ . '/..' . '/phpoffice/common/src/Common',
         ),
-        'MimeType\\' => 
+        'MimeTyper\\' => 
         array (
-            0 => __DIR__ . '/..' . '/katzien/php-mime-type/src',
+            0 => __DIR__ . '/..' . '/adrienrn/php-mimetyper/src',
         ),
         'MJS\\TopSort\\Tests\\' => 
         array (
@@ -210,6 +210,10 @@ class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
         'Civi\\Cxn\\Rpc\\' => 
         array (
             0 => __DIR__ . '/..' . '/civicrm/civicrm-cxn-rpc/src',
+        ),
+        'Civi\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/setup/src',
         ),
         'Cache\\TagInterop\\' => 
         array (
@@ -290,6 +294,13 @@ class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
             'File' => 
             array (
                 0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
+            ),
+        ),
+        'D' => 
+        array (
+            'Dflydev\\ApacheMimeTypes' => 
+            array (
+                0 => __DIR__ . '/..' . '/dflydev/apache-mime-types/src',
             ),
         ),
         'C' => 
@@ -476,11 +487,11 @@ class ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$prefixesPsr0;
-            $loader->fallbackDirsPsr0 = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$fallbackDirsPsr0;
-            $loader->classMap = ComposerStaticInite1bce6b98f077a9e2771fed1a71fa6ec::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit68b971c18e1c849a9fbaf9524a8bb88f::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit68b971c18e1c849a9fbaf9524a8bb88f::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit68b971c18e1c849a9fbaf9524a8bb88f::$prefixesPsr0;
+            $loader->fallbackDirsPsr0 = ComposerStaticInit68b971c18e1c849a9fbaf9524a8bb88f::$fallbackDirsPsr0;
+            $loader->classMap = ComposerStaticInit68b971c18e1c849a9fbaf9524a8bb88f::$classMap;
 
         }, null, ClassLoader::class);
     }

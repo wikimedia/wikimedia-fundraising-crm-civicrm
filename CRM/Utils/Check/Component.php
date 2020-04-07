@@ -71,9 +71,7 @@ abstract class CRM_Utils_Check_Component {
     foreach (get_class_methods($this) as $method) {
       // Note that we should check if the test is disabled BEFORE running it in case it's disabled for performance.
       if ($method !== 'checkAll' && strpos($method, 'check') === 0 && !$this->isDisabled($method)) {
-        CRM_Core_Error::debug_log_message("calling $method");
         $messages = array_merge($messages, $this->$method());
-        CRM_Core_Error::debug_log_message("finished $method");
       }
     }
     return $messages;
