@@ -161,7 +161,7 @@ PHPCODE;
     $sep = DIRECTORY_SEPARATOR;
     file_put_contents(
         "{$dir}{$sep}bootstrap.test.php",
-        sprintf($code, $bootstrap),
+        sprintf($code, $bootstrap)
     );
 }
 
