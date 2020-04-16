@@ -951,6 +951,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
    * @return array
    */
   public static function getInactiveStatuses() {
+    // WMF Hack, deleted 'Completed' Status from this array
     return ['Cancelled', 'Failed'];
   }
 
