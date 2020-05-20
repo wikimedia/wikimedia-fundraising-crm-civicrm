@@ -3,7 +3,9 @@
 ALTER TABLE civicrm_option_value MODIFY COLUMN `filter` int unsigned DEFAULT NULL COMMENT 'Bitwise logic can be used to create subsets of options within an option_group for different uses.';
 
 UPDATE civicrm_contact SET is_deceased = 0 WHERE is_deceased IS NULL;
-ALTER TABLE civicrm_contact MODIFY COLUMN is_deceased TINYINT NOT NULL DEFAULT 0;
+# this is commented out as it is slow to run. Instead https://gerrit.wikimedia.org/r/#/c/wikimedia/fundraising/crm/+/597663/
+# We won't need this hack after this one release.
+#ALTER TABLE civicrm_contact MODIFY COLUMN is_deceased TINYINT NOT NULL DEFAULT 0;
 
 -- Update Colmbra state/province to Coimbra
 UPDATE civicrm_state_province s
