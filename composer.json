@@ -29,20 +29,20 @@
     "psr-0": {
       "PHPUnit_": ["packages/"],
       "Civi": "",
-      "Civi\\": [".", "tests/phpunit/"]
+      "Civi\\": ["tests/phpunit/"]
     },
     "psr-4": {
-      "Civi\\": ["setup/src/"]
+      "Civi\\": [".", "setup/src/"]
     }
   },
   "include-path": ["vendor/tecnickcom"],
   "config": {
     "platform": {
-      "php": "7."
+      "php": "7.1"
     }
   },
   "require": {
-    "php": "~7.0",
+    "php": "~7.1",
     "cache/integration-tests": "~0.16.0",
     "dompdf/dompdf" : "0.8.*",
     "electrolinux/phpquery": "^0.9.6",
@@ -75,7 +75,7 @@
     "league/csv": "^9.2",
     "tplaner/when": "~3.0.0",
     "xkerman/restricted-unserialize": "~1.1",
-    "typo3/phar-stream-wrapper": "^3.0"
+    "typo3/phar-stream-wrapper": "^2 || ^3.0"
   },
   "scripts": {
     "post-install-cmd": [

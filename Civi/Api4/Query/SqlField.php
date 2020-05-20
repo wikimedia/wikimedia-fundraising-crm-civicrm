@@ -17,14 +17,17 @@ namespace Civi\Api4\Query;
 class SqlField extends SqlExpression {
 
   protected function initialize() {
-    $this->fields[] = $this->arg;
+    if ($this->alias && $this->alias !== $this->expr) {
+      throw new \API_Exception("Aliasing field names is not allowed, only expressions can have an alias.");
+    }
+    $this->fields[] = $this->expr;
   }
 
   public function render(array $fieldList): string {
-    if (empty($fieldList[$this->arg])) {
-      throw new \API_Exception("Invalid field '{$this->arg}'");
+    if (empty($fieldList[$this->expr])) {
+      throw new \API_Exception("Invalid field '{$this->expr}'");
     }
-    return $fieldList[$this->arg]['sql_name'];
+    return $fieldList[$this->expr]['sql_name'];
   }
 
 }

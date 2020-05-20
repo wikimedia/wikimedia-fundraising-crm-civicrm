@@ -516,8 +516,9 @@ class CRM_Contact_BAO_Query {
       $this->_fields = array_merge($this->_fields, $fields);
 
       // add activity fields
-      $fields = CRM_Activity_BAO_Activity::exportableFields();
-      $this->_fields = array_merge($this->_fields, $fields);
+      $this->_fields = array_merge($this->_fields, CRM_Activity_BAO_Activity::exportableFields());
+      // Add hack as no unique name is defined for the field but the search form is in denial.
+      $this->_fields['activity_priority_id'] = $this->_fields['priority_id'];
 
       // add any fields provided by hook implementers
       $extFields = CRM_Contact_BAO_Query_Hook::singleton()->getFields();
@@ -2181,8 +2182,7 @@ class CRM_Contact_BAO_Query {
         'CRM_Contact_DAO_Contact',
         $field,
         $field['title'],
-        CRM_Utils_Type::typeToString($dataType),
-        TRUE
+        CRM_Utils_Type::typeToString($dataType)
       );
       if ($name === 'gender_id') {
         self::$_openedPanes[ts('Demographics')] = TRUE;
@@ -2211,8 +2211,7 @@ class CRM_Contact_BAO_Query {
         NULL,
         $field,
         ts('World Region'),
-        'Positive',
-        TRUE
+        'Positive'
       );
     }
     elseif ($name === 'is_deceased') {
@@ -2256,36 +2255,6 @@ class CRM_Contact_BAO_Query {
       $ceWhereClause .= " AND contact_a.contact_type = 'Individual'";
       $this->_where[$grouping][] = $ceWhereClause;
       $this->_qill[$grouping][] = "$field[title] $op \"$value\"";
-    }
-    elseif ($name === 'email_greeting') {
-      CRM_Core_Error::deprecatedFunctionWarning('pass in email_greeting_id or email_greeting_display');
-      $filterCondition = ['greeting_type' => 'email_greeting'];
-      $this->optionValueQuery(
-        $name, $op, $value, $grouping,
-        CRM_Core_PseudoConstant::greeting($filterCondition),
-        $field,
-        ts('Email Greeting')
-      );
-    }
-    elseif ($name === 'postal_greeting') {
-      CRM_Core_Error::deprecatedFunctionWarning('pass in postal_greeting_id or postal_greeting_display');
-      $filterCondition = ['greeting_type' => 'postal_greeting'];
-      $this->optionValueQuery(
-        $name, $op, $value, $grouping,
-        CRM_Core_PseudoConstant::greeting($filterCondition),
-        $field,
-        ts('Postal Greeting')
-      );
-    }
-    elseif ($name === 'addressee') {
-      CRM_Core_Error::deprecatedFunctionWarning('pass in addressee_id or addressee_display');
-      $filterCondition = ['greeting_type' => 'addressee'];
-      $this->optionValueQuery(
-        $name, $op, $value, $grouping,
-        CRM_Core_PseudoConstant::greeting($filterCondition),
-        $field,
-        ts('Addressee')
-      );
     }
     elseif (substr($name, 0, 4) === 'url-') {
       $tName = 'civicrm_website';
@@ -2585,7 +2554,7 @@ class CRM_Contact_BAO_Query {
     }
 
     if ((!empty($tables['civicrm_state_province']) || !empty($tables['civicrm_country']) ||
-        CRM_Utils_Array::value('civicrm_county', $tables)) && empty($tables['civicrm_address'])) {
+        !empty($tables['civicrm_county'])) && empty($tables['civicrm_address'])) {
       $tables = array_merge(['civicrm_address' => 1],
         $tables
       );
@@ -2990,8 +2959,8 @@ class CRM_Contact_BAO_Query {
     // even one group might equate to multiple when looking at children so IN is simpler.
     // @todo - also look at != casting but there are rows below to review.
     $opReplacements = [
-      'EMPTY' => 'NULL',
-      'NOT EMPTY' => 'NOT NULL',
+      'IS EMPTY' => 'IS NULL',
+      'IS NOT EMPTY' => 'IS NOT NULL',
       '=' => 'IN',
     ];
     if (isset($opReplacements[$op])) {
@@ -4191,7 +4160,7 @@ WHERE  $smartGroupClause
     if (self::$_relType == 'reciprocal') {
       $where = [];
       self::$_relationshipTempTable = $relationshipTempTable = CRM_Utils_SQL_TempTable::build()
-        ->createWithColumns("`contact_id` int(10) unsigned NOT NULL DEFAULT '0', `contact_id_alt` int(10) unsigned NOT NULL DEFAULT '0', relationship_id int unsigned, KEY `contact_id` (`contact_id`), KEY `contact_id_alt` (`contact_id_alt`)")
+        ->createWithColumns("`contact_id` int(10) unsigned NOT NULL DEFAULT '0', `contact_id_alt` int(10) unsigned NOT NULL DEFAULT '0', id int unsigned, KEY `contact_id` (`contact_id`), KEY `contact_id_alt` (`contact_id_alt`)")
         ->getName();
       if ($nameClause) {
         $where[$grouping][] = " sort_name $nameClause ";
@@ -4207,7 +4176,7 @@ WHERE  $smartGroupClause
       $groupJoinTable = "contact_b";
       $groupJoinColumn = "id";
     }
-    $allRelationshipType = CRM_Contact_BAO_Relationship::getContactRelationshipType(NULL, 'null', NULL, NULL, TRUE);
+    $allRelationshipType = CRM_Contact_BAO_Relationship::getContactRelationshipType(NULL, 'null', NULL, NULL, TRUE, 'label', FALSE);
     if ($nameClause || !$targetGroup) {
       if (!empty($relationType)) {
         $relQill = '';
@@ -4315,7 +4284,7 @@ civicrm_relationship.start_date > {$today}
         $whereClause = str_replace('contact_b', 'c', $whereClause);
       }
       $sql = "
-        INSERT INTO {$relationshipTempTable} (contact_id, contact_id_alt, relationship_id)
+        INSERT INTO {$relationshipTempTable} (contact_id, contact_id_alt, id)
           (SELECT contact_id_b as contact_id, contact_id_a as contact_id_alt, civicrm_relationship.id
             FROM civicrm_relationship
             INNER JOIN  civicrm_contact c ON civicrm_relationship.contact_id_a = c.id
@@ -5882,8 +5851,6 @@ AND   displayRelType.is_active = 1
    * @param string $label
    *   The label for this field element.
    * @param string $dataType
-   *   The data type for this element.
-   * @param bool $useIDsOnly
    *
    * @throws \CRM_Core_Exception
    */
@@ -5895,8 +5862,7 @@ AND   displayRelType.is_active = 1
     $daoName = NULL,
     $field,
     $label,
-    $dataType = 'String',
-    $useIDsOnly = FALSE
+    $dataType = 'String'
   ) {
 
     $pseudoFields = [
@@ -5905,27 +5871,22 @@ AND   displayRelType.is_active = 1
       'addressee',
     ];
 
-    if ($useIDsOnly) {
-      list($tableName, $fieldName) = explode('.', $field['where'], 2);
-      if ($tableName == 'civicrm_contact') {
-        $wc = "contact_a.$fieldName";
-      }
-      else {
-        // Special handling for on_hold, so that we actually use the 'where'
-        // property in order to limit the query by the on_hold status of the email,
-        // instead of using email.id which would be nonsensical.
-        if ($field['name'] === 'on_hold') {
-          $wc = $field['where'];
-        }
-        else {
-          $wc = "$tableName.id";
-        }
-      }
+    list($tableName, $fieldName) = explode('.', $field['where'], 2);
+    if ($tableName == 'civicrm_contact') {
+      $wc = "contact_a.$fieldName";
     }
     else {
-      CRM_Core_Error::deprecatedFunctionWarning('pass $ids to this method');
-      $wc = "{$field['where']}";
+      // Special handling for on_hold, so that we actually use the 'where'
+      // property in order to limit the query by the on_hold status of the email,
+      // instead of using email.id which would be nonsensical.
+      if ($field['name'] === 'on_hold') {
+        $wc = $field['where'];
+      }
+      else {
+        $wc = "$tableName.id";
+      }
     }
+
     if (in_array($name, $pseudoFields)) {
       $wc = "contact_a.{$name}_id";
       $dataType = 'Positive';

@@ -2515,7 +2515,9 @@
         "version_normalized": "3.0.0.0",
         "dist": {
             "type": "zip",
-            "url": "https://github.com/tplaner/When/archive/c1ec099f421bff354cc5c929f83b94031423fc80.zip"
+            "url": "https://github.com/tplaner/When/archive/c1ec099f421bff354cc5c929f83b94031423fc80.zip",
+            "reference": null,
+            "shasum": null
         },
         "require": {
             "php": ">=5.3.0"
