@@ -335,10 +335,8 @@ ALTER TABLE {$tableName}
       else {
         CRM_Core_DAO::executeQuery($sql, [], TRUE, NULL, FALSE, FALSE);
       }
-      $domain = new CRM_Core_DAO_Domain();
-      $domain->find(TRUE);
-      if ($domain->locales) {
-        $locales = explode(CRM_Core_DAO::VALUE_SEPARATOR, $domain->locales);
+      $locales = CRM_Core_I18n::getMultilingual();
+      if ($locales) {
         CRM_Core_I18n_Schema::rebuildMultilingualSchema($locales, NULL, $isUpgradeMode);
       }
     }
@@ -385,9 +383,7 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
    */
   public static function createIndexes($tables, $createIndexPrefix = 'index', $substrLengths = []) {
     $queries = [];
-    $domain = new CRM_Core_DAO_Domain();
-    $domain->find(TRUE);
-    $locales = explode(CRM_Core_DAO::VALUE_SEPARATOR, $domain->locales);
+    $locales = CRM_Core_I18n::getMultilingual();
 
     // if we're multilingual, cache the information on internationalised fields
     static $columns = NULL;
@@ -502,7 +498,7 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
    * @param string $columnName
    * @param $length
    *
-   * @throws Exception
+   * @throws CRM_Core_Exception
    */
   public static function alterFieldLength($customFieldID, $tableName, $columnName, $length) {
     // first update the custom field tables
@@ -543,7 +539,7 @@ MODIFY      {$columnName} varchar( $length )
       CRM_Core_DAO::executeQuery($sql);
     }
     else {
-      CRM_Core_Error::fatal(ts('Could Not Find Custom Field Details for %1, %2, %3',
+      throw new CRM_Core_Exception(ts('Could Not Find Custom Field Details for %1, %2, %3',
         [
           1 => $tableName,
           2 => $columnName,
@@ -866,7 +862,7 @@ MODIFY      {$columnName} varchar( $length )
       }
       $query .= " CHARACTER SET = $newCharSet COLLATE = $tableCollation";
       if ($param['Engine'] === 'InnoDB') {
-        $query .= ' ROW_FORMAT = Dynamic';
+        $query .= ' ROW_FORMAT = Dynamic KEY_BLOCK_SIZE = 0';
       }
       // Disable i18n rewrite.
       CRM_Core_DAO::executeQuery($query, $params, TRUE, NULL, FALSE, FALSE);
@@ -881,6 +877,23 @@ MODIFY      {$columnName} varchar( $length )
    */
   public static function getDBCollation() {
     return CRM_Core_DAO::singleValueQuery('SELECT @@collation_database');
+  }
+
+  /**
+   * Get the collation actually being used by the tables in the database.
+   *
+   * The db collation may not match the collation used by the tables, get what is
+   * set on the tables (represented by civicrm_contact).
+   *
+   * @return string
+   */
+  public static function getInUseCollation() {
+    if (!isset(\Civi::$statics[__CLASS__][__FUNCTION__])) {
+      $dao = CRM_Core_DAO::executeQuery('SHOW TABLE STATUS LIKE \'civicrm_contact\'');
+      $dao->fetch();
+      \Civi::$statics[__CLASS__][__FUNCTION__] = $dao->Collation;
+    }
+    return \Civi::$statics[__CLASS__][__FUNCTION__];
   }
 
   /**

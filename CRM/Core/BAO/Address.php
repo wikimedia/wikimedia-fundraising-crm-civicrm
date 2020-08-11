@@ -142,10 +142,14 @@ class CRM_Core_BAO_Address extends CRM_Core_DAO_Address {
     }
 
     $address->copyValues($params);
-
     $address->save();
 
     if ($address->id) {
+      // first get custom field from master address if any
+      if (isset($params['master_id']) && !CRM_Utils_System::isNull($params['master_id'])) {
+        $address->copyCustomFields($params['master_id'], $address->id);
+      }
+
       if (isset($params['custom'])) {
         $addressCustom = $params['custom'];
       }
@@ -1060,6 +1064,7 @@ SELECT is_primary,
       $addressDAO->copyValues($params);
       $addressDAO->id = $dao->id;
       $addressDAO->save();
+      $addressDAO->copyCustomFields($addressId, $addressDAO->id);
     }
   }
 
@@ -1181,7 +1186,7 @@ SELECT is_primary,
     $relTypeId = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_RelationshipType', 'Household Member of', 'id', 'name_a_b');
 
     if (!$relTypeId) {
-      CRM_Core_Error::fatal(ts("You seem to have deleted the relationship type 'Household Member of'"));
+      throw new CRM_Core_Exception(ts("You seem to have deleted the relationship type 'Household Member of'"));
     }
 
     $relParam = [

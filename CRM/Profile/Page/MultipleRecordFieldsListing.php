@@ -13,7 +13,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC https://civicrm.org/licensing
- *
  */
 class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
 
@@ -53,7 +52,7 @@ class CRM_Profile_Page_MultipleRecordFieldsListing extends CRM_Core_Page_Basic {
    *   (reference) of action links
    */
   public function &links() {
-    if (!(self::$_links[$this->_pageViewType])) {
+    if (!isset(self::$_links[$this->_pageViewType])) {
       // helper variable for nicer formatting
       $links = [];
 

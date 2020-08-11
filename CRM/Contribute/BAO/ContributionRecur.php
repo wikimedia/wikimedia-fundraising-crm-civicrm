@@ -326,9 +326,12 @@ class CRM_Contribute_BAO_ContributionRecur extends CRM_Contribute_DAO_Contributi
    * @return null|Object
    */
   public static function getSubscriptionDetails($entityID, $entity = 'recur') {
+    // Note: processor_id used to be aliased as subscription_id so we include it here
+    // both as processor_id and subscription_id for legacy compatibility.
     $sql = "
 SELECT rec.id                   as recur_id,
        rec.processor_id         as subscription_id,
+       rec.processor_id,
        rec.frequency_interval,
        rec.installments,
        rec.frequency_unit,
@@ -421,8 +424,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
       'id' => $id,
     ]);
     // First look for new-style template contribution with is_template=1
-    $templateContributions = \Civi\Api4\Contribution::get()
-      ->setCheckPermissions(FALSE)
+    $templateContributions = \Civi\Api4\Contribution::get(FALSE)
       ->addWhere('contribution_recur_id', '=', $id)
       ->addWhere('is_template', '=', 1)
       ->addWhere('is_test', '=', $is_test)
@@ -431,8 +433,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
       ->execute();
     if (!$templateContributions->count()) {
       // Fall back to old style template contributions
-      $templateContributions = \Civi\Api4\Contribution::get()
-        ->setCheckPermissions(FALSE)
+      $templateContributions = \Civi\Api4\Contribution::get(FALSE)
         ->addWhere('contribution_recur_id', '=', $id)
         ->addWhere('is_test', '=', $is_test)
         ->addOrderBy('id', 'DESC')
@@ -441,8 +442,16 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
     }
     if ($templateContributions->count()) {
       $templateContribution = $templateContributions->first();
+      $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($templateContribution['id']);
+      // We only permit the financial type to be overridden for single line items.
+      // Otherwise we need to figure out a whole lot of extra complexity.
+      // It's not UI-possible to alter financial_type_id for recurring contributions
+      // with more than one line item.
+      if (count($lineItems) > 1 && isset($overrides['financial_type_id'])) {
+        unset($overrides['financial_type_id']);
+      }
       $result = array_merge($templateContribution, $overrides);
-      $result['line_item'] = CRM_Contribute_BAO_ContributionRecur::calculateRecurLineItems($id, $result['total_amount'], $result['financial_type_id']);
+      $result['line_item'] = self::reformatLineItemsForRepeatContribution($result['total_amount'], $result['financial_type_id'], $lineItems, (array) $templateContribution);
       return $result;
     }
     return [];
@@ -543,6 +552,8 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
   /**
    * Copy custom data of the initial contribution into its recurring contributions.
    *
+   * @deprecated
+   *
    * @param int $recurId
    * @param int $targetContributionId
    */
@@ -613,6 +624,8 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
    * @param \CRM_Contribute_BAO_Contribution $contribution
    *
    * @return array
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
    */
   public static function addRecurLineItems($recurId, $contribution) {
     $foundLineItems = FALSE;
@@ -829,7 +842,6 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
    */
   public static function updateOnNewPayment($recurringContributionID, $paymentStatus, $effectiveDate) {
 
-    $effectiveDate = $effectiveDate ? date('Y-m-d', strtotime($effectiveDate)) : date('Y-m-d');
     if (!in_array($paymentStatus, ['Completed', 'Failed'])) {
       return;
     }
@@ -858,12 +870,18 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
 
     if (!empty($existing['installments']) && self::isComplete($recurringContributionID, $existing['installments'])) {
       $params['contribution_status_id'] = 'Completed';
+      $params['next_sched_contribution_date'] = 'null';
     }
     else {
-      // Only update next sched date if it's empty or 'just now' because payment processors may be managing
-      // the scheduled date themselves as core did not previously provide any help.
-      if (empty($existing['next_sched_contribution_date']) || strtotime($existing['next_sched_contribution_date']) ==
-        strtotime($effectiveDate)) {
+      // Only update next sched date if it's empty or up to 48 hours away because payment processors may be managing
+      // the scheduled date themselves as core did not previously provide any help. This check can possibly be removed
+      // as it's unclear if it actually is helpful...
+      // We should allow payment processors to pass this value into repeattransaction in future.
+      // Note 48 hours is a bit aribtrary but means that we can hopefully ignore the time being potentially
+      // rounded down to midnight.
+      $upperDateToConsiderProcessed = strtotime('+ 48 hours', ($effectiveDate ? strtotime($effectiveDate) : time()));
+      if (empty($existing['next_sched_contribution_date']) || strtotime($existing['next_sched_contribution_date']) <=
+        $upperDateToConsiderProcessed) {
         $params['next_sched_contribution_date'] = date('Y-m-d', strtotime('+' . $existing['frequency_interval'] . ' ' . $existing['frequency_unit'], strtotime($effectiveDate)));
       }
     }
@@ -901,6 +919,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
    * @param int $financial_type_id
    *
    * @return array
+   * @throws \CiviCRM_API3_Exception
    */
   public static function calculateRecurLineItems($recurId, $total_amount, $financial_type_id) {
     $originalContribution = civicrm_api3('Contribution', 'getsingle', [
@@ -910,41 +929,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
       'return' => ['id', 'financial_type_id'],
     ]);
     $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($originalContribution['id']);
-    $lineSets = [];
-    if (count($lineItems) == 1) {
-      foreach ($lineItems as $index => $lineItem) {
-        if ($lineItem['financial_type_id'] != $originalContribution['financial_type_id']) {
-          // CRM-20685, Repeattransaction produces incorrect Financial Type ID (in specific circumstance) - if number of lineItems = 1, So this conditional will set the financial_type_id as the original if line_item and contribution comes with different data.
-          $financial_type_id = $lineItem['financial_type_id'];
-        }
-        if ($financial_type_id) {
-          // CRM-17718 allow for possibility of changed financial type ID having been set prior to calling this.
-          $lineItem['financial_type_id'] = $financial_type_id;
-        }
-        $taxAmountMatches = FALSE;
-        if ((!empty($lineItem['tax_amount']) && ($lineItem['line_total'] + $lineItem['tax_amount']) == $total_amount)) {
-          $taxAmountMatches = TRUE;
-        }
-        if ($lineItem['line_total'] != $total_amount && !$taxAmountMatches) {
-          // We are dealing with a changed amount! Per CRM-16397 we can work out what to do with these
-          // if there is only one line item, and the UI should prevent this situation for those with more than one.
-          $lineItem['line_total'] = $total_amount;
-          $lineItem['unit_price'] = round($total_amount / $lineItem['qty'], 2);
-        }
-        $priceField = new CRM_Price_DAO_PriceField();
-        $priceField->id = $lineItem['price_field_id'];
-        $priceField->find(TRUE);
-        $lineSets[$priceField->price_set_id][$lineItem['price_field_id']] = $lineItem;
-      }
-    }
-    // CRM-19309 if more than one then just pass them through:
-    elseif (count($lineItems) > 1) {
-      foreach ($lineItems as $index => $lineItem) {
-        $lineSets[$index][$lineItem['price_field_id']] = $lineItem;
-      }
-    }
-
-    return $lineSets;
+    return self::reformatLineItemsForRepeatContribution($total_amount, $financial_type_id, $lineItems, $originalContribution);
   }
 
   /**
@@ -953,10 +938,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
    * @return array
    */
   public static function getInactiveStatuses() {
-    // WMF hack - completed temporarily removed - perhaps with
-    // https://gerrit.wikimedia.org/r/#/c/wikimedia/fundraising/crm/+/597402/
-    // we will stop creating false completed & remove this?
-    return ['Cancelled', 'Failed'];
+    return ['Cancelled', 'Failed', 'Completed'];
   }
 
   /**
@@ -990,6 +972,55 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
         return $allProcessors;
     }
     return CRM_Core_PseudoConstant::get(__CLASS__, $fieldName, $params, $context);
+  }
+
+  /**
+   * Reformat line items for getTemplateContribution / repeat contribution.
+   *
+   * This is an extraction and may be subject to further cleanup.
+   *
+   * @param float $total_amount
+   * @param int $financial_type_id
+   * @param array $lineItems
+   * @param array $originalContribution
+   *
+   * @return array
+   */
+  protected static function reformatLineItemsForRepeatContribution($total_amount, $financial_type_id, array $lineItems, array $originalContribution): array {
+    $lineSets = [];
+    if (count($lineItems) == 1) {
+      foreach ($lineItems as $index => $lineItem) {
+        if ($lineItem['financial_type_id'] != $originalContribution['financial_type_id']) {
+          // CRM-20685, Repeattransaction produces incorrect Financial Type ID (in specific circumstance) - if number of lineItems = 1, So this conditional will set the financial_type_id as the original if line_item and contribution comes with different data.
+          $financial_type_id = $lineItem['financial_type_id'];
+        }
+        if ($financial_type_id) {
+          // CRM-17718 allow for possibility of changed financial type ID having been set prior to calling this.
+          $lineItem['financial_type_id'] = $financial_type_id;
+        }
+        $taxAmountMatches = FALSE;
+        if ((!empty($lineItem['tax_amount']) && ($lineItem['line_total'] + $lineItem['tax_amount']) == $total_amount)) {
+          $taxAmountMatches = TRUE;
+        }
+        if ($lineItem['line_total'] != $total_amount && !$taxAmountMatches) {
+          // We are dealing with a changed amount! Per CRM-16397 we can work out what to do with these
+          // if there is only one line item, and the UI should prevent this situation for those with more than one.
+          $lineItem['line_total'] = $total_amount;
+          $lineItem['unit_price'] = round($total_amount / $lineItem['qty'], 2);
+        }
+        $priceField = new CRM_Price_DAO_PriceField();
+        $priceField->id = $lineItem['price_field_id'];
+        $priceField->find(TRUE);
+        $lineSets[$priceField->price_set_id][$lineItem['price_field_id']] = $lineItem;
+      }
+    }
+    // CRM-19309 if more than one then just pass them through:
+    elseif (count($lineItems) > 1) {
+      foreach ($lineItems as $index => $lineItem) {
+        $lineSets[$index][$lineItem['price_field_id']] = $lineItem;
+      }
+    }
+    return $lineSets;
   }
 
 }

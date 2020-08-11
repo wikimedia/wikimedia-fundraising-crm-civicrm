@@ -35,7 +35,9 @@ class DAOGetAction extends AbstractGetAction {
   use Traits\DAOActionTrait;
 
   /**
-   * Fields to return. Defaults to all non-custom fields `[*]`.
+   * Fields to return. Defaults to all non-custom fields `['*']`.
+   *
+   * The keyword `"custom.*"` selects all custom fields. So to select all core + custom fields, select `['*', 'custom.*']`.
    *
    * Use the dot notation to perform joins in the select clause, e.g. selecting `['*', 'contact.*']` from `Email::get()`
    * will select all fields for the email + all fields for the related contact.
@@ -44,6 +46,27 @@ class DAOGetAction extends AbstractGetAction {
    * @inheritDoc
    */
   protected $select = [];
+
+  /**
+   * Joins to other entities.
+   *
+   * Each join is an array of properties:
+   *
+   * ```
+   * [Entity, Required, Bridge, [field, op, value]...]
+   * ```
+   *
+   * - `Entity`: the name of the api entity to join onto.
+   * - `Required`: `TRUE` for an `INNER JOIN`, `FALSE` for a `LEFT JOIN`.
+   * - `Bridge` (optional): Name of a BridgeEntity to incorporate into the join.
+   * - `[field, op, value]...`: zero or more conditions for the ON clause, using the same nested format as WHERE and HAVING
+   *     but with the difference that "value" is interpreted as an expression (e.g. can be the name of a field).
+   *     Enclose literal values with quotes.
+   *
+   * @var array
+   * @see \Civi\Api4\Generic\BridgeEntity
+   */
+  protected $join = [];
 
   /**
    * Field(s) by which to group the results.
@@ -64,20 +87,31 @@ class DAOGetAction extends AbstractGetAction {
   public function _run(Result $result) {
     $this->setDefaultWhereClause();
     $this->expandSelectClauseWildcards();
-    $result->exchangeArray($this->getObjects());
+    $this->getObjects($result);
   }
 
   /**
-   * @return array|int
+   * @param \Civi\Api4\Generic\Result $result
    */
-  protected function getObjects() {
-    $query = new Api4SelectQuery($this);
+  protected function getObjects(Result $result) {
+    $getCount = in_array('row_count', $this->getSelect());
+    $onlyCount = $this->getSelect() === ['row_count'];
 
-    $result = $query->run();
-    if (is_array($result)) {
-      \CRM_Utils_API_HTMLInputCoder::singleton()->decodeRows($result);
+    if (!$onlyCount) {
+      $query = new Api4SelectQuery($this);
+      $rows = $query->run();
+      \CRM_Utils_API_HTMLInputCoder::singleton()->decodeRows($rows);
+      $result->exchangeArray($rows);
+      // No need to fetch count if we got a result set below the limit
+      if (!$this->getLimit() || count($rows) < $this->getLimit()) {
+        $result->rowCount = count($rows) + $this->getOffset();
+        $getCount = FALSE;
+      }
     }
-    return $result;
+    if ($getCount) {
+      $query = new Api4SelectQuery($this);
+      $result->rowCount = $query->getCount();
+    }
   }
 
   /**
@@ -118,6 +152,38 @@ class DAOGetAction extends AbstractGetAction {
     }
     $this->having[] = [$expr, $op, $value];
     return $this;
+  }
+
+  /**
+   * @param string $entity
+   * @param bool $required
+   * @param string $bridge
+   * @param array ...$conditions
+   * @return DAOGetAction
+   */
+  public function addJoin(string $entity, bool $required = FALSE, $bridge = NULL, ...$conditions): DAOGetAction {
+    if ($bridge) {
+      array_unshift($conditions, $bridge);
+    }
+    array_unshift($conditions, $entity, $required);
+    $this->join[] = $conditions;
+    return $this;
+  }
+
+  /**
+   * @param array $join
+   * @return DAOGetAction
+   */
+  public function setJoin(array $join): DAOGetAction {
+    $this->join = $join;
+    return $this;
+  }
+
+  /**
+   * @return array
+   */
+  public function getJoin(): array {
+    return $this->join;
   }
 
 }

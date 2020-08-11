@@ -2,7 +2,7 @@
 
 namespace Civi\Core;
 
-use Symfony\Component\EventDispatcher\ContainerAwareEventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\Event;
 
 /**
@@ -15,7 +15,7 @@ use Symfony\Component\EventDispatcher\Event;
  *
  * @see \CRM_Utils_Hook
  */
-class CiviEventDispatcher extends ContainerAwareEventDispatcher {
+class CiviEventDispatcher extends EventDispatcher {
 
   const DEFAULT_HOOK_PRIORITY = -100;
 
@@ -62,6 +62,34 @@ class CiviEventDispatcher extends ContainerAwareEventDispatcher {
   }
 
   /**
+   * Adds a service as event listener.
+   *
+   * This provides partial backwards compatibility with ContainerAwareEventDispatcher.
+   *
+   * @param string $eventName Event for which the listener is added
+   * @param array $callback The service ID of the listener service & the method
+   *                        name that has to be called
+   * @param int $priority The higher this value, the earlier an event listener
+   *                      will be triggered in the chain.
+   *                      Defaults to 0.
+   *
+   * @throws \InvalidArgumentException
+   */
+  public function addListenerService($eventName, $callback, $priority = 0) {
+    if (!\is_array($callback) || 2 !== \count($callback)) {
+      throw new \InvalidArgumentException('Expected an array("service", "method") argument');
+    }
+
+    $this->addListener($eventName, function($event) use ($callback) {
+      static $svc;
+      if ($svc === NULL) {
+        $svc = \Civi::container()->get($callback[0]);
+      }
+      return call_user_func([$svc, $callback[1]], $event);
+    }, $priority);
+  }
+
+  /**
    * @inheritDoc
    */
   public function dispatch($eventName, Event $event = NULL) {
@@ -88,6 +116,9 @@ class CiviEventDispatcher extends ContainerAwareEventDispatcher {
 
         case 'fail':
           throw new \RuntimeException("The dispatch policy prohibits event \"$eventName\".");
+
+        case 'not-ready':
+          throw new \RuntimeException("CiviCRM has not bootstrapped sufficiently to fire event \"$eventName\".");
 
         default:
           throw new \RuntimeException("The dispatch policy for \"$eventName\" is unrecognized ($mode).");

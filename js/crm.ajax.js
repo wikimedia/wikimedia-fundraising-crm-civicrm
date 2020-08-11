@@ -1,7 +1,7 @@
 // https://civicrm.org/licensing
 /**
- * @see https://wiki.civicrm.org/confluence/display/CRMDOC/AJAX+Interface
- * @see https://wiki.civicrm.org/confluence/display/CRMDOC/Ajax+Pages+and+Forms
+ * @see https://docs.civicrm.org/dev/en/latest/api/interfaces/#ajax
+ * @see https://docs.civicrm.org/dev/en/latest/framework/ajax/
  */
 (function($, CRM, _, undefined) {
   /**
@@ -56,6 +56,7 @@
     return result;
   }
 
+  // https://docs.civicrm.org/dev/en/latest/api/interfaces/#ajax
   CRM.api4 = function(entity, action, params, index) {
     return new Promise(function(resolve, reject) {
       if (typeof entity === 'string') {
@@ -88,7 +89,7 @@
 
   /**
    * AJAX api
-   * @link http://wiki.civicrm.org/confluence/display/CRMDOC/AJAX+Interface#AJAXInterface-CRM.api3
+   * @link https://docs.civicrm.org/dev/en/latest/api/interfaces/#ajax
    */
   CRM.api3 = function(entity, action, params, status) {
     if (typeof(entity) === 'string') {
@@ -516,7 +517,7 @@
             added.push(identifier);
           }
           // display:none causes the form to not submit when pressing "enter"
-          $el.parents(buttonContainers).css({height: 0, padding: 0, margin: 0, overflow: 'hidden'}).find('.crm-button-icon').hide();
+          $el.parents(buttonContainers).css({height: 0, padding: 0, margin: 0, overflow: 'hidden'});
         });
         $el.dialog('option', 'buttons', buttons);
       }

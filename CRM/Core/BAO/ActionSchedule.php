@@ -13,8 +13,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC https://civicrm.org/licensing
- * $Id$
- *
  */
 
 /**
@@ -226,6 +224,7 @@ FROM civicrm_action_schedule cas
    * @param int $id
    *   ID of the Reminder to be deleted.
    *
+   * @throws CRM_Core_Exception
    */
   public static function del($id) {
     if ($id) {
@@ -236,7 +235,7 @@ FROM civicrm_action_schedule cas
         return;
       }
     }
-    CRM_Core_Error::fatal(ts('Invalid value passed to delete function.'));
+    throw new CRM_Core_Exception(ts('Invalid value passed to delete function.'));
   }
 
   /**

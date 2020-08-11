@@ -444,17 +444,14 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
           ['onclick' => "showHideByValue('pcp_display_in_roll','','nameID|nickID|personalNoteID','block','radio',false); pcpAnonymous( );"]
         );
         $extraOption = ['onclick' => "return pcpAnonymous( );"];
-        $elements = [];
-        $elements[] = &$this->createElement('radio', NULL, '', ts('Include my name and message'), 0, $extraOption);
-        $elements[] = &$this->createElement('radio', NULL, '', ts('List my contribution anonymously'), 1, $extraOption);
-        $this->addGroup($elements, 'pcp_is_anonymous', NULL, '&nbsp;&nbsp;&nbsp;');
+        $this->addRadio('pcp_is_anonymous', NULL, [ts('Include my name and message'), ts('List my contribution anonymously')], [], '&nbsp;&nbsp;&nbsp;', FALSE, [$extraOption, $extraOption]);
 
         $this->add('text', 'pcp_roll_nickname', ts('Name'), ['maxlength' => 30]);
         $this->addField('pcp_personal_note', ['entity' => 'ContributionSoft', 'context' => 'create', 'style' => 'height: 3em; width: 40em;']);
       }
     }
     if (empty($this->_values['fee']) && empty($this->_ccid)) {
-      CRM_Core_Error::fatal(ts('This page does not have any price fields configured or you may not have permission for them. Please contact the site administrator for more details.'));
+      throw new CRM_Core_Exception(ts('This page does not have any price fields configured or you may not have permission for them. Please contact the site administrator for more details.'));
     }
 
     //we have to load confirm contribution button in template
@@ -479,10 +476,14 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
     if (!($allAreBillingModeProcessors && !$this->_values['is_pay_later'])) {
       $submitButton = [
         'type' => 'upload',
-        'name' => !empty($this->_values['is_confirm_enabled']) ? ts('Review your contribution') : ts('Contribute'),
+        'name' => ts('Contribute'),
         'spacing' => '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
         'isDefault' => TRUE,
       ];
+      if (!empty($this->_values['is_confirm_enabled'])) {
+        $submitButton['name'] = ts('Review your contribution');
+        $submitButton['icon'] = 'fa-chevron-right';
+      }
       // Add submit-once behavior when confirm page disabled
       if (empty($this->_values['is_confirm_enabled'])) {
         $this->submitOnce = TRUE;
@@ -699,7 +700,7 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
       }
 
       // CRM-12233
-      if ($membershipIsActive && !$self->_membershipBlock['is_required']
+      if ($membershipIsActive && empty($self->_membershipBlock['is_required'])
         && $self->_values['amount_block_is_active']
       ) {
         $membershipFieldId = $contributionFieldId = $errorKey = $otherFieldId = NULL;

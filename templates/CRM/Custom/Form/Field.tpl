@@ -27,12 +27,16 @@
         {if $action eq 2 and $changeFieldType}
           <br />
           <a class="action-item crm-hover-button" href='{crmURL p="civicrm/admin/custom/group/field/changetype" q="reset=1&id=`$id`"}'>
-            <i class="crm-i fa-wrench"></i>
+            <i class="crm-i fa-wrench" aria-hidden="true"></i>
             {ts}Change Input Field Type{/ts}
           </a>
           <div class='clear'></div>
         {/if}
       </td>
+    </tr>
+    <tr class="crm-custom-field-form-block-serialize">
+      <td class="label">{$form.serialize.label}</td>
+      <td class="html-adjust">{$form.serialize.html}</td>
     </tr>
     {if $form.in_selector}
       <tr class='crm-custom-field-form-block-in_selector'>
@@ -59,7 +63,7 @@
         {$form.group_id.html}
         &nbsp;&nbsp;<span><a class="crm-hover-button toggle-contact-ref-mode" href="#Advance">{ts}Advanced Filter{/ts}</a></span>
         {capture assign=searchPreferences}{crmURL p="civicrm/admin/setting/search" q="reset=1"}{/capture}
-        <div class="messages status no-popup"><i class="crm-i fa-exclamation-triangle"></i> {ts 1=$searchPreferences}If you are planning on using this field in front-end profile, event registration or contribution forms, you should 'Limit List to Group' or configure an 'Advanced Filter'  (so that you do not unintentionally expose your entire set of contacts). Users must have either 'access contact reference fields' OR 'access CiviCRM' permission in order to use contact reference autocomplete fields. You can assign 'access contact reference fields' to the anonymous role if you want un-authenticated visitors to use this field. Use <a href='%1'>Search Preferences - Contact Reference Options</a> to control the fields included in the search results.{/ts}
+        <div class="messages status no-popup"><i class="crm-i fa-exclamation-triangle" aria-hidden="true"></i> {ts 1=$searchPreferences}If you are planning on using this field in front-end profile, event registration or contribution forms, you should 'Limit List to Group' or configure an 'Advanced Filter'  (so that you do not unintentionally expose your entire set of contacts). Users must have either 'access contact reference fields' OR 'access CiviCRM' permission in order to use contact reference autocomplete fields. You can assign 'access contact reference fields' to the anonymous role if you want un-authenticated visitors to use this field. Use <a href='%1'>Search Preferences - Contact Reference Options</a> to control the fields included in the search results.{/ts}
       </td>
     </tr>
     <tr id='field_advance_filter'>
@@ -68,7 +72,7 @@
         {$form.filter.html}
         &nbsp;&nbsp;<span><a class="crm-hover-button toggle-contact-ref-mode" href="#Group">{ts}Filter by Group{/ts}</a></span>
         <br />
-        <span class="description">{ts}Filter contact search results for this field using Contact get API parameters. EXAMPLE: To list Students in group 3:{/ts} "action=get&group=3&contact_sub_type=Student" {docURL page="Using the API" resource="wiki"}</span>
+        <span class="description">{ts}Filter contact search results for this field using Contact get API parameters. EXAMPLE: To list Students in group 3:{/ts} "action=get&group=3&contact_sub_type=Student" {docURL page="dev/api"}</span>
       </td>
     </tr>
     <tr class="crm-custom-field-form-block-options_per_line" id="optionsPerLine" {if $action neq 2 && ($form.data_type.value.0.0 >= 4 && $form.data_type.value.1.0 neq 'CheckBox' || $form.data_type.value.1.0 neq 'Radio' )}class="hiddenElement"{/if}>
@@ -262,6 +266,8 @@
       $("#textLength", $form).toggle(dataType === 'String');
 
       $("#noteColumns, #noteRows, #noteLength", $form).toggle(dataType === 'Memo');
+
+      $(".crm-custom-field-form-block-serialize", $form).toggle(htmlType === 'Select' || htmlType === 'Country' || htmlType === 'StateProvince');
     }
 
     $('[name^="data_type"]', $form).change(customOptionHtmlType);

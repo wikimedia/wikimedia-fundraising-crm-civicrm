@@ -145,16 +145,19 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
 
   /**
    * Process recurring contributions.
+   *
    * @param array $input
    * @param array $ids
    * @param array $objects
    * @param bool $first
-   * @return void
+   *
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
    */
-  public function recur(&$input, &$ids, &$objects, $first) {
+  public function recur($input, $ids, $objects, $first) {
     if (!isset($input['txnType'])) {
       Civi::log()->debug('PayPalProIPN: Could not find txn_type in input request.');
-      echo "Failure: Invalid parameters<p>";
+      echo 'Failure: Invalid parameters<p>';
       return;
     }
 
@@ -165,7 +168,7 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
     // the contribution record
     if ($recur->invoice_id != $input['invoice']) {
       Civi::log()->debug('PayPalProIPN: Invoice values dont match between database and IPN request recur is ' . $recur->invoice_id . ' input is ' . $input['invoice']);
-      echo "Failure: Invoice values dont match between database and IPN request recur is " . $recur->invoice_id . " input is " . $input['invoice'];
+      echo 'Failure: Invoice values dont match between database and IPN request recur is ' . $recur->invoice_id . " input is " . $input['invoice'];
       return;
     }
 
@@ -344,36 +347,33 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
       $contribution->total_amount = $input['amount'];
     }
 
-    $transaction = new CRM_Core_Transaction();
-
     $status = $input['paymentStatus'];
-    if ($status == 'Denied' || $status == 'Failed' || $status == 'Voided') {
-      $this->failed($objects, $transaction);
+    if ($status === 'Denied' || $status === 'Failed' || $status === 'Voided') {
+      $this->failed($objects);
       return;
     }
-    elseif ($status == 'Pending') {
-      $this->pending($objects, $transaction);
+    if ($status === 'Pending') {
+      Civi::log()->debug('Returning since contribution status is Pending');
       return;
     }
-    elseif ($status == 'Refunded' || $status == 'Reversed') {
-      $this->cancelled($objects, $transaction);
+    elseif ($status === 'Refunded' || $status === 'Reversed') {
+      $this->cancelled($objects);
       return;
     }
-    elseif ($status != 'Completed') {
-      $this->unhandled($objects, $transaction);
+    elseif ($status !== 'Completed') {
+      Civi::log()->debug('Returning since contribution status is not handled');
       return;
     }
 
     // check if contribution is already completed, if so we ignore this ipn
     $completedStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
     if ($contribution->contribution_status_id == $completedStatusId) {
-      $transaction->commit();
       Civi::log()->debug('PayPalProIPN: Returning since contribution has already been handled.');
-      echo "Success: Contribution has already been handled<p>";
+      echo 'Success: Contribution has already been handled<p>';
       return;
     }
 
-    $this->completeTransaction($input, $ids, $objects, $transaction, $recur);
+    $this->completeTransaction($input, $ids, $objects);
   }
 
   /**
@@ -423,7 +423,7 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
     $ids['contact'] = self::getValue('c', TRUE);
     $ids['contribution'] = self::getValue('b', TRUE);
 
-    $this->getInput($input, $ids);
+    $this->getInput($input);
 
     if ($this->_component == 'event') {
       $ids['event'] = self::getValue('e', TRUE);
@@ -487,15 +487,12 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
 
   /**
    * @param array $input
-   * @param array $ids
    *
    * @return void
    * @throws CRM_Core_Exception
    */
-  public function getInput(&$input, &$ids) {
-    if (!$this->getBillingID($ids)) {
-      return;
-    }
+  public function getInput(&$input) {
+    $billingID = CRM_Core_BAO_LocationType::getBilling();
 
     $input['txnType'] = self::retrieve('txn_type', 'String', 'POST', FALSE);
     $input['paymentStatus'] = self::retrieve('payment_status', 'String', 'POST', FALSE);
@@ -503,7 +500,6 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
     $input['amount'] = self::retrieve('mc_gross', 'Money', 'POST', FALSE);
     $input['reasonCode'] = self::retrieve('ReasonCode', 'String', 'POST', FALSE);
 
-    $billingID = $ids['billing'];
     $lookup = [
       "first_name" => 'first_name',
       "last_name" => 'last_name',
@@ -588,7 +584,7 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
     // & suspec main function may be a victom of copy & paste
     // membership would be an easy add - but not relevant to my customer...
     $this->_component = $input['component'] = 'contribute';
-    $input['trxn_date'] = date('Y-m-d-H-i-s', strtotime(self::retrieve('time_created', 'String')));
+    $input['trxn_date'] = date('Y-m-d H:i:s', strtotime(self::retrieve('time_created', 'String')));
     $paymentProcessorID = $contributionRecur['payment_processor_id'];
 
     if (!$this->validateData($input, $ids, $objects, TRUE, $paymentProcessorID)) {

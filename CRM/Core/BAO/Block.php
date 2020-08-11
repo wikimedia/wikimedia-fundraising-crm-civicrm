@@ -10,11 +10,10 @@
  */
 
 /**
+ * Add static functions to include some common functionality used across location sub object BAO classes.
  *
  * @package CRM
  * @copyright CiviCRM LLC https://civicrm.org/licensing
- *
- * Add static functions to include some common functionality used across location sub object BAO classes.
  */
 class CRM_Core_BAO_Block {
 
@@ -40,6 +39,7 @@ class CRM_Core_BAO_Block {
    *
    * @return array
    *   Array of $block objects.
+   * @throws CRM_Core_Exception
    */
   public static function &getValues($blockName, $params) {
     if (empty($params)) {
@@ -52,7 +52,7 @@ class CRM_Core_BAO_Block {
     if (!isset($params['entity_table'])) {
       $block->contact_id = $params['contact_id'];
       if (!$block->contact_id) {
-        CRM_Core_Error::fatal();
+        throw new CRM_Core_Exception('Invalid Contact ID parameter passed');
       }
       $blocks = self::retrieveBlock($block, $blockName);
     }
@@ -439,7 +439,7 @@ class CRM_Core_BAO_Block {
       /*
        * If the only existing email is the one we are editing then we must set
        * is_primary to 1
-       * CRM-10451
+       * @see https://issues.civicrm.org/jira/browse/CRM-10451
        */
       if ($existingEntities->N == 1 && $existingEntities->id == CRM_Utils_Array::value('id', $params)) {
         $params['is_primary'] = 1;

@@ -10,21 +10,14 @@
  +--------------------------------------------------------------------+
  */
 
-/**
- *
- * @package CRM
- * @copyright CiviCRM LLC https://civicrm.org/licensing
- * $Id$
- *
- */
-
 namespace Civi\Api4\Generic\Traits;
 
+use Civi\Api4\CustomField;
 use Civi\Api4\Utils\FormattingUtil;
 
 /**
  * @method string getLanguage()
- * @method setLanguage(string $language)
+ * @method $this setLanguage(string $language)
  */
 trait DAOActionTrait {
 
@@ -103,9 +96,11 @@ trait DAOActionTrait {
    *
    * @param array $items
    *   The records to write to the DB.
+   *
    * @return array
    *   The records after being written to the DB (e.g. including newly assigned "id").
    * @throws \API_Exception
+   * @throws \CRM_Core_Exception
    */
   protected function writeObjects($items) {
     $baoName = $this->getBaoName();
@@ -130,7 +125,7 @@ trait DAOActionTrait {
       $item['check_permissions'] = $this->getCheckPermissions();
 
       // For some reason the contact bao requires this
-      if ($entityId && $this->getEntityName() == 'Contact') {
+      if ($entityId && $this->getEntityName() === 'Contact') {
         $item['contact_id'] = $entityId;
       }
 
@@ -138,7 +133,7 @@ trait DAOActionTrait {
         $this->checkContactPermissions($baoName, $item);
       }
 
-      if ($this->getEntityName() == 'Address') {
+      if ($this->getEntityName() === 'Address') {
         $createResult = $baoName::add($item, $this->fixAddress);
       }
       elseif (method_exists($baoName, $method)) {
@@ -162,7 +157,11 @@ trait DAOActionTrait {
   /**
    * @param array $params
    * @param int $entityId
+   *
    * @return mixed
+   *
+   * @throws \API_Exception
+   * @throws \CRM_Core_Exception
    */
   protected function formatCustomParams(&$params, $entityId) {
     $customParams = [];
@@ -170,50 +169,29 @@ trait DAOActionTrait {
     // $customValueID is the ID of the custom value in the custom table for this
     // entity (i guess this assumes it's not a multi value entity)
     foreach ($params as $name => $value) {
-      if (strpos($name, '.') === FALSE) {
+      $field = $this->getCustomFieldInfo($name);
+      if (!$field) {
         continue;
       }
 
-      list($customGroup, $customField) = explode('.', $name);
-      list($customField, $option) = array_pad(explode(':', $customField), 2, NULL);
-
-      $customFieldId = \CRM_Core_BAO_CustomField::getFieldValue(
-        \CRM_Core_DAO_CustomField::class,
-        $customField,
-        'id',
-        'name'
-      );
-      $customFieldType = \CRM_Core_BAO_CustomField::getFieldValue(
-        \CRM_Core_DAO_CustomField::class,
-        $customField,
-        'html_type',
-        'name'
-      );
-      $customFieldExtends = \CRM_Core_BAO_CustomGroup::getFieldValue(
-        \CRM_Core_DAO_CustomGroup::class,
-        $customGroup,
-        'extends',
-        'name'
-      );
-
       // todo are we sure we don't want to allow setting to NULL? need to test
-      if ($customFieldId && NULL !== $value) {
+      if (NULL !== $value) {
 
-        if ($option) {
-          $options = FormattingUtil::getPseudoconstantList($this->getEntityName(), 'custom_' . $customFieldId, $option, $params, $this->getActionName());
+        if ($field['suffix']) {
+          $options = FormattingUtil::getPseudoconstantList($this->getEntityName(), 'custom_' . $field['id'], $field['suffix'], $params, $this->getActionName());
           $value = FormattingUtil::replacePseudoconstant($options, $value, TRUE);
         }
 
-        if ($customFieldType == 'CheckBox') {
+        if ($field['html_type'] === 'CheckBox') {
           // this function should be part of a class
-          formatCheckBoxField($value, 'custom_' . $customFieldId, $this->getEntityName());
+          formatCheckBoxField($value, 'custom_' . $field['id'], $this->getEntityName());
         }
 
         \CRM_Core_BAO_CustomField::formatCustomField(
-          $customFieldId,
+          $field['id'],
           $customParams,
           $value,
-          $customFieldExtends,
+          $field['custom_group.extends'],
           // todo check when this is needed
           NULL,
           $entityId,
@@ -230,15 +208,39 @@ trait DAOActionTrait {
   }
 
   /**
+   * Gets field info needed to save custom data
+   *
+   * @param string $name
+   *   Field identifier with possible suffix, e.g. MyCustomGroup.MyField1:label
+   * @return array|NULL
+   */
+  protected function getCustomFieldInfo($name) {
+    if (strpos($name, '.') === FALSE) {
+      return NULL;
+    }
+    list($groupName, $fieldName) = explode('.', $name);
+    list($fieldName, $suffix) = array_pad(explode(':', $fieldName), 2, NULL);
+    if (empty(\Civi::$statics['APIv4_Custom_Fields'][$groupName])) {
+      \Civi::$statics['APIv4_Custom_Fields'][$groupName] = (array) CustomField::get(FALSE)
+        ->addSelect('id', 'name', 'html_type', 'custom_group.extends')
+        ->addWhere('custom_group.name', '=', $groupName)
+        ->execute()->indexBy('name');
+    }
+    $info = \Civi::$statics['APIv4_Custom_Fields'][$groupName][$fieldName] ?? NULL;
+    return $info ? ['suffix' => $suffix] + $info : NULL;
+  }
+
+  /**
    * Check edit/delete permissions for contacts and related entities.
    *
-   * @param $baoName
-   * @param $item
+   * @param string $baoName
+   * @param array $item
+   *
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   protected function checkContactPermissions($baoName, $item) {
-    if ($baoName == 'CRM_Contact_BAO_Contact' && !empty($item['id'])) {
-      $permission = $this->getActionName() == 'delete' ? \CRM_Core_Permission::DELETE : \CRM_Core_Permission::EDIT;
+    if ($baoName === 'CRM_Contact_BAO_Contact' && !empty($item['id'])) {
+      $permission = $this->getActionName() === 'delete' ? \CRM_Core_Permission::DELETE : \CRM_Core_Permission::EDIT;
       if (!\CRM_Contact_BAO_Contact_Permission::allow($item['id'], $permission)) {
         throw new \Civi\API\Exception\UnauthorizedException('Permission denied to modify contact record');
       }

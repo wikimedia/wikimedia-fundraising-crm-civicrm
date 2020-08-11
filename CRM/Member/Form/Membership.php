@@ -357,20 +357,12 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
     }
     $this->assign('alreadyAutoRenew', $alreadyAutoRenew);
 
-    $this->assign('member_is_test', CRM_Utils_Array::value('member_is_test', $defaults));
+    $this->assign('member_is_test', $defaults['member_is_test'] ?? NULL);
+    $this->assign('membership_status_id', $defaults['status_id'] ?? NULL);
+    $this->assign('is_pay_later', !empty($defaults['is_pay_later']));
 
-    $this->assign('membership_status_id', CRM_Utils_Array::value('status_id', $defaults));
-
-    if (!empty($defaults['is_pay_later'])) {
-      $this->assign('is_pay_later', TRUE);
-    }
     if ($this->_mode) {
       $defaults = $this->getBillingDefaults($defaults);
-      // hack to simplify credit card entry for testing
-      // $defaults['credit_card_type']     = 'Visa';
-      // $defaults['credit_card_number']   = '4807731747657838';
-      // $defaults['cvv2']                 = '000';
-      // $defaults['credit_card_exp_date'] = array( 'Y' => '2012', 'M' => '05' );
     }
 
     //setting default join date if there is no join date
@@ -505,7 +497,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       $totalAmount = $values['minimum_fee'] ?? NULL;
       //CRM-18827 - override the default value if total_amount is submitted
       if (!empty($this->_submitValues['total_amount'])) {
-        $totalAmount = $this->_submitValues['total_amount'];
+        $totalAmount = CRM_Utils_Rule::cleanMoney($this->_submitValues['total_amount']);
       }
       // build membership info array, which is used when membership type is selected to:
       // - set the payment information block
@@ -925,7 +917,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
    * or FALSE otherwise.
    */
   private function convertIsOverrideValue() {
-    $this->_params['is_override'] = CRM_Member_StatusOverrideTypes::isOverridden($this->_params['is_override']);
+    $this->_params['is_override'] = CRM_Member_StatusOverrideTypes::isOverridden($this->_params['is_override'] ?? CRM_Member_StatusOverrideTypes::NO);
   }
 
   /**
@@ -966,13 +958,9 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
         $form->_bltID
       ));
 
-      $date = CRM_Utils_Date::format($form->_params['credit_card_exp_date']);
-      $date = CRM_Utils_Date::mysqlToIso($date);
-      $form->assign('credit_card_exp_date', $date);
-      $form->assign('credit_card_number',
-        CRM_Utils_System::mungeCreditCard($form->_params['credit_card_number'])
-      );
-      $form->assign('credit_card_type', $form->_params['credit_card_type']);
+      $valuesForForm = CRM_Contribute_Form_AbstractEditPayment::formatCreditCardDetails($form->_params);
+      $form->assignVariables($valuesForForm, ['credit_card_exp_date', 'credit_card_type', 'credit_card_number']);
+
       $form->assign('contributeMode', 'direct');
       $form->assign('isAmountzero', 0);
       $form->assign('is_pay_later', 0);
@@ -1097,8 +1085,6 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
     if (empty($formValues['financial_type_id'])) {
       $formValues['financial_type_id'] = $this->_priceSet['financial_type_id'];
     }
-
-    $config = CRM_Core_Config::singleton();
 
     $membershipTypeValues = [];
     foreach ($this->_memTypeSelected as $memType) {
@@ -1335,7 +1321,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       // add all the additional payment params we need
       $formValues['amount'] = $params['total_amount'];
       // @todo this is a candidate for beginPostProcessFunction.
-      $formValues['currencyID'] = $config->defaultCurrency;
+      $formValues['currencyID'] = CRM_Core_Config::singleton()->defaultCurrency;
       $formValues['description'] = ts("Contribution submitted by a staff person using member's credit card for signup");
       $formValues['invoiceID'] = md5(uniqid(rand(), TRUE));
       $formValues['financial_type_id'] = $params['financial_type_id'];
@@ -1456,7 +1442,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       $params['contribution_source'] = ts('%1 Membership Signup: Credit card or direct debit (by %2)',
         [1 => $membershipType, 2 => $userName]
       );
-      $params['source'] = $formValues['source'] ? $formValues['source'] : $params['contribution_source'];
+      $params['source'] = $formValues['source'] ?: $params['contribution_source'];
       $params['trxn_id'] = $result['trxn_id'] ?? NULL;
       $params['is_test'] = ($this->_mode === 'live') ? 0 : 1;
       if (!empty($formValues['send_receipt'])) {
@@ -1794,23 +1780,24 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
     $buttonName = $this->controller->getButtonName();
     $session = CRM_Core_Session::singleton();
 
-    if ($this->_context === 'standalone') {
-      if ($buttonName == $this->getButtonName('upload', 'new')) {
-        $session->replaceUserContext(CRM_Utils_System::url('civicrm/member/add',
+    if ($buttonName == $this->getButtonName('upload', 'new')) {
+      if ($this->_context === 'standalone') {
+        $url = CRM_Utils_System::url('civicrm/member/add',
           'reset=1&action=add&context=standalone'
-        ));
+        );
       }
       else {
-        $session->replaceUserContext(CRM_Utils_System::url('civicrm/contact/view',
-          "reset=1&cid={$this->_contactID}&selectedChild=member"
-        ));
+        $url = CRM_Utils_System::url('civicrm/contact/view/membership',
+          "reset=1&action=add&context=membership&cid={$this->_contactID}"
+        );
       }
     }
-    elseif ($buttonName == $this->getButtonName('upload', 'new')) {
-      $session->replaceUserContext(CRM_Utils_System::url('civicrm/contact/view/membership',
-        "reset=1&action=add&context=membership&cid={$this->_contactID}"
-      ));
+    else {
+      $url = CRM_Utils_System::url('civicrm/contact/view',
+        "reset=1&cid={$this->_contactID}&selectedChild=member"
+      );
     }
+    $session->replaceUserContext($url);
   }
 
   /**
@@ -1856,7 +1843,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       ]);
 
       $membership = $createdMemberships[$memType];
-      $memEndDate = ($membership->end_date) ? $membership->end_date : $endDate;
+      $memEndDate = $membership->end_date ?: $endDate;
 
       //get the end date from calculated dates.
       if (!$memEndDate && !$isRecur) {

@@ -201,7 +201,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
    *
    * This is a bit too much about wierd form interpretation to be this deep.
    *
-   * CRM-11885
+   * @see https://issues.civicrm.org/jira/browse/CRM-11885
    *  if non_deductible_amount exists i.e. Additional Details fieldset was opened [and staff typed something] -> keep
    * it.
    *
@@ -282,10 +282,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
     $this->_params['tax_amount'] = $this->get('tax_amount');
     $this->_useForMember = $this->get('useForMember');
 
-    if (isset($this->_params['credit_card_exp_date'])) {
-      $this->_params['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
-      $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
-    }
+    CRM_Contribute_Form_AbstractEditPayment::formatCreditCardDetails($this->_params);
 
     $this->_params['currencyID'] = CRM_Core_Config::singleton()->defaultCurrency;
 
@@ -957,7 +954,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
         }
         $smarty = CRM_Core_Smarty::singleton();
         $smarty->assign('dataArray', $dataArray);
-        $smarty->assign('totalTaxAmount', $params['tax_amount']);
+        $smarty->assign('totalTaxAmount', $params['tax_amount'] ?? NULL);
       }
 
       // lets store it in the form variable so postProcess hook can get to this and use it
@@ -1889,7 +1886,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
       // contribution amount to be null, so that it will not show
       // contribution amount same as membership amount.
       //@todo - merge with section above
-      if ($this->_membershipBlock['is_separate_payment']
+      if (!empty($this->_membershipBlock['is_separate_payment'])
         && !empty($this->_values['fee'][$priceField->id])
         && CRM_Utils_Array::value('name', $this->_values['fee'][$priceField->id]) == 'contribution_amount'
         && CRM_Utils_Array::value("price_{$priceField->id}", $this->_params) == '-1'
