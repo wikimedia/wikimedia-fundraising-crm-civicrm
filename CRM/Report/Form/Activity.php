@@ -28,9 +28,8 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
    * all reports have been adjusted to take care of it. This report has not
    * and will run an inefficient query until fixed.
    *
-   * CRM-19170
-   *
    * @var bool
+   * @see https://issues.civicrm.org/jira/browse/CRM-19170
    */
   protected $groupFilterNotOptimised = TRUE;
 
@@ -643,7 +642,7 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
    */
   public function add2group($groupID) {
     if (CRM_Utils_Array::value("contact_target_op", $this->_params) == 'nll') {
-      CRM_Core_Error::fatal(ts('Current filter criteria didn\'t have any target contact to add to group'));
+      CRM_Core_Error::statusBounce(ts('Current filter criteria didn\'t have any target contact to add to group'));
     }
 
     $new_select = 'AS addtogroup_contact_id';

@@ -516,6 +516,7 @@ class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
       // if field is not present in customFields, that means the user
       // DOES NOT HAVE permission to access that field
       if (array_key_exists($field->field_name, $customFields)) {
+        $formattedField['serialize'] = !empty($customFields[$field->field_name]['serialize']);
         $formattedField['is_search_range'] = $customFields[$field->field_name]['is_search_range'];
         // fix for CRM-1994
         $formattedField['options_per_line'] = $customFields[$field->field_name]['options_per_line'];
@@ -1662,12 +1663,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    *   array of ufgroups for a module
    */
   public static function getModuleUFGroup($moduleName = NULL, $count = 0, $skipPermission = TRUE, $op = CRM_Core_Permission::VIEW, $returnFields = NULL) {
-    $selectFields = ['id', 'title', 'created_id', 'is_active', 'is_reserved', 'group_type'];
-
-    if (CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_uf_group', 'description')) {
-      // CRM-13555, since description field was added later (4.4), and to avoid any problems with upgrade
-      $selectFields[] = 'description';
-    }
+    $selectFields = ['id', 'title', 'created_id', 'is_active', 'is_reserved', 'group_type', 'description'];
 
     if (CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_uf_group', 'frontend_title')) {
       $selectFields[] = 'frontend_title';
@@ -1944,16 +1940,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
     elseif (in_array($fieldName, ['gender_id', 'communication_style_id'])) {
       $options = [];
       $pseudoValues = CRM_Core_PseudoConstant::get('CRM_Contact_DAO_Contact', $fieldName);
-      foreach ($pseudoValues as $key => $var) {
-        $options[$key] = $form->createElement('radio', NULL, ts($title), $var, $key);
-      }
-      $group = $form->addGroup($options, $name, $title);
-      if ($required) {
-        $form->addRule($name, ts('%1 is a required field.', [1 => $title]), 'required');
-      }
-      else {
-        $group->setAttribute('allowClear', TRUE);
-      }
+      $form->addRadio($name, ts('%1', [1 => $title]), $pseudoValues, ['allowClear' => !$required], NULL, $required);
     }
     elseif ($fieldName === 'prefix_id' || $fieldName === 'suffix_id') {
       $form->addSelect($name, [
@@ -2339,6 +2326,14 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
           }
           elseif (CRM_Core_BAO_CustomField::getKeyID($name)) {
             $defaults[$fldName] = self::formatCustomValue($field, $details[$name]);
+            if (!$singleProfile && $field['html_type'] === 'CheckBox') {
+              // For batch update profile there needs to be a key lik
+              // $defaults['field[166]['custom_8'][2]'] => 1 where
+              // 166 is the conntact id, 8 is the field id and 2 is the checkbox option.
+              foreach ($defaults[$fldName] as $itemKey => $itemValue) {
+                $defaults[$fldName . '[' . $itemKey . ']'] = $itemValue;
+              }
+            }
           }
           else {
             $defaults[$fldName] = $details[$name];
@@ -2699,7 +2694,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
 
     if (!$domainEmailAddress || $domainEmailAddress == 'info@EXAMPLE.ORG') {
       $fixUrl = CRM_Utils_System::url('civicrm/admin/domain', 'action=update&reset=1');
-      CRM_Core_Error::fatal(ts('The site administrator needs to enter a valid \'FROM Email Address\' in <a href="%1">Administer CiviCRM &raquo; Communications &raquo; FROM Email Addresses</a>. The email address used may need to be a valid mail account with your email service provider.', [1 => $fixUrl]));
+      CRM_Core_Error::statusBounce(ts('The site administrator needs to enter a valid \'FROM Email Address\' in <a href="%1">Administer CiviCRM &raquo; Communications &raquo; FROM Email Addresses</a>. The email address used may need to be a valid mail account with your email service provider.', [1 => $fixUrl]));
     }
 
     foreach ($emailList as $emailTo) {
@@ -3598,6 +3593,7 @@ SELECT  group_id
     if (CRM_Core_BAO_CustomField::isSerialized($field)) {
       $value = CRM_Utils_Array::explodePadded($value);
 
+      // This may not be required now.
       if ($field['html_type'] === 'CheckBox') {
         $checkboxes = [];
         foreach (array_filter($value) as $item) {

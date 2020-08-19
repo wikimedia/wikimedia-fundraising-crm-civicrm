@@ -52,6 +52,9 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
    * @param int $id Group id.
    */
   public static function discard($id) {
+    if (!$id || !is_numeric($id)) {
+      throw new CRM_Core_Exception('Invalid group request attempted');
+    }
     CRM_Utils_Hook::pre('delete', 'Group', $id, CRM_Core_DAO::$_nullArray);
 
     $transaction = new CRM_Core_Transaction();
@@ -912,7 +915,7 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
       $action = array_sum(array_keys($newLinks));
 
       // CRM-9936
-      if (array_key_exists('is_reserved', $object)) {
+      if (property_exists($object, 'is_reserved')) {
         //if group is reserved and I don't have reserved permission, suppress delete/edit
         if ($object->is_reserved && !$reservedPermission) {
           $action -= CRM_Core_Action::DELETE;
@@ -921,7 +924,7 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
         }
       }
 
-      if (array_key_exists('is_active', $object)) {
+      if (property_exists($object, 'is_active')) {
         if ($object->is_active) {
           $action -= CRM_Core_Action::ENABLE;
         }
@@ -1052,7 +1055,7 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
     $groups = [];
     $args = [1 => [$groupIdString, 'String']];
     $query = "
-SELECT id, title, description, visibility, parents
+SELECT id, title, description, visibility, parents, saved_search_id
 FROM   civicrm_group
 WHERE  id IN $groupIdString
 ";
@@ -1078,7 +1081,7 @@ WHERE  id IN $groupIdString
         $parent = self::filterActiveGroups($parentArray);
         $tree[$parent][] = [
           'id' => $dao->id,
-          'title' => $dao->title,
+          'title' => empty($dao->saved_search_id) ? $dao->title : '* ' . $dao->title,
           'visibility' => $dao->visibility,
           'description' => $dao->description,
         ];
@@ -1086,7 +1089,7 @@ WHERE  id IN $groupIdString
       else {
         $roots[] = [
           'id' => $dao->id,
-          'title' => $dao->title,
+          'title' => empty($dao->saved_search_id) ? $dao->title : '* ' . $dao->title,
           'visibility' => $dao->visibility,
           'description' => $dao->description,
         ];
@@ -1097,6 +1100,7 @@ WHERE  id IN $groupIdString
     for ($i = 0; $i < count($roots); $i++) {
       self::buildGroupHierarchy($hierarchy, $roots[$i], $tree, $titleOnly, $spacer, 0);
     }
+
     return $hierarchy;
   }
 
@@ -1119,8 +1123,9 @@ WHERE  id IN $groupIdString
       $hierarchy[$group['id']] = $spaces . $group['title'];
     }
     else {
-      $hierarchy[$group['id']] = [
-        'title' => $spaces . $group['title'],
+      $hierarchy[] = [
+        'id' => $group['id'],
+        'text' => $spaces . $group['title'],
         'description' => $group['description'],
         'visibility' => $group['visibility'],
       ];

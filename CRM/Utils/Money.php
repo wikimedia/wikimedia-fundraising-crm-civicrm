@@ -15,6 +15,10 @@
  * @copyright CiviCRM LLC https://civicrm.org/licensing
  */
 
+use Brick\Money\Money;
+use Brick\Money\Context\DefaultContext;
+use Brick\Math\RoundingMode;
+
 /**
  * Money utilties
  */
@@ -59,6 +63,10 @@ class CRM_Utils_Money {
 
     if (!$valueFormat) {
       $valueFormat = $config->moneyvalueformat;
+    }
+
+    if (!empty($valueFormat) && $valueFormat !== '%!i') {
+      CRM_Core_Error::deprecatedFunctionWarning('Having a Money Value format other than !%i is deprecated, please report this on the GitLab Issue https://lab.civicrm.org/dev/core/-/issues/1494 with the relevant moneyValueFormat you use.');
     }
 
     if ($onlyNumber) {
@@ -131,8 +139,8 @@ class CRM_Utils_Money {
    */
   public static function subtractCurrencies($leftOp, $rightOp, $currency) {
     if (is_numeric($leftOp) && is_numeric($rightOp)) {
-      $precision = pow(10, self::getCurrencyPrecision($currency));
-      return (($leftOp * $precision) - ($rightOp * $precision)) / $precision;
+      $money = Money::of($leftOp, $currency, new DefaultContext(), RoundingMode::CEILING);
+      return $money->minus($rightOp)->getAmount()->toFloat();
     }
   }
 
@@ -170,6 +178,9 @@ class CRM_Utils_Money {
    * @return string
    */
   protected static function formatLocaleNumeric($amount) {
+    if (CRM_Core_Config::singleton()->moneyvalueformat !== '%!i') {
+      CRM_Core_Error::deprecatedFunctionWarning('Having a Money Value format other than !%i is deprecated, please report this on GitLab with the relevant moneyValueFormat you use.');
+    }
     return self::formatNumericByFormat($amount, CRM_Core_Config::singleton()->moneyvalueformat);
   }
 

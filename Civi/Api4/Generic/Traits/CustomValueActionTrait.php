@@ -14,8 +14,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC https://civicrm.org/licensing
- * $Id$
- *
  */
 
 
@@ -76,7 +74,7 @@ trait CustomValueActionTrait {
    * @inheritDoc
    */
   protected function deleteObjects($items) {
-    $customTable = CoreUtil::getCustomTableByName($this->getCustomGroup());
+    $customTable = CoreUtil::getTableName($this->getEntityName());
     $ids = [];
     foreach ($items as $item) {
       \CRM_Utils_Hook::pre('delete', $this->getEntityName(), $item['id'], \CRM_Core_DAO::$_nullArray);

@@ -294,7 +294,7 @@ function _civicrm_api3_load_DAO($entity) {
  *   return the DAO name to manipulate this function
  *   eg. "civicrm_api3_contact_create" or "Contact" will return "CRM_Contact_BAO_Contact"
  *
- * @return mixed|string
+ * @return CRM_Core_DAO|string
  */
 function _civicrm_api3_get_DAO($name) {
   if (strpos($name, 'civicrm_api3') !== FALSE) {
@@ -990,7 +990,7 @@ function _civicrm_api3_dao_to_array($dao, $params = NULL, $uniqueFields = TRUE, 
   while ($dao->fetch()) {
     $tmp = [];
     foreach ($fields as $key) {
-      if (array_key_exists($key, $dao)) {
+      if (property_exists($dao, $key)) {
         // not sure on that one
         if ($dao->$key !== NULL) {
           $tmp[$key] = $dao->$key;
@@ -1047,8 +1047,8 @@ function _civicrm_api3_object_to_array(&$dao, &$values, $uniqueFields = FALSE) {
 
   $fields = _civicrm_api3_build_fields_array($dao, $uniqueFields);
   foreach ($fields as $key => $value) {
-    if (array_key_exists($key, $dao)) {
-      $values[$key] = $dao->$key;
+    if (property_exists($dao, $key)) {
+      $values[$key] = $dao->$key ?? NULL;
     }
   }
 }
@@ -1237,7 +1237,7 @@ function formatCheckBoxField(&$checkboxFieldValue, $customFieldLabel, $entity) {
  * @return array
  */
 function _civicrm_api3_basic_get($bao_name, $params, $returnAsSuccess = TRUE, $entity = "", $sql = NULL, $uniqueFields = FALSE) {
-  $entity = $entity ?: CRM_Core_DAO_AllCoreTables::getBriefName(str_replace('_BAO_', '_DAO_', $bao_name));
+  $entity = $entity ?: CRM_Core_DAO_AllCoreTables::getBriefName($bao_name);
   $options = _civicrm_api3_get_options_from_params($params);
 
   $query = new \Civi\API\Api3SelectQuery($entity, CRM_Utils_Array::value('check_permissions', $params, FALSE));
@@ -1878,15 +1878,19 @@ function _civicrm_api_get_fields($entity, $unique = FALSE, &$params = []) {
   if (empty($dao)) {
     return [];
   }
-  $d = new $dao();
-  $fields = $d->fields();
+  $fields = $dao::fields();
+  $supportedFields = $dao::getSupportedFields();
 
-  foreach ($fields as $name => &$field) {
+  foreach ($fields as $name => $field) {
     // Denote as core field
-    $field['is_core_field'] = TRUE;
+    $fields[$name]['is_core_field'] = TRUE;
     // Set html attributes for text fields
     if (isset($field['html'])) {
-      $field['html'] += (array) $d::makeAttribute($field);
+      $fields[$name]['html'] += (array) $dao::makeAttribute($field);
+    }
+    // Delete field if not supported by current db schema (prevents errors when there are pending db updates)
+    if (!isset($supportedFields[$field['name']])) {
+      unset($fields[$name]);
     }
   }
 
@@ -2342,6 +2346,16 @@ function _civicrm_api3_api_match_pseudoconstant_value(&$value, $options, $fieldN
       // CiviMagic syntax for Nulling out the field - let it through.
       return;
     }
+    // Legacy support for custom fields: If matching failed by name, fallback to label
+    // @see https://lab.civicrm.org/dev/core/-/issues/1816
+    if ($customFieldId = CRM_Core_BAO_CustomField::getKeyID($fieldName)) {
+      $field = new CRM_Core_BAO_CustomField();
+      $field->id = $customFieldId;
+      $options = array_map("strtolower", $field->getOptions());
+      $newValue = array_search(strtolower($value), $options);
+    }
+  }
+  if ($newValue === FALSE) {
     throw new API_Exception("'$value' is not a valid option for field $fieldName", 2001, ['error_field' => $fieldName]);
   }
   $value = $newValue;
@@ -2367,7 +2381,7 @@ function _civicrm_api3_api_resolve_alias($entity, $fieldName, $action = 'create'
   if (strpos($fieldName, 'custom_') === 0 && is_numeric($fieldName[7])) {
     return $fieldName;
   }
-  if ($fieldName == _civicrm_api_get_entity_name_from_camel($entity) . '_id') {
+  if ($fieldName === (CRM_Core_DAO_AllCoreTables::convertEntityNameToLower($entity) . '_id')) {
     return 'id';
   }
   $result = civicrm_api($entity, 'getfields', [

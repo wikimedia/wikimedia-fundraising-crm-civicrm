@@ -43,19 +43,6 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
   public function __construct($mode, &$paymentProcessor) {
     $this->_mode = $mode;
     $this->_paymentProcessor = $paymentProcessor;
-
-    if ($this->isPayPalType($this::PAYPAL_STANDARD)) {
-      $this->_processorName = ts('PayPal Standard');
-    }
-    elseif ($this->isPayPalType($this::PAYPAL_EXPRESS)) {
-      $this->_processorName = ts('PayPal Express');
-    }
-    elseif ($this->isPayPalType($this::PAYPAL_PRO)) {
-      $this->_processorName = ts('PayPal Pro');
-    }
-    else {
-      throw new PaymentProcessorException('CRM_Core_Payment_PayPalImpl: Payment processor type is not defined!');
-    }
   }
 
   /**
@@ -703,7 +690,7 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
    */
-  public static function handlePaymentNotification() {
+  public function handlePaymentNotification() {
     $params = array_merge($_GET, $_REQUEST);
     $q = explode('/', CRM_Utils_Array::value('q', $params, ''));
     $lastParam = array_pop($q);
@@ -929,7 +916,7 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
     // if recurring donations, add a few more items
     if (!empty($params['is_recur'])) {
       if (!$params['contributionRecurID']) {
-        CRM_Core_Error::fatal(ts('Recurring contribution, but no database id'));
+        throw new CRM_Core_Exception(ts('Recurring contribution, but no database id'));
       }
 
       $paypalParams += [

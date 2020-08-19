@@ -28,10 +28,13 @@ class Requirements {
    */
   protected $system_checks = [
     'checkMemory',
-    'checkServerVariables',
     'checkMysqlConnectExists',
     'checkJsonEncodeExists',
     'checkMultibyteExists',
+  ];
+
+  protected $system_checks_web = [
+    'checkServerVariables',
   ];
 
   protected $database_checks = [
@@ -58,6 +61,9 @@ class Requirements {
    *   An array of check summaries. Each array contains the keys 'title', 'severity', and 'details'.
    */
   public function checkAll(array $config) {
+    if (!class_exists('\CRM_Utils_SQL_TempTable')) {
+      require_once dirname(__FILE__) . '/../../CRM/Utils/SQL/TempTable.php';
+    }
     return array_merge($this->checkSystem($config['file_paths']), $this->checkDatabase($config['db_config']));
   }
 
@@ -78,6 +84,12 @@ class Requirements {
     $errors[] = $this->checkFilepathIsWritable($file_paths);
     foreach ($this->system_checks as $check) {
       $errors[] = $this->$check();
+    }
+
+    if (PHP_SAPI !== 'cli') {
+      foreach ($this->system_checks_web as $check) {
+        $errors[] = $this->$check();
+      }
     }
 
     return $errors;
@@ -291,6 +303,9 @@ class Requirements {
    * @return array
    */
   public function checkMysqlVersion(array $db_config) {
+    if (!class_exists('\CRM_Upgrade_Incremental_General')) {
+      require_once dirname(__FILE__) . '/../../CRM/Upgrade/Incremental/General.php';
+    }
     $min = \CRM_Upgrade_Incremental_General::MIN_INSTALL_MYSQL_VER;
     $results = [
       'title' => 'CiviCRM MySQL Version',
@@ -304,7 +319,8 @@ class Requirements {
       return $results;
     }
 
-    if (version_compare($info, $min) == -1) {
+    $versionDetails = mysqli_query($conn, 'SELECT version() as version')->fetch_assoc();
+    if (version_compare($versionDetails['version'], $min) == -1) {
       $results['severity'] = $this::REQUIREMENT_ERROR;
       $results['details'] = "MySQL version is {$info}; minimum required is {$min}";
       return $results;
@@ -373,15 +389,15 @@ class Requirements {
       $results['details'] = "Could not select the database";
       return $results;
     }
-
-    $r = mysqli_query($conn, 'CREATE TEMPORARY TABLE civicrm_install_temp_table_test (test text)');
+    $temporaryTableName = \CRM_Utils_SQL_TempTable::build()->setCategory('install')->getName();
+    $r = mysqli_query($conn, 'CREATE TEMPORARY TABLE ' . $temporaryTableName . ' (test text)');
     if (!$r) {
       $results['severity'] = $this::REQUIREMENT_ERROR;
       $results['details'] = "Database does not support creation of temporary tables";
       return $results;
     }
 
-    mysqli_query($conn, 'DROP TEMPORARY TABLE civicrm_install_temp_table_test');
+    mysqli_query($conn, 'DROP TEMPORARY TABLE ' . $temporaryTableName);
     return $results;
   }
 

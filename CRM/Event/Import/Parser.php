@@ -13,8 +13,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC https://civicrm.org/licensing
- * $Id$
- *
  */
 abstract class CRM_Event_Import_Parser extends CRM_Import_Parser {
 
@@ -70,7 +68,7 @@ abstract class CRM_Event_Import_Parser extends CRM_Import_Parser {
     $onDuplicate = self::DUPLICATE_SKIP
   ) {
     if (!is_array($fileName)) {
-      CRM_Core_Error::fatal();
+      throw new CRM_Core_Exception('Unable to determine import file');
     }
     $fileName = $fileName['name'];
 

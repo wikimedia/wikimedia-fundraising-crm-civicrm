@@ -16,8 +16,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC https://civicrm.org/licensing
- * $Id$
- *
  */
 class CRM_Core_SelectValues {
 
@@ -68,11 +66,7 @@ class CRM_Core_SelectValues {
    * @return array
    */
   public static function contactType() {
-    static $contactType = NULL;
-    if (!$contactType) {
-      $contactType = CRM_Contact_BAO_ContactType::basicTypePairs();
-    }
-    return $contactType;
+    return CRM_Contact_BAO_ContactType::basicTypePairs();
   }
 
   /**
@@ -181,12 +175,9 @@ class CRM_Core_SelectValues {
       'Select Date' => ts('Select Date'),
       'File' => ts('File'),
       'Select State/Province' => ts('Select State/Province'),
-      'Multi-Select State/Province' => ts('Multi-Select State/Province'),
       'Select Country' => ts('Select Country'),
-      'Multi-Select Country' => ts('Multi-Select Country'),
       'RichTextEditor' => ts('Rich Text Editor'),
       'Autocomplete-Select' => ts('Autocomplete-Select'),
-      'Multi-Select' => ts('Multi-Select'),
       'Link' => ts('Link'),
       'ContactReference' => ts('Autocomplete-Select'),
     ];
@@ -1177,6 +1168,40 @@ class CRM_Core_SelectValues {
     }
 
     return $ret;
+  }
+
+  /**
+   * @return string[]
+   */
+  public static function fieldSerialization() {
+    return [
+      CRM_Core_DAO::SERIALIZE_SEPARATOR_BOOKEND => 'separator_bookend',
+      CRM_Core_DAO::SERIALIZE_SEPARATOR_TRIMMED => 'separator_trimmed',
+      CRM_Core_DAO::SERIALIZE_JSON => 'json',
+      CRM_Core_DAO::SERIALIZE_PHP => 'php',
+      CRM_Core_DAO::SERIALIZE_COMMA => 'comma',
+    ];
+  }
+
+  /**
+   * @return array
+   */
+  public static function navigationMenuSeparator() {
+    return [
+      ts('None'),
+      ts('After menu element'),
+      ts('Before menu element'),
+    ];
+  }
+
+  /**
+   * @return array
+   */
+  public static function relationshipOrientation() {
+    return [
+      'a_b' => ts('A to B'),
+      'b_a' => ts('B to A'),
+    ];
   }
 
 }

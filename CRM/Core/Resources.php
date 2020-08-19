@@ -258,7 +258,7 @@ class CRM_Core_Resources {
    * Access var from javascript:
    * CRM.vars.myNamespace.foo // "bar"
    *
-   * @see http://wiki.civicrm.org/confluence/display/CRMDOC/Javascript+Reference
+   * @see https://docs.civicrm.org/dev/en/latest/standards/javascript/
    *
    * @param string $nameSpace
    *   Usually the name of your extension.
@@ -743,6 +743,7 @@ class CRM_Core_Resources {
       "bower_components/datatables/media/js/jquery.dataTables.min.js",
       "bower_components/datatables/media/css/jquery.dataTables.min.css",
       "bower_components/jquery-validation/dist/jquery.validate.min.js",
+      "bower_components/jquery-validation/dist/additional-methods.min.js",
       "packages/jquery/plugins/jquery.ui.datepicker.validation.min.js",
       "js/Common.js",
       "js/crm.datepicker.js",
@@ -759,11 +760,11 @@ class CRM_Core_Resources {
     // add wysiwyg editor
     $editor = Civi::settings()->get('editor_id');
     if ($editor == "CKEditor") {
-      CRM_Admin_Page_CKEditorConfig::setConfigDefault();
+      CRM_Admin_Form_CKEditorConfig::setConfigDefault();
       $items[] = [
         'config' => [
           'wysisygScriptLocation' => Civi::paths()->getUrl("[civicrm.root]/js/wysiwyg/crm.ckeditor.js"),
-          'CKEditorCustomConfig' => CRM_Admin_Page_CKEditorConfig::getConfigUrl(),
+          'CKEditorCustomConfig' => CRM_Admin_Form_CKEditorConfig::getConfigUrl(),
         ],
       ];
     }
