@@ -370,22 +370,24 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
    * @return string
    */
   public function thresholdQuery($checkPermission = TRUE) {
-    $this->_aclFrom  = $this->_aclWhere = '';
+    $this->_aclFrom = '';
+    $aclWhere = '';
 
     if ($this->params && !$this->noRules) {
       if ($checkPermission) {
-        list($this->_aclFrom, $this->_aclWhere) = CRM_Contact_BAO_Contact_Permission::cacheClause('civicrm_contact');
-        $this->_aclWhere = $this->_aclWhere ? "AND {$this->_aclWhere}" : '';
+        list($this->_aclFrom, $aclWhere) = CRM_Contact_BAO_Contact_Permission::cacheClause('civicrm_contact');
+        $aclWhere = $aclWhere ? "AND {$aclWhere}" : '';
       }
       $query = "SELECT {$this->temporaryTables['dedupe']}.id1 as id
                 FROM {$this->temporaryTables['dedupe']} JOIN civicrm_contact ON {$this->temporaryTables['dedupe']}.id1 = civicrm_contact.id {$this->_aclFrom}
-                WHERE contact_type = '{$this->contact_type}'  AND is_deleted = 0 {$this->_aclWhere}
+                WHERE contact_type = '{$this->contact_type}' AND is_deleted = 0 $aclWhere
                 AND weight >= {$this->threshold}";
     }
     else {
+      $aclWhere = '';
       if ($checkPermission) {
-        list($this->_aclFrom, $this->_aclWhere) = CRM_Contact_BAO_Contact_Permission::cacheClause(['c1', 'c2']);
-        $this->_aclWhere = $this->_aclWhere ? "AND {$this->_aclWhere}" : '';
+        list($this->_aclFrom, $aclWhere) = CRM_Contact_BAO_Contact_Permission::cacheClause(['c1', 'c2']);
+        $aclWhere = $aclWhere ? "AND {$aclWhere}" : '';
       }
       $query = "SELECT IF({$this->temporaryTables['dedupe']}.id1 < {$this->temporaryTables['dedupe']}.id2, {$this->temporaryTables['dedupe']}.id1, {$this->temporaryTables['dedupe']}.id2) as id1,
                 IF({$this->temporaryTables['dedupe']}.id1 < {$this->temporaryTables['dedupe']}.id2, {$this->temporaryTables['dedupe']}.id2, {$this->temporaryTables['dedupe']}.id1) as id2, {$this->temporaryTables['dedupe']}.weight
@@ -393,7 +395,9 @@ class CRM_Dedupe_BAO_RuleGroup extends CRM_Dedupe_DAO_RuleGroup {
                             JOIN civicrm_contact c2 ON {$this->temporaryTables['dedupe']}.id2 = c2.id {$this->_aclFrom}
                        LEFT JOIN civicrm_dedupe_exception exc ON {$this->temporaryTables['dedupe']}.id1 = exc.contact_id1 AND {$this->temporaryTables['dedupe']}.id2 = exc.contact_id2
                 WHERE c1.contact_type = '{$this->contact_type}' AND
-                      c2.contact_type = '{$this->contact_type}'  AND c1.is_deleted = 0 AND c2.is_deleted = 0 {$this->_aclWhere}
+                      c2.contact_type = '{$this->contact_type}'
+                       AND c1.is_deleted = 0 AND c2.is_deleted = 0
+                      {$aclWhere}
                       AND weight >= {$this->threshold} AND exc.contact_id1 IS NULL";
     }
 

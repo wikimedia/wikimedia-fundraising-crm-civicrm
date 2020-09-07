@@ -145,11 +145,7 @@ function _civicrm_api3_payment_processor_pay_spec(&$params) {
     'type' => CRM_Utils_Type::T_MONEY,
   ];
   $params['contribution_id'] = [
-    // WMF hack - this is required to make us do things the civi-way
-    // ie create the contribution first. For now we don't
-    // We can change this through a hook if we ever decide not to do
-    // it the civi-way as opposed to 'we haven't gotten around to it'
-    //'api.required' => TRUE,
+    'api.required' => TRUE,
     'title' => ts('Contribution ID'),
     'type' => CRM_Utils_Type::T_INT,
     'api.aliases' => ['order_id'],

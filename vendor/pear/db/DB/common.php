@@ -42,7 +42,7 @@ require_once 'PEAR.php';
  * @author     Daniel Convissor <danielc@php.net>
  * @copyright  1997-2007 The PHP Group
  * @license    http://www.php.net/license/3_0.txt  PHP License 3.0
- * @version    Release: 1.9.3
+ * @version    Release: @package_version@
  * @link       http://pear.php.net/package/DB
  */
 class DB_common extends PEAR
@@ -262,7 +262,7 @@ class DB_common extends PEAR
     function quoteString($string)
     {
         $string = $this->quoteSmart($string);
-        if ($string{0} == "'") {
+        if ($string[0] == "'") {
             return substr($string, 1, -1);
         }
         return $string;
@@ -471,7 +471,7 @@ class DB_common extends PEAR
     function quoteBoolean($boolean) {
         return $boolean ? '1' : '0';
     }
-
+     
     // }}}
     // {{{ quoteFloat()
 
@@ -487,7 +487,7 @@ class DB_common extends PEAR
     function quoteFloat($float) {
         return "'".$this->escapeSimple(str_replace(',', '.', strval(floatval($float))))."'";
     }
-
+     
     // }}}
     // {{{ escapeSimple()
 
@@ -885,6 +885,9 @@ class DB_common extends PEAR
     function autoExecute($table, $fields_values, $mode = DB_AUTOQUERY_INSERT,
                          $where = false)
     {
+        if ($where) {
+            $where = strtr($where, array('?' => '\?', '!' => '\!', '&' => '\&',));
+        }
         $sth = $this->autoPrepare($table, array_keys($fields_values), $mode,
                                   $where);
         if (DB::isError($sth)) {

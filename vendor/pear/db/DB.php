@@ -440,7 +440,7 @@ define('DB_PORTABILITY_ALL', 63);
  * @author     Daniel Convissor <danielc@php.net>
  * @copyright  1997-2007 The PHP Group
  * @license    http://www.php.net/license/3_0.txt  PHP License 3.0
- * @version    Release: 1.9.3
+ * @version    Release: @package_version@
  * @link       http://pear.php.net/package/DB
  */
 class DB
@@ -591,7 +591,7 @@ class DB
      */
     function apiVersion()
     {
-        return '1.9.3';
+        return '@package_version@';
     }
 
     // }}}
@@ -606,7 +606,7 @@ class DB
      */
     public static function isError($value)
     {
-        return is_object($value) && is_a($value, 'DB_Error');
+        return is_object($value) && is_a($value, 'DB_Error');		
     }
 
     // }}}
@@ -896,7 +896,7 @@ class DB
          * defined, and means that we deal with strings and array in the same
          * manner. */
         $dsnArray = DB::parseDSN($dsn);
-
+        
         if ($hidePassword) {
             $dsnArray['password'] = 'PASSWORD';
         }
@@ -906,7 +906,7 @@ class DB
         if (is_string($dsn) && strpos($dsn, 'tcp') === false && $dsnArray['protocol'] == 'tcp') {
             $dsnArray['protocol'] = false;
         }
-
+        
         // Now we just have to construct the actual string. This is ugly.
         $dsnString = $dsnArray['phptype'];
         if ($dsnArray['dbsyntax']) {
@@ -929,7 +929,7 @@ class DB
             $dsnString .= ':'.$dsnArray['port'];
         }
         $dsnString .= '/'.$dsnArray['database'];
-
+        
         /* Option handling. Unfortunately, parseDSN simply places options into
          * the top-level array, so we'll first get rid of the fields defined by
          * DB and see what's left. */
@@ -956,7 +956,7 @@ class DB
 
         return $dsnString;
     }
-
+    
     // }}}
 }
 
@@ -972,7 +972,7 @@ class DB
  * @author     Stig Bakken <ssb@php.net>
  * @copyright  1997-2007 The PHP Group
  * @license    http://www.php.net/license/3_0.txt  PHP License 3.0
- * @version    Release: 1.9.3
+ * @version    Release: @package_version@
  * @link       http://pear.php.net/package/DB
  */
 class DB_Error extends PEAR_Error
@@ -1033,7 +1033,7 @@ class DB_Error extends PEAR_Error
  * @author     Stig Bakken <ssb@php.net>
  * @copyright  1997-2007 The PHP Group
  * @license    http://www.php.net/license/3_0.txt  PHP License 3.0
- * @version    Release: 1.9.3
+ * @version    Release: @package_version@
  * @link       http://pear.php.net/package/DB
  */
 class DB_result
@@ -1498,7 +1498,7 @@ class DB_result
  * @author     Stig Bakken <ssb@php.net>
  * @copyright  1997-2007 The PHP Group
  * @license    http://www.php.net/license/3_0.txt  PHP License 3.0
- * @version    Release: 1.9.3
+ * @version    Release: @package_version@
  * @link       http://pear.php.net/package/DB
  * @see        DB_common::setFetchMode()
  */

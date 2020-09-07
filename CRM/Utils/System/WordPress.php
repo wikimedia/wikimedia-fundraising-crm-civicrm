@@ -21,6 +21,13 @@
 class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
 
   /**
+   * Get a normalized version of the wpBasePage.
+   */
+  public static function getBasePage() {
+    return rtrim(Civi::settings()->get('wpBasePage'), '/');
+  }
+
+  /**
    */
   public function __construct() {
     /**
@@ -319,9 +326,9 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     if ($config->userFrameworkFrontend) {
       global $post;
       if (get_option('permalink_structure') != '') {
-        $script = get_permalink($post->ID);
+        $script = $post ? get_permalink($post->ID) : "";
       }
-      if ($config->wpBasePage == $post->post_name) {
+      if ($post && $config->wpBasePage == $post->post_name) {
         $basepage = TRUE;
       }
       // when shortcode is included in page

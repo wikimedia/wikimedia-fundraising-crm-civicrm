@@ -43,7 +43,7 @@ require_once 'DB/common.php';
  * @author     Daniel Convissor <danielc@php.net>
  * @copyright  1997-2007 The PHP Group
  * @license    http://www.php.net/license/3_0.txt  PHP License 3.0
- * @version    Release: 1.9.3
+ * @version    Release: @package_version@
  * @link       http://pear.php.net/package/DB
  * @since      Class functional since Release 1.6.3
  */
@@ -256,7 +256,7 @@ class DB_mysqli extends DB_common
      * Example of how to connect using SSL:
      * <code>
      * require_once 'DB.php';
-     *
+     * 
      * $dsn = array(
      *     'phptype'  => 'mysqli',
      *     'username' => 'someuser',
@@ -269,11 +269,11 @@ class DB_mysqli extends DB_common
      *     'capath'   => '/path/to/ca/dir',
      *     'cipher'   => 'AES',
      * );
-     *
+     * 
      * $options = array(
      *     'ssl' => true,
      * );
-     *
+     * 
      * $db = DB::connect($dsn, $options);
      * if (PEAR::isError($db)) {
      *     die($db->getMessage());

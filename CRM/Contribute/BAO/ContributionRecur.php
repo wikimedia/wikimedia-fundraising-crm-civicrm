@@ -938,10 +938,7 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
    * @return array
    */
   public static function getInactiveStatuses() {
-    // WMF hack - completed temporarily removed - perhaps with
-    // https://gerrit.wikimedia.org/r/#/c/wikimedia/fundraising/crm/+/597402/
-    // we will stop creating false completed & remove this?
-    return ['Cancelled', 'Failed'];
+    return ['Cancelled', 'Failed', 'Completed'];
   }
 
   /**

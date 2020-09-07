@@ -41,7 +41,7 @@ require_once 'DB/common.php';
  * @author     Daniel Convissor <danielc@php.net>
  * @copyright  1997-2007 The PHP Group
  * @license    http://www.php.net/license/3_0.txt  PHP License 3.0
- * @version    Release: 1.9.3
+ * @version    Release: @package_version@
  * @link       http://pear.php.net/package/DB
  */
 class DB_mysql extends DB_common
@@ -251,7 +251,7 @@ class DB_mysql extends DB_common
         if (!$this->connection) {
             if (($err = @mysql_error()) != '') {
                 return $this->raiseError(DB_ERROR_CONNECT_FAILED,
-                                         null, null, null,
+                                         null, null, null, 
                                          $err);
             } else {
                 return $this->raiseError(DB_ERROR_CONNECT_FAILED,
@@ -930,7 +930,7 @@ class DB_mysql extends DB_common
                     return $this->mysqlRaiseError(DB_ERROR_NODBSELECTED);
                 }
             }
-
+            
             /*
              * Probably received a table name.
              * Create a result resource identifier.
