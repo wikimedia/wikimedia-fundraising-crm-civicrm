@@ -535,6 +535,12 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
         continue;
       }
 
+      // Temporary hack for WMF to deal with contact_id being a varchar & indexes being bypassed if not set as a string.
+      if ($table === 'civicrm_mailing_provider_data') {
+        $sqls[] = "UPDATE civicrm_mailing_provider_data SET contact_id = '{$mainId}' WHERE contact_id = '{$otherId}'";
+        continue;
+      }
+
       if ($table === 'civicrm_activity_contact') {
         $sqls[] = "UPDATE IGNORE civicrm_activity_contact SET contact_id = $mainId WHERE contact_id = $otherId";
         $sqls[] = "DELETE FROM civicrm_activity_contact WHERE contact_id = $otherId";
