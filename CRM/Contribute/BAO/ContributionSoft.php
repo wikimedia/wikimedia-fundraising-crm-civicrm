@@ -586,12 +586,10 @@ class CRM_Contribute_BAO_ContributionSoft extends CRM_Contribute_DAO_Contributio
    * @param array $pcp
    * @param \CRM_Contribute_BAO_Contribution $contribution
    *
-   * @return array
-   *
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
    */
-  protected static function processPCP($pcp, $contribution): array {
+  protected static function processPCP($pcp, $contribution) {
     $pcpId = self::getSoftCreditIds($contribution->id, TRUE);
 
     if ($pcp) {
