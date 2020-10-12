@@ -365,9 +365,9 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
    *
    * @param $tables
    *   Tables to create index for in the format:
-   *     array('civicrm_entity_table' => 'entity_id')
+   *     ['civicrm_entity_table' => ['entity_id']]
    *     OR
-   *     array('civicrm_entity_table' => array('entity_id', 'entity_table'))
+   *     array['civicrm_entity_table' => array['entity_id', 'entity_table']]
    *   The latter will create a combined index on the 2 keys (in order).
    *
    *  Side note - when creating combined indexes the one with the most variation
@@ -889,6 +889,9 @@ MODIFY      {$columnName} varchar( $length )
       // Disable i18n rewrite.
       CRM_Core_DAO::executeQuery($query, $params, TRUE, NULL, FALSE, FALSE);
     }
+    // Rebuild triggers and other schema reconciliation if needed.
+    $logging = new CRM_Logging_Schema();
+    $logging->fixSchemaDifferences();
     return TRUE;
   }
 

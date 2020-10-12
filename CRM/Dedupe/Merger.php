@@ -535,12 +535,6 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
         continue;
       }
 
-      // Temporary hack for WMF to deal with contact_id being a varchar & indexes being bypassed if not set as a string.
-      if ($table === 'civicrm_mailing_provider_data') {
-        $sqls[] = "UPDATE civicrm_mailing_provider_data SET contact_id = '{$mainId}' WHERE contact_id = '{$otherId}'";
-        continue;
-      }
-
       if ($table === 'civicrm_activity_contact') {
         $sqls[] = "UPDATE IGNORE civicrm_activity_contact SET contact_id = $mainId WHERE contact_id = $otherId";
         $sqls[] = "DELETE FROM civicrm_activity_contact WHERE contact_id = $otherId";
@@ -1812,9 +1806,6 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
 
       foreach ($locBlocks as $name => $block) {
         $blocksDAO[$name] = ['delete' => [], 'update' => []];
-        if (!is_array($block) || CRM_Utils_System::isNull($block)) {
-          continue;
-        }
         $daoName = 'CRM_Core_DAO_' . $locationBlocks[$name]['label'];
         $changePrimary = FALSE;
         $primaryDAOId = (array_key_exists($name, $primaryBlockIds)) ? array_pop($primaryBlockIds[$name]) : NULL;
@@ -1826,23 +1817,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
           if (!$otherBlockId) {
             continue;
           }
-
-          // For the block which belongs to other-contact, link the location block to main-contact
-          $otherBlockDAO = new $daoName();
-          $otherBlockDAO->contact_id = $mergeHandler->getToKeepID();
-
-          // Get the ID of this block on the 'other' contact, otherwise skip
-          $otherBlockDAO->id = $otherBlockId;
-
-          // Add/update location and type information from the form, if applicable
-          if ($locationBlocks[$name]['hasLocation']) {
-            $locTypeId = $migrationInfo['location_blocks'][$name][$blkCount]['locTypeId'] ?? NULL;
-            $otherBlockDAO->location_type_id = $locTypeId;
-          }
-          if ($locationBlocks[$name]['hasType']) {
-            $typeTypeId = $migrationInfo['location_blocks'][$name][$blkCount]['typeTypeId'] ?? NULL;
-            $otherBlockDAO->{$locationBlocks[$name]['hasType']} = $typeTypeId;
-          }
+          $otherBlockDAO = $mergeHandler->copyDataToNewBlockDAO($otherBlockId, $name, $blkCount);
 
           // If we're deliberately setting this as primary then add the flag
           // and remove it from the current primary location (if there is one).
@@ -1851,7 +1826,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
           if (!$changePrimary && $set_primary == "1") {
             $otherBlockDAO->is_primary = 1;
             if ($primaryDAOId) {
-              $removePrimaryDAO = new $daoName();
+              $removePrimaryDAO = $mergeHandler->getDAOForLocationEntity($name);
               $removePrimaryDAO->id = $primaryDAOId;
               $removePrimaryDAO->is_primary = 0;
               $blocksDAO[$name]['update'][$primaryDAOId] = $removePrimaryDAO;
@@ -1870,7 +1845,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
 
           // overwrite - need to delete block which belongs to main-contact.
           if (!empty($mainBlockId) && $values['is_replace']) {
-            $deleteDAO = new $daoName();
+            $deleteDAO = $mergeHandler->getDAOForLocationEntity($name);
             $deleteDAO->id = $mainBlockId;
             $deleteDAO->find(TRUE);
 

@@ -20,6 +20,7 @@
           // For paths like /create/Contact, return the stashed savedSearch if present
           savedSearch: function($route, $location, $timeout, crmApi4) {
             var retrievedSearch = savedSearch,
+              getParams,
               params = $route.current.params;
             savedSearch = undefined;
             switch (params.mode) {
@@ -27,23 +28,33 @@
                 return retrievedSearch;
 
               case 'load':
+                // Load savedSearch by `id` (the SavedSearch entity doesn't have `name`)
+                if (params.entity === 'SavedSearch' && /^\d+$/.test(params.name)) {
+                  getParams = {
+                    where: [['id', '=', params.name]]
+                  };
+                }
+                // Load attached entity (e.g. Smart Groups) with a join via saved_search_id
+                else if (params.entity === 'Group' && params.name) {
+                  getParams = {
+                    select: ['id', 'title', 'saved_search_id', 'saved_search.*'],
+                    where: [['name', '=', params.name]]
+                  };
+                }
                 // In theory savedSearches could be attached to something other than groups, but for now that's not supported
-                if (params.entity !== 'Group' || !params.name) {
+                else {
                   throw 'Failed to load ' + params.entity;
                 }
-                return crmApi4(params.entity, 'get', {
-                  select: ['id', 'title', 'saved_search_id', 'saved_search.api_entity', 'saved_search.api_params'],
-                  where: [['name', '=', params.name]]
-                }, 0).then(function(retrieved) {
-                  savedSearch = {
-                    type: params.entity,
-                    id: retrieved.id,
-                    title: retrieved.title,
-                    saved_search_id: retrieved.saved_search_id,
-                    api_params: retrieved['saved_search.api_params']
-                  };
+                return crmApi4(params.entity, 'get', getParams, 0).then(function(retrieved) {
+                  savedSearch = retrieved;
+                  savedSearch.type = params.entity;
+                  if (params.entity !== 'SavedSearch') {
+                    savedSearch.api_entity = retrieved['saved_search.api_entity'];
+                    savedSearch.api_params = retrieved['saved_search.api_params'];
+                    savedSearch.form_values = retrieved['saved_search.form_values'];
+                  }
                   $timeout(function() {
-                    $location.url('/create/' + retrieved['saved_search.api_entity']);
+                    $location.url('/create/' + savedSearch.api_entity);
                   });
                 });
             }
@@ -70,23 +81,21 @@
     .factory('searchMeta', function() {
       function getEntity(entityName) {
         if (entityName) {
-          entityName = entityName === true ? searchEntity : entityName;
           return _.find(CRM.vars.search.schema, {name: entityName});
         }
       }
-      function getField(name) {
-        var dotSplit = name.split('.'),
+      function getField(fieldName, entityName) {
+        var dotSplit = fieldName.split('.'),
           joinEntity = dotSplit.length > 1 ? dotSplit[0] : null,
-          fieldName = _.last(dotSplit).split(':')[0],
-          entityName = searchEntity;
+          name = _.last(dotSplit).split(':')[0];
         // Custom fields contain a dot in their fieldname
         // If 3 segments, the first is the joinEntity and the last 2 are the custom field
         if (dotSplit.length === 3) {
-          fieldName = dotSplit[1] + '.' + fieldName;
+          name = dotSplit[1] + '.' + name;
         }
         // If 2 segments, it's ambiguous whether this is a custom field or joined field. Search the main entity first.
         if (dotSplit.length === 2) {
-          var field = _.find(getEntity(true).fields, {name: dotSplit[0] + '.' + fieldName});
+          var field = _.find(getEntity(entityName).fields, {name: dotSplit[0] + '.' + name});
           if (field) {
             return field;
           }
@@ -94,25 +103,29 @@
         if (joinEntity) {
           entityName = _.find(CRM.vars.search.links[entityName], {alias: joinEntity}).entity;
         }
-        return _.find(getEntity(entityName).fields, {name: fieldName});
+        return _.find(getEntity(entityName).fields, {name: name});
       }
       return {
         getEntity: getEntity,
         getField: getField,
         parseExpr: function(expr) {
-          var result = {},
+          var result = {fn: null, modifier: ''},
             fieldName = expr,
             bracketPos = expr.indexOf('(');
           if (bracketPos >= 0) {
-            fieldName = expr.match(/[A-Z( _]*([\w.:]+)/)[1];
+            var parsed = expr.substr(bracketPos).match(/[ ]?([A-Z]+[ ]+)?([\w.:]+)/);
+            fieldName = parsed[2];
             result.fn = _.find(CRM.vars.search.functions, {name: expr.substring(0, bracketPos)});
+            result.modifier = _.trim(parsed[1]);
           }
-          result.field = getField(fieldName);
-          var split = fieldName.split(':'),
-            prefixPos = split[0].lastIndexOf(result.field.name);
-          result.path = split[0];
-          result.prefix = prefixPos > 0 ? result.path.substring(0, prefixPos) : '';
-          result.suffix = !split[1] ? '' : ':' + split[1];
+          result.field = expr ? getField(fieldName, searchEntity) : undefined;
+          if (result.field) {
+            var split = fieldName.split(':'),
+              prefixPos = split[0].lastIndexOf(result.field.name);
+            result.path = split[0];
+            result.prefix = prefixPos > 0 ? result.path.substring(0, prefixPos) : '';
+            result.suffix = !split[1] ? '' : ':' + split[1];
+          }
           return result;
         }
       };

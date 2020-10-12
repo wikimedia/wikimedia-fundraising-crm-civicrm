@@ -18,7 +18,7 @@
       this.page = 1;
       this.params = {};
       // After a search this.results is an object of result arrays keyed by page,
-      // Prior to searching it's an empty string because 1: falsey and 2: doesn't throw an error if you try to access undefined properties
+      // Initially this.results is an empty string because 1: it's falsey (unlike an empty object) and 2: it doesn't throw an error if you try to access undefined properties (unlike null)
       this.results = '';
       this.rowCount = false;
       // Have the filters (WHERE, HAVING, GROUP BY, JOIN) changed?
@@ -27,7 +27,7 @@
 
       $scope.controls = {};
       $scope.joinTypes = [{k: false, v: ts('Optional')}, {k: true, v: ts('Required')}];
-      $scope.entities = formatForSelect2(CRM.vars.search.schema, 'name', 'title', ['description', 'icon']);
+      $scope.entities = formatForSelect2(CRM.vars.search.schema, 'name', 'titlePlural', ['description', 'icon']);
       this.perm = {
         editGroups: CRM.checkPerm('edit groups')
       };
@@ -44,7 +44,7 @@
           if (entity) {
             joinEntities.push({
               id: link.entity + ' AS ' + link.alias,
-              text: entity.title,
+              text: entity.titlePlural,
               description: '(' + link.alias + ')',
               icon: entity.icon
             });
@@ -343,12 +343,12 @@
 
       // Is a column eligible to use an aggregate function?
       this.canAggregate = function(col) {
+        var info = searchMeta.parseExpr(col);
         // If the column is used for a groupBy, no
-        if (ctrl.params.groupBy.indexOf(col) > -1) {
+        if (ctrl.params.groupBy.indexOf(info.path) > -1) {
           return false;
         }
         // If the entity this column belongs to is being grouped by id, then also no
-        var info = searchMeta.parseExpr(col);
         return ctrl.params.groupBy.indexOf(info.prefix + 'id') < 0;
       };
 
@@ -356,11 +356,7 @@
         var info = searchMeta.parseExpr(col),
           key = info.fn ? (info.fn.name + ':' + info.path + info.suffix) : col,
           value = row[key];
-        // Handle grouped results
-        if (info.fn && info.fn.name === 'GROUP_CONCAT' && value) {
-          return formatGroupConcatValues(info, value);
-        }
-        else if (info.fn && info.fn.name === 'COUNT') {
+        if (info.fn && info.fn.name === 'COUNT') {
           return value;
         }
         return formatFieldValue(info.field, value);
@@ -368,36 +364,21 @@
 
       function formatFieldValue(field, value) {
         var type = field.data_type;
+        if (_.isArray(value)) {
+          return _.map(value, function(val) {
+            return formatFieldValue(field, val);
+          }).join(', ');
+        }
         if (value && (type === 'Date' || type === 'Timestamp') && /^\d{4}-\d{2}-\d{2}/.test(value)) {
           return CRM.utils.formatDate(value, null, type === 'Timestamp');
         }
         else if (type === 'Boolean' && typeof value === 'boolean') {
           return value ? ts('Yes') : ts('No');
         }
-        else if (type === 'Money') {
+        else if (type === 'Money' && typeof value === 'number') {
           return CRM.formatMoney(value);
         }
-        if (_.isArray(value)) {
-          return value.join(', ');
-        }
         return value;
-      }
-
-      function formatGroupConcatValues(info, values) {
-        return _.transform(values.split(','), function(result, val) {
-          if (info.field.options && !info.suffix) {
-            result.push(_.result(getOption(info.field, val), 'label'));
-          } else {
-            result.push(formatFieldValue(info.field, val));
-          }
-        }).join(', ');
-      }
-
-      function getOption(field, value) {
-        return _.find(field.options, function(option) {
-          // Type coersion is intentional
-          return option.id == value;
-        });
       }
 
       $scope.fieldsForGroupBy = function() {
@@ -425,7 +406,9 @@
       };
 
       function getDefaultSelect() {
-        return _.filter(['id', 'display_name', 'label', 'title', 'location_type_id:label'], searchMeta.getField);
+        return _.filter(['id', 'display_name', 'label', 'title', 'location_type_id:label'], function(field) {
+          return !!searchMeta.getField(field, ctrl.entity);
+        });
       }
 
       function getAllFields(suffix, disabledIf) {
@@ -445,7 +428,7 @@
 
         var mainEntity = searchMeta.getEntity(ctrl.entity),
           result = [{
-            text: mainEntity.title,
+            text: mainEntity.titlePlural,
             icon: mainEntity.icon,
             children: formatFields(ctrl.entity, '')
           }];
@@ -453,7 +436,7 @@
           var joinName = join[0].split(' AS '),
             joinEntity = searchMeta.getEntity(joinName[0]);
           result.push({
-            text: joinEntity.title + ' (' + joinName[1] + ')',
+            text: joinEntity.titlePlural + ' (' + joinName[1] + ')',
             icon: joinEntity.icon,
             children: formatFields(joinEntity.name, joinName[1] + '.')
           });
@@ -570,21 +553,19 @@
       };
 
       $scope.saveGroup = function() {
-        var selectField = ctrl.entity === 'Contact' ? 'id' : 'contact_id';
-        if (ctrl.entity !== 'Contact' && !searchMeta.getField('contact_id')) {
-          CRM.alert(ts('Cannot create smart group from %1.', {1: searchMeta.getEntity(true).title}), ts('Missing contact_id'), 'error', {expires: 5000});
-          return;
-        }
         var model = {
           title: '',
           description: '',
           visibility: 'User and User Admin Only',
           group_type: [],
           id: ctrl.load ? ctrl.load.id : null,
-          entity: ctrl.entity,
-          params: angular.extend({}, ctrl.params, {version: 4})
+          api_entity: ctrl.entity,
+          api_params: _.cloneDeep(angular.extend({}, ctrl.params, {version: 4}))
         };
-        delete model.params.orderBy;
+        delete model.api_params.orderBy;
+        if (ctrl.load && ctrl.load.api_params && ctrl.load.api_params.select && ctrl.load.api_params.select[0]) {
+          model.api_params.select.unshift(ctrl.load.api_params.select[0]);
+        }
         var options = CRM.utils.adjustDialogDefaults({
           autoOpen: false,
           title: ts('Save smart group')
