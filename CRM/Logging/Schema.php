@@ -751,7 +751,8 @@ WHERE  table_schema IN ('{$this->db}', '{$civiDB}')";
     $oldCols = array_diff(array_keys($logTableSpecs), array_keys($civiTableSpecs));
     foreach ($oldCols as $col) {
       if (!in_array($col, ['log_date', 'log_conn_id', 'log_user_id', 'log_action']) &&
-        $logTableSpecs[$col]['IS_NULLABLE'] == 'NO'
+        $logTableSpecs[$col]['IS_NULLABLE'] === 'NO'
+        && $logTableSpecs[$col]['EXTRA'] !== 'auto_increment'
       ) {
         // if its a column present only in log table, not among those used by log tables for special purpose, and not-null
         $diff['OBSOLETE'][] = $col;
