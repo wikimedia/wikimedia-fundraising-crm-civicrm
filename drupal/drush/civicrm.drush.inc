@@ -8,7 +8,8 @@
  | and copyright information, see https://civicrm.org/licensing       |
  +--------------------------------------------------------------------+
  */
-
+require_once __DIR__ .'/../../api/v3/utils.php';
+require_once __DIR__ .'/../../api/Exception.php';
 /**
  *
  * @package CRM
