@@ -670,6 +670,9 @@ class CRM_Contribute_BAO_Query extends CRM_Core_BAO_Query {
     }
     if (in_array(self::$_contribOrSoftCredit,
       ["only_scredits", "both_related", "both", "only_contribs_unsoftcredited"])) {
+      throw new CRM_Core_Exception('Unfortunately this search crashes the wmf database :-(.
+      Please log a phab explaining what you are trying to find and fr-tech will try to help you
+      find it');
       if (!isset(\Civi::$statics[__CLASS__]['soft_credit_temp_table_name'])) {
         // build a temp table which is union of contributions and soft credits
         // note: group-by in first part ensures uniqueness in counts
