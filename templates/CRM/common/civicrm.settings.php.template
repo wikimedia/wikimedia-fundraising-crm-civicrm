@@ -76,6 +76,16 @@ if (!defined('CIVICRM_UF_DSN') && CIVICRM_UF !== 'UnitTests') {
   define( 'CIVICRM_UF_DSN'           , 'mysql://%%CMSdbUser%%:%%CMSdbPass%%@%%CMSdbHost%%/%%CMSdbName%%?new_link=true');
 }
 
+/**
+ * Excluding folders can speed up cache flush.
+ *
+ * See https://docs.civicrm.org/sysadmin/en/latest/setup/optimizations/#exclude-dirs-that-do-not-need-to-be-scanned
+ * and also discussion on including vendor (excluded) in https://lab.civicrm.org/dev/core/-/issues/2031
+ */
+if (!defined('CIVICRM_EXCLUDE_DIRS_PATTERN')) {
+  define('CIVICRM_EXCLUDE_DIRS_PATTERN', '@/(\.|node_modules|js/|css/|bower_components|packages/|sites/default/files/private)@');
+}
+
 // %%extraSettings%%
 
 /**
