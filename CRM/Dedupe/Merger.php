@@ -233,8 +233,7 @@ class CRM_Dedupe_Merger {
 
     CRM_Utils_Hook::merge('cidRefs', $contactReferences);
     if ($contactReferences !== $coreReferences) {
-      Civi::log()
-        ->warning("Deprecated hook ::merge in context of 'cidRefs. Use entityTypes instead.", ['civi.tag' => 'deprecated']);
+      CRM_Core_Error::deprecatedWarning("Deprecated hook ::merge in context of 'cidRefs. Use entityTypes instead.");
     }
     \Civi::$statics[__CLASS__]['contact_references'] = $contactReferences;
     return \Civi::$statics[__CLASS__]['contact_references'];
@@ -532,12 +531,6 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
           $className::$fnName($mainId, $otherId, $sqls, $tables, $tableOperations);
         }
         // Skip normal processing
-        continue;
-      }
-
-      // Temporary hack for WMF to deal with contact_id being a varchar & indexes being bypassed if not set as a string.
-      if ($table === 'civicrm_mailing_provider_data') {
-        $sqls[] = "UPDATE civicrm_mailing_provider_data SET contact_id = '{$mainId}' WHERE contact_id = '{$otherId}'";
         continue;
       }
 
@@ -1257,7 +1250,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
       $relTables[$name]['other_url'] = str_replace('$cid', $otherId, $relTables[$name]['url']);
       if ($name === 'rel_table_users') {
         // @todo - this user url stuff is only needed for the form layer - move to CRM_Contact_Form_Merge
-        $relTables[$name]['main_url'] = str_replace('%ufid', CRM_Core_BAO_UFMatch::getUFId($otherId), $relTables[$name]['url']);
+        $relTables[$name]['main_url'] = str_replace('%ufid', CRM_Core_BAO_UFMatch::getUFId($mainId), $relTables[$name]['url']);
         $relTables[$name]['other_url'] = str_replace('%ufid', CRM_Core_BAO_UFMatch::getUFId($otherId), $relTables[$name]['url']);
       }
       if ($name === 'rel_table_memberships') {

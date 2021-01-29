@@ -99,6 +99,7 @@
       <td class="label">{$form.weight.label}</td>
       <td>{$form.weight.html|crmAddClass:two}
         {if $action neq 4}
+          <br />
           <span class="description">{ts}Weight controls the order in which fields are displayed in a group. Enter a positive or negative integer - lower numbers are displayed ahead of higher numbers.{/ts}</span>
         {/if}
       </td>
@@ -119,6 +120,7 @@
       <td class="label">{$form.help_post.label} {if $action == 2}{include file='CRM/Core/I18n/Dialog.tpl' table='civicrm_custom_field' field='help_post' id=$id}{/if}</td>
       <td class="html-adjust">{$form.help_post.html|crmAddClass:huge}
         {if $action neq 4}
+          <br />
           <span class="description">{ts}Explanatory text displayed on back-end forms. Pre help is displayed inline on the form (above the field). Post help is displayed in a pop-up - users click the help balloon to view help text.{/ts}</span>
         {/if}
       </td>
@@ -150,7 +152,10 @@
     <tr class="crm-custom-field-form-block-is_view">
       <td class="label">{$form.is_view.label}</td>
       <td class="html-adjust">{$form.is_view.html}
-        <span class="description">{ts}Is this field set by PHP code (via a custom hook). This field will not be updated by CiviCRM.{/ts}</span>
+        {if $action neq 4}
+          <br />
+          <span class="description">{ts}Is this field set by PHP code (via a custom hook). This field will not be updated by CiviCRM.{/ts}</span>
+        {/if}
       </td>
     </tr>
   </table>
@@ -277,7 +282,7 @@
 
       $("#noteColumns, #noteRows, #noteLength", $form).toggle(dataType === 'Memo');
 
-      $(".crm-custom-field-form-block-serialize", $form).toggle(htmlType === 'Select');
+      $(".crm-custom-field-form-block-serialize", $form).toggle(htmlType === 'Select' || htmlType === 'Autocomplete-Select');
     }
 
     function makeDefaultValueField(dataType) {
@@ -308,7 +313,7 @@
     $form.submit(function() {
       var htmlType = $('#html_type', $form).val(),
         serialize = $("#serialize", $form).is(':checked'),
-        htmlTypeLabel = (serialize && htmlType === 'Select') ? ts('Multi-Select') : _.find(htmlTypes, {key: htmlType}).value;
+        htmlTypeLabel = (serialize && _.includes(['Select', 'Autocomplete-Select'], htmlType)) ? ts('Multi-Select') : _.find(htmlTypes, {key: htmlType}).value;
       if (originalHtmlType && (originalHtmlType !== htmlType || originalSerialize !== serialize)) {
         var origHtmlTypeLabel = (originalSerialize && originalHtmlType === 'Select') ? ts('Multi-Select') : _.find(htmlTypes, {key: originalHtmlType}).value;
         if (originalSerialize && !serialize && existingMultiValueCount) {

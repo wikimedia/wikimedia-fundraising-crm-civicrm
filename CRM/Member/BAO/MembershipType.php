@@ -324,7 +324,7 @@ class CRM_Member_BAO_MembershipType extends CRM_Member_DAO_MembershipType {
       }
     }
     if (!$joinDate) {
-      $joinDate = date('Y-m-d');
+      $joinDate = CRM_Utils_Time::date('Y-m-d');
     }
     $actualStartDate = $joinDate;
     if ($startDate) {
@@ -531,7 +531,7 @@ class CRM_Member_BAO_MembershipType extends CRM_Member_DAO_MembershipType {
       // CRM=7297 Membership Upsell: we need to handle null end_date in case we are switching
       // from a lifetime to a different membership type
       if (is_null($membershipDetails->end_date)) {
-        $date = date('Y-m-d');
+        $date = CRM_Utils_Time::date('Y-m-d');
       }
       else {
         $date = $membershipDetails->end_date;
@@ -581,14 +581,14 @@ class CRM_Member_BAO_MembershipType extends CRM_Member_DAO_MembershipType {
           $year
         ));
       }
-      $today = date('Y-m-d');
+      $today = CRM_Utils_Time::date('Y-m-d');
       $membershipDates['today'] = CRM_Utils_Date::customFormat($today, '%Y%m%d');
       $membershipDates['start_date'] = CRM_Utils_Date::customFormat($startDate, '%Y%m%d');
       $membershipDates['end_date'] = CRM_Utils_Date::customFormat($endDate, '%Y%m%d');
       $membershipDates['log_start_date'] = CRM_Utils_Date::customFormat($logStartDate, '%Y%m%d');
     }
     else {
-      $today = date('Y-m-d');
+      $today = CRM_Utils_Time::date('Y-m-d');
       if ($changeToday) {
         $today = CRM_Utils_Date::processDate($changeToday, NULL, FALSE, 'Y-m-d');
       }
@@ -841,6 +841,9 @@ class CRM_Member_BAO_MembershipType extends CRM_Member_DAO_MembershipType {
         if ($types[$id]['tax_rate'] !== 0.0) {
           $multiplier += ($types[$id]['tax_rate'] / 100);
         }
+        if (!array_key_exists('minimum_fee', $types[$id])) {
+          $types[$id]['minimum_fee'] = 0;
+        }
         $types[$id]['minimum_fee_with_tax'] = (float) $types[$id]['minimum_fee'] * $multiplier;
       }
       Civi::cache('metadata')->set($cacheString, $types);
@@ -858,23 +861,6 @@ class CRM_Member_BAO_MembershipType extends CRM_Member_DAO_MembershipType {
    */
   public static function getMembershipType($id) {
     return self::getAllMembershipTypes()[$id];
-  }
-
-  /**
-   * Get an array of all membership types the contact is permitted to access.
-   *
-   * @throws \CiviCRM_API3_Exception
-   */
-  public static function getPermissionedMembershipTypes() {
-    $types = self::getAllMembershipTypes();
-    $financialTypes = NULL;
-    $financialTypes = CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes, CRM_Core_Action::ADD);
-    foreach ($types as $id => $type) {
-      if (!isset($financialTypes[$type['financial_type_id']])) {
-        unset($types[$id]);
-      }
-    }
-    return $types;
   }
 
 }

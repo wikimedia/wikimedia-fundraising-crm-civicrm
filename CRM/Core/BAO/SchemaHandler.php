@@ -85,7 +85,7 @@ class CRM_Core_BAO_SchemaHandler {
         $sql .= self::buildPrimaryKeySQL($field, $separator, $prefix);
       }
       foreach ($params['fields'] as $field) {
-        $sql .= self::buildSearchIndexSQL($field, $separator, $prefix);
+        $sql .= self::buildSearchIndexSQL($field, $separator);
       }
       if (isset($params['indexes'])) {
         foreach ($params['indexes'] as $index) {
@@ -155,13 +155,13 @@ class CRM_Core_BAO_SchemaHandler {
 
   /**
    * @param array $params
-   * @param $separator
-   * @param $prefix
-   * @param bool $indexExist
+   * @param string $separator
+   * @param string $prefix
+   * @param string|NULL $existingIndex
    *
    * @return NULL|string
    */
-  public static function buildSearchIndexSQL($params, $separator, $prefix, $indexExist = FALSE) {
+  public static function buildSearchIndexSQL($params, $separator, $prefix = '', $existingIndex = NULL) {
     $sql = NULL;
 
     // dont index blob
@@ -169,20 +169,19 @@ class CRM_Core_BAO_SchemaHandler {
       return $sql;
     }
 
-    //create index only for searchable fields during ADD,
-    //create index only if field is become searchable during MODIFY,
-    //drop index only if field is no longer searchable and it does not reference
-    //a forgein key (and indexExist is true)
-    if (!empty($params['searchable']) && !$indexExist) {
+    // Add index if field is searchable if it does not reference a foreign key
+    // (skip indexing FK fields because it would be redundant to have 2 indexes)
+    if (!empty($params['searchable']) && empty($params['fk_table_name']) && substr($existingIndex, 0, 5) !== 'INDEX') {
       $sql .= $separator;
       $sql .= str_repeat(' ', 8);
       $sql .= $prefix;
       $sql .= "INDEX_{$params['name']} ( {$params['name']} )";
     }
-    elseif (empty($params['searchable']) && empty($params['fk_table_name']) && $indexExist) {
+    // Drop search index if field is no longer searchable
+    elseif (empty($params['searchable']) && substr($existingIndex, 0, 5) === 'INDEX') {
       $sql .= $separator;
       $sql .= str_repeat(' ', 8);
-      $sql .= "DROP INDEX INDEX_{$params['name']}";
+      $sql .= "DROP INDEX $existingIndex";
     }
     return $sql;
   }
@@ -260,52 +259,12 @@ ALTER TABLE {$tableName}
       $sql .= $separator;
       $sql .= str_repeat(' ', 8);
       $sql .= $prefix;
-      $fkName = "{$tableName}_{$params['name']}";
-      if (strlen($fkName) >= 48) {
-        $fkName = substr($fkName, 0, 32) . "_" . substr(md5($fkName), 0, 16);
-      }
+      $fkName = $params['fkName'] ?? self::getIndexName($tableName, $params['name']);
 
       $sql .= "CONSTRAINT FK_$fkName FOREIGN KEY ( `{$params['name']}` ) REFERENCES {$params['fk_table_name']} ( {$params['fk_field_name']} ) ";
-      $sql .= CRM_Utils_Array::value('fk_attributes', $params);
+      $sql .= $params['fk_attributes'] ?? '';
     }
     return $sql;
-  }
-
-  /**
-   * @deprecated
-   *
-   * @param array $params
-   * @param bool $indexExist
-   * @param bool $triggerRebuild
-   *
-   * @return bool
-   */
-  public static function alterFieldSQL($params, $indexExist = FALSE, $triggerRebuild = TRUE) {
-    CRM_Core_Error::deprecatedFunctionWarning('function no longer in use / supported');
-    // lets suppress the required flag, since that can cause sql issue
-    $params['required'] = FALSE;
-
-    $sql = self::buildFieldChangeSql($params, $indexExist);
-
-    // CRM-7007: do not i18n-rewrite this query
-    CRM_Core_DAO::executeQuery($sql, [], TRUE, NULL, FALSE, FALSE);
-
-    $config = CRM_Core_Config::singleton();
-    if ($config->logging) {
-      // CRM-16717 not sure why this was originally limited to add.
-      // For example custom tables can have field length changes - which need to flow through to logging.
-      // Are there any modifies we DON'T was to call this function for (& shouldn't it be clever enough to cope?)
-      if ($params['operation'] == 'add' || $params['operation'] == 'modify') {
-        $logging = new CRM_Logging_Schema();
-        $logging->fixSchemaDifferencesFor($params['table_name'], [trim(strtoupper($params['operation'])) => [$params['name']]]);
-      }
-    }
-
-    if ($triggerRebuild) {
-      Civi::service('sql_triggers')->rebuild($params['table_name'], TRUE);
-    }
-
-    return TRUE;
   }
 
   /**
@@ -432,6 +391,8 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
           }
         }
 
+        $indexType = $createIndexPrefix === 'UI' ? 'UNIQUE' : '';
+
         // the index doesn't exist, so create it
         // if we're multilingual and the field is internationalised, do it for every locale
         // @todo remove is_array check & add multilingual support for combined indexes and add a test.
@@ -439,11 +400,11 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
         // entity_id + entity_table which are not multilingual.
         if (!is_array($field) && !CRM_Utils_System::isNull($locales) and isset($columns[$table][$fieldName])) {
           foreach ($locales as $locale) {
-            $queries[] = "CREATE INDEX {$createIndexPrefix}_{$fieldName}{$lengthName}_{$locale} ON {$table} ({$fieldName}_{$locale}{$lengthSize})";
+            $queries[] = "CREATE $indexType INDEX {$createIndexPrefix}_{$fieldName}{$lengthName}_{$locale} ON {$table} ({$fieldName}_{$locale}{$lengthSize})";
           }
         }
         else {
-          $queries[] = "CREATE INDEX {$createIndexPrefix}_{$fieldName}{$lengthName} ON {$table} (" . implode(',', (array) $field) . "{$lengthSize})";
+          $queries[] = "CREATE $indexType INDEX {$createIndexPrefix}_{$fieldName}{$lengthName} ON {$table} (" . implode(',', (array) $field) . "{$lengthSize})";
         }
       }
     }
@@ -739,14 +700,13 @@ MODIFY      {$columnName} varchar( $length )
    * Build the sql to alter the field.
    *
    * @param array $params
-   * @param bool $indexExist
    *
    * @return string
    */
-  public static function buildFieldChangeSql($params, $indexExist) {
+  public static function buildFieldChangeSql($params) {
     $sql = str_repeat(' ', 8);
     $sql .= "ALTER TABLE {$params['table_name']}";
-    return $sql . self::getFieldAlterSQL($params, $indexExist);
+    return $sql . self::getFieldAlterSQL($params);
   }
 
   /**
@@ -756,11 +716,10 @@ MODIFY      {$columnName} varchar( $length )
    * by individual field we can do one or many.
    *
    * @param array $params
-   * @param bool $indexExist
    *
    * @return string
    */
-  public static function getFieldAlterSQL($params, $indexExist) {
+  public static function getFieldAlterSQL($params) {
     $sql = '';
     switch ($params['operation']) {
       case 'add':
@@ -774,9 +733,22 @@ MODIFY      {$columnName} varchar( $length )
 
       case 'modify':
         $separator = "\n";
+        $existingIndex = NULL;
+        $dao = CRM_Core_DAO::executeQuery("SHOW INDEX FROM `{$params['table_name']}` WHERE Column_name = '{$params['name']}'");
+        if ($dao->fetch()) {
+          $existingIndex = $dao->Key_name;
+        }
+        $fkSql = self::buildForeignKeySQL($params, ",\n", "ADD ", $params['table_name']);
+        if (substr($existingIndex, 0, 2) === 'FK' && !$fkSql) {
+          $sql .= "$separator DROP FOREIGN KEY {$existingIndex},\nDROP INDEX {$existingIndex}";
+          $separator = ",\n";
+        }
         $sql .= self::buildFieldSQL($params, $separator, "MODIFY ");
         $separator = ",\n";
-        $sql .= self::buildSearchIndexSQL($params, $separator, "ADD INDEX ", $indexExist);
+        $sql .= self::buildSearchIndexSQL($params, $separator, "ADD INDEX ", $existingIndex);
+        if (!$existingIndex && $fkSql) {
+          $sql .= $fkSql;
+        }
         break;
 
       case 'delete':
@@ -790,6 +762,21 @@ MODIFY      {$columnName} varchar( $length )
         break;
     }
     return $sql;
+  }
+
+  /**
+   * Turns tableName + columnName into a safe & predictable index name
+   *
+   * @param $tableName
+   * @param $columnName
+   * @return string
+   */
+  public static function getIndexName($tableName, $columnName) {
+    $indexName = "{$tableName}_{$columnName}";
+    if (strlen($indexName) >= 48) {
+      $indexName = substr($indexName, 0, 32) . "_" . substr(md5($indexName), 0, 16);
+    }
+    return $indexName;
   }
 
   /**

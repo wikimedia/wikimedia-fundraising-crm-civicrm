@@ -57,7 +57,7 @@
     $scope.controls = {};
     $scope.langs = ['php', 'js', 'ang', 'cli'];
     $scope.joinTypes = [{k: false, v: 'FALSE (LEFT JOIN)'}, {k: true, v: 'TRUE (INNER JOIN)'}];
-    $scope.bridgeEntities = _.filter(schema, {type: 'BridgeEntity'});
+    $scope.bridgeEntities = _.filter(schema, function(entity) {return _.includes(entity.type, 'EntityBridge');});
     $scope.code = {
       php: [
         {name: 'oop', label: ts('OOP Style'), code: ''},
@@ -102,7 +102,7 @@
       if (lastLetter === 's' || lastLetter === 'x' || lastTwo === 'ch') {
         return str + 'es';
       }
-      if (lastLetter === 'y' && lastTwo !== 'ey') {
+      if (lastLetter === 'y' && !_.includes(['ay', 'ey', 'iy', 'oy', 'uy'], lastTwo)) {
         return str.slice(0, -1) + 'ies';
       }
       return str + 's';
@@ -873,6 +873,7 @@
       setHelp($scope.entity, {
         description: entityInfo.description,
         comment: entityInfo.comment,
+        type: entityInfo.type,
         see: entityInfo.see
       });
     }

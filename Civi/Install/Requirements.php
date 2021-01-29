@@ -133,7 +133,7 @@ class Requirements {
       $host = $db_config['server'];
     }
     if (empty($db_config['ssl_params'])) {
-      $conn = @mysqli_connect($host, $db_config['username'], $db_config['password'], $db_config['database'], !empty($db_config['port']) ? $db_config['port'] : NULL);
+      $conn = @mysqli_connect($host, $db_config['username'], $db_config['password'], $db_config['database'], !empty($db_config['port']) ? $db_config['port'] : NULL, $db_config['socket'] ?? NULL);
     }
     else {
       $conn = NULL;
@@ -146,7 +146,7 @@ class Requirements {
         $db_config['ssl_params']['capath'] ?? NULL,
         $db_config['ssl_params']['cipher'] ?? NULL
       );
-      if (@mysqli_real_connect($init, $host, $db_config['username'], $db_config['password'], $db_config['database'], (!empty($db_config['port']) ? $db_config['port'] : NULL), NULL, MYSQLI_CLIENT_SSL)) {
+      if (@mysqli_real_connect($init, $host, $db_config['username'], $db_config['password'], $db_config['database'], (!empty($db_config['port']) ? $db_config['port'] : NULL), $db_config['socket'] ?? NULL, MYSQLI_CLIENT_SSL)) {
         $conn = $init;
       }
     }
@@ -173,7 +173,7 @@ class Requirements {
     if ($mem < $min && $mem > 0) {
       $results['severity'] = $this::REQUIREMENT_ERROR;
     }
-    elseif ($mem < $recommended && $mem != 0) {
+    elseif ($mem < $recommended && $mem != 0 && $mem != -1) {
       $results['severity'] = $this::REQUIREMENT_WARNING;
     }
     elseif ($mem == 0) {

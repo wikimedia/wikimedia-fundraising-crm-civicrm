@@ -249,6 +249,11 @@ if (!CRM.vars) CRM.vars = {};
         opts = placeholder || placeholder === '' ? '' : '[value!=""]';
       $elect.find('option' + opts).remove();
       var newOptions = CRM.utils.renderOptions(options, val);
+      if (options.length == 0) {
+        $elect.removeClass('required');
+      } else if ($elect.hasClass('crm-field-required') && !$elect.hasClass('required')) {
+        $elect.addClass('required');
+      }
       if (typeof placeholder === 'string') {
         if ($elect.is('[multiple]')) {
           select.attr('placeholder', placeholder);
@@ -1043,6 +1048,8 @@ if (!CRM.vars) CRM.vars = {};
   };
 
   $.fn.crmtooltip = function () {
+    var TOOLTIP_HIDE_DELAY = 300;
+
     $(document)
       .on('mouseover', 'a.crm-summary-link:not(.crm-processed)', function (e) {
         $(this).addClass('crm-processed crm-tooltip-active');
@@ -1057,8 +1064,13 @@ if (!CRM.vars) CRM.vars = {};
             .load(this.href);
         }
       })
-      .on('mouseout', 'a.crm-summary-link', function () {
-        $(this).removeClass('crm-processed crm-tooltip-active crm-tooltip-down');
+      .on('mouseleave', 'a.crm-summary-link', function () {
+        var tooltipLink = $(this);
+        setTimeout(function () {
+          if (tooltipLink.filter(':hover').length === 0) {
+            tooltipLink.removeClass('crm-processed crm-tooltip-active crm-tooltip-down');
+          }
+        }, TOOLTIP_HIDE_DELAY);
       })
       .on('click', 'a.crm-summary-link', false);
   };
@@ -1300,10 +1312,10 @@ if (!CRM.vars) CRM.vars = {};
 
     var extra = {
       expires: 0
-    };
+    }, label;
     if ($(this).length) {
       if (title === '') {
-        var label = $('label[for="' + $(this).attr('name') + '"], label[for="' + $(this).attr('id') + '"]').not('[generated=true]');
+        label = $('label[for="' + $(this).attr('name') + '"], label[for="' + $(this).attr('id') + '"]').not('[generated=true]');
         if (label.length) {
           label.addClass('crm-error');
           var $label = label.clone();
@@ -1323,7 +1335,9 @@ if (!CRM.vars) CRM.vars = {};
         ele.one('change', function () {
           if (msg && msg.close) msg.close();
           ele.removeClass('crm-error');
-          label.removeClass('crm-error');
+          if (label) {
+            label.removeClass('crm-error');
+          }
         });
       }, 1000);
     }

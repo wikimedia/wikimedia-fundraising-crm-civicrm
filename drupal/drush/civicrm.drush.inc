@@ -8,8 +8,7 @@
  | and copyright information, see https://civicrm.org/licensing       |
  +--------------------------------------------------------------------+
  */
-require_once __DIR__ .'/../../api/v3/utils.php';
-require_once __DIR__ .'/../../api/Exception.php';
+
 /**
  *
  * @package CRM
@@ -488,7 +487,8 @@ function _civicrm_generate_settings_file($dbuser, $dbpass, $dbhost, $dbname, $mo
     'CMSdbPass' => $db_spec['password'],
     'CMSdbHost' => $db_spec['host'],
     'CMSdbName' => $db_spec['database'],
-    'siteKey' => md5(uniqid('', TRUE) . $baseUrl),
+    'siteKey' => preg_replace(';[^a-zA-Z0-9];', '', base64_encode(random_bytes(32))),
+    'credKeys' => 'aes-cbc:hkdf-sha256:' . preg_replace(';[^a-zA-Z0-9];', '', base64_encode(random_bytes(32))),
   ];
   $str = file_get_contents($settingsTplFile);
   foreach ($params as $key => $value) {
@@ -1507,14 +1507,8 @@ function _civicrm_init($fail = TRUE, $load_config = TRUE) {
     return drush_set_error('CIVICRM_INIT_CODEBASE_NOT_FOUND', dt('Could not locate CiviCRM codebase. Make sure CiviCRM settings file has correct information.'));
   }
 
-  // Autoload was added in 4.2
-  require_once 'CRM/Utils/System.php';
-  $codeVer = CRM_Utils_System::version();
-
-  if (substr($codeVer, 0, 3) >= '4.2') {
-    require_once $civicrm_root . '/CRM/Core/ClassLoader.php';
-    CRM_Core_ClassLoader::singleton()->register();
-  }
+  require_once $civicrm_root . '/CRM/Core/ClassLoader.php';
+  CRM_Core_ClassLoader::singleton()->register();
 
   if ($load_config) {
     require_once 'CRM/Core/Config.php';
