@@ -1555,6 +1555,7 @@ LIKE %1
 
     if ($trapException) {
       CRM_Core_Error::deprecatedFunctionWarning('calling functions should handle exceptions');
+      CRM_Core_Error::backtrace($queryStr, TRUE);
       $errorScope = CRM_Core_TemporaryErrorScope::ignoreException();
     }
 
