@@ -2,17 +2,21 @@
   "use strict";
 
   angular.module('crmSearchActions').controller('crmSearchActionUpdate', function ($scope, $timeout, crmApi4, dialogService) {
-    var ts = $scope.ts = CRM.ts(),
+    var ts = $scope.ts = CRM.ts('org.civicrm.search'),
       model = $scope.model,
-      ctrl = $scope.$ctrl = this;
+      ctrl = this;
 
     this.entityTitle = model.ids.length === 1 ? model.entityInfo.title : model.entityInfo.title_plural;
     this.values = [];
     this.add = null;
     this.fields = null;
 
-    crmApi4(model.entity, 'getFields', {action: 'update', loadOptions: ['id', 'name', 'label', 'description', 'color', 'icon']})
-      .then(function(fields) {
+    crmApi4(model.entity, 'getFields', {
+      action: 'update',
+      select: ['name', 'label', 'description', 'data_type', 'serialize', 'options'],
+      loadOptions: ['id', 'name', 'label', 'description', 'color', 'icon'],
+      where: [["readonly", "=", false]],
+    }).then(function(fields) {
         ctrl.fields = fields;
       });
 
@@ -58,9 +62,7 @@
         if (fieldInUse(item.name)) {
           formatted.disabled = true;
         }
-        if (item.name !== 'id') {
-          result.push(formatted);
-        }
+        result.push(formatted);
       }, []);
       return {results: results};
     };

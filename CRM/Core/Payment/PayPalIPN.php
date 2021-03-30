@@ -225,7 +225,7 @@ class CRM_Core_Payment_PayPalIPN extends CRM_Core_Payment_BaseIPN {
       return;
     }
 
-    CRM_Contribute_BAO_Contribution::completeOrder($input, $ids, $contribution);
+    CRM_Contribute_BAO_Contribution::completeOrder($input, $ids, $contribution->id ?? NULL);
   }
 
   /**
@@ -348,9 +348,9 @@ class CRM_Core_Payment_PayPalIPN extends CRM_Core_Payment_BaseIPN {
         $this->recur($input, $ids, $contributionRecur, $contribution, $first);
         if ($this->getFirstOrLastInSeriesStatus()) {
           //send recurring Notification email for user
-          CRM_Contribute_BAO_ContributionPage::recurringNotify($this->getFirstOrLastInSeriesStatus(),
-            $ids['contact'],
-            $ids['contributionPage'],
+          CRM_Contribute_BAO_ContributionPage::recurringNotify(
+            $ids['contribution'],
+            $this->getFirstOrLastInSeriesStatus(),
             $contributionRecur,
             !empty($ids['membership'])
           );

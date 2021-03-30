@@ -2023,16 +2023,19 @@ abstract class CRM_Utils_Hook {
    * This hook is called when exporting Civi's permission to the CMS. Use this hook to modify
    * the array of system permissions for CiviCRM.
    *
+   * @param array $newPermissions
+   *   Array to be filled with permissions.
    * @param array $permissions
-   *   Array of permissions. See CRM_Core_Permission::getCorePermissions() for
-   *   the format of this array.
+   *   Already calculated permissions. These can be altered. Notably an
+   *   extension might want to add it's permissions to 'implied' or to
+   *   remove some permissions.
    *
    * @return null
    *   The return value is ignored
    */
-  public static function permission(&$permissions) {
-    return self::singleton()->invoke(['permissions'], $permissions,
-      self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
+  public static function permission(&$newPermissions, &$permissions) {
+    return self::singleton()->invoke(['permissions', 'all_permissions'], $newPermissions, $permissions,
+      self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
       'civicrm_permission'
     );
   }
@@ -2782,6 +2785,39 @@ abstract class CRM_Utils_Hook {
       ['displayValue', 'value', 'entityId', 'fieldInfo'],
       $displayValue, $value, $entityId, $fieldInfo, self::$_nullObject,
       self::$_nullObject, 'civicrm_alterCustomFieldDisplayValue'
+    );
+  }
+
+  /**
+   * Alter APIv4 route permissions based on the Entity and Action
+   *
+   * This is an experimental hook intended to *relax* the requirement
+   * for "access AJAX API" when calling public-oriented APIs.
+   *
+   * Historically, when APIv2/v3 were first exposed to an HTTP interface, using
+   * the HTTP interface required an extra permission "access AJAX API". This is a
+   * broad hedge against security flaws within those API's. In the current APIv4
+   * era, security concerns are often baked into each API, so there is a debate about
+   * whether "access AJAX API" serves a purpose or just makes
+   * administration/development more complicated. (So far, there's more support
+   * for the latter.)
+   *
+   * This hook might foreseeably be abandoned either...
+   *
+   * - if it is found that "access AJAX API" guard is not needed for APIv4.
+   * - if the policy is moved into metadata.
+   *
+   * @param array|string $permissions
+   * @param string $entity
+   * @param string $action
+   *
+   * @return mixed
+   */
+  public static function alterApiRoutePermissions(&$permissions, $entity, $action) {
+    return self::singleton()->invoke(
+      ['permissions', 'entity', 'action'],
+      $permissions, $entity, $action, self::$_nullObject, self::$_nullObject,
+      self::$_nullObject, 'civicrm_alterApiRoutePermissions'
     );
   }
 

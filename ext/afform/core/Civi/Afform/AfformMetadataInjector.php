@@ -11,6 +11,8 @@
 
 namespace Civi\Afform;
 
+use CRM_Afform_ExtensionUtil as E;
+
 /**
  * Class AfformMetadataInjector
  * @package Civi\Afform
@@ -74,43 +76,68 @@ class AfformMetadataInjector {
   /**
    * Merge field definition metadata into an afform field's definition
    *
-   * @param string $entityType
+   * @param string $entityName
    * @param string $action
    * @param \DOMElement $afField
    * @throws \API_Exception
    */
-  private static function fillFieldMetadata($entityType, $action, \DOMElement $afField) {
+  private static function fillFieldMetadata($entityName, $action, \DOMElement $afField) {
     $fieldName = $afField->getAttribute('name');
-    if (strpos($entityType, ' AS ')) {
-      [$entityType, $alias] = explode(' AS ', $entityType);
+    // For explicit joins, strip the alias off the field name
+    if (strpos($entityName, ' AS ')) {
+      [$entityName, $alias] = explode(' AS ', $entityName);
       $fieldName = preg_replace('/^' . preg_quote($alias . '.', '/') . '/', '', $fieldName);
     }
     $params = [
       'action' => $action,
       'where' => [['name', '=', $fieldName]],
-      'select' => ['label', 'input_type', 'input_attrs', 'options'],
+      'select' => ['label', 'input_type', 'input_attrs', 'help_pre', 'help_post', 'options'],
       'loadOptions' => ['id', 'label'],
+      // If the admin included this field on the form, then it's OK to get metadata about the field regardless of user permissions.
+      'checkPermissions' => FALSE,
     ];
-    if (in_array($entityType, \CRM_Contact_BAO_ContactType::basicTypes(TRUE))) {
-      $params['values'] = ['contact_type' => $entityType];
-      $entityType = 'Contact';
+    if (in_array($entityName, \CRM_Contact_BAO_ContactType::basicTypes(TRUE))) {
+      $params['values'] = ['contact_type' => $entityName];
+      $entityName = 'Contact';
     }
+    $fieldInfo = civicrm_api4($entityName, 'getFields', $params)->first();
     // Merge field definition data with whatever's already in the markup.
-    // If the admin has chosen to include this field on the form, then it's OK for us to get metadata about the field - regardless of user's other permissions.
-    $getFields = civicrm_api4($entityType, 'getFields', $params + ['checkPermissions' => FALSE]);
     $deep = ['input_attrs'];
-    foreach ($getFields as $fieldInfo) {
+    if ($fieldInfo) {
+      // Defaults for attributes not in spec
+      $fieldInfo['search_range'] = FALSE;
+
       $existingFieldDefn = trim(pq($afField)->attr('defn') ?: '');
       if ($existingFieldDefn && $existingFieldDefn[0] != '{') {
         // If it's not an object, don't mess with it.
-        continue;
-      }
-      // Default placeholder for select inputs
-      if ($fieldInfo['input_type'] === 'Select') {
-        $fieldInfo['input_attrs'] = ($fieldInfo['input_attrs'] ?? []) + ['placeholder' => ts('Select')];
+        return;
       }
 
+      // Get field defn from afform markup
       $fieldDefn = $existingFieldDefn ? \CRM_Utils_JS::getRawProps($existingFieldDefn) : [];
+      // This is the input type set on the form (may be different from the default input type in the field spec)
+      $inputType = !empty($fieldDefn['input_type']) ? \CRM_Utils_JS::decode($fieldDefn['input_type']) : $fieldInfo['input_type'];
+      // On a search form, search_range will present a pair of fields (or possibly 3 fields for date select + range)
+      $isSearchRange = !empty($fieldDefn['search_range']) && \CRM_Utils_JS::decode($fieldDefn['search_range']);
+
+      // Default placeholder for select inputs
+      if ($inputType === 'Select') {
+        $fieldInfo['input_attrs']['placeholder'] = E::ts('Select');
+      }
+
+      if ($fieldInfo['input_type'] === 'Date') {
+        // This flag gets used by the afField controller
+        $fieldDefn['is_date'] = TRUE;
+        // For date fields that have been converted to Select
+        if ($inputType === 'Select') {
+          $dateOptions = \CRM_Utils_Array::makeNonAssociative(\CRM_Core_OptionGroup::values('relative_date_filters'), 'id', 'label');
+          if ($isSearchRange) {
+            $dateOptions = array_merge([['id' => '{}', 'label' => E::ts('Choose Date Range')]], $dateOptions);
+          }
+          $fieldInfo['options'] = $dateOptions;
+        }
+      }
+
       foreach ($fieldInfo as $name => $prop) {
         // Merge array props 1 level deep
         if (in_array($name, $deep) && !empty($fieldDefn[$name])) {
@@ -125,6 +152,8 @@ class AfformMetadataInjector {
   }
 
   /**
+   * Determines name of the api entity based on the field name prefix
+   *
    * @param string $fieldName
    * @param string[] $entityList
    * @return string

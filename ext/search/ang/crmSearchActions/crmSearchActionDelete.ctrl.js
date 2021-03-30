@@ -2,9 +2,9 @@
   "use strict";
 
   angular.module('crmSearchActions').controller('crmSearchActionDelete', function($scope, dialogService) {
-    var ts = $scope.ts = CRM.ts(),
+    var ts = $scope.ts = CRM.ts('org.civicrm.search'),
       model = $scope.model,
-      ctrl = $scope.$ctrl = this;
+      ctrl = this;
 
     this.entityTitle = model.ids.length === 1 ? model.entityInfo.title : model.entityInfo.title_plural;
 

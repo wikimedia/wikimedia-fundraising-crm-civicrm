@@ -17,14 +17,16 @@
         <th>{{:: ts('Displays') }}</th>
         <th>{{:: ts('Smart Group') }}</th>
         <th ng-if="$ctrl.afformEnabled">{{:: ts('Forms') }}</th>
+        <th>{{:: ts('Created') }}</th>
+        <th>{{:: ts('Last Modified') }}</th>
         <th></th>
       </tr>
     </thead>
     <tbody>
       <tr ng-repeat="search in $ctrl.savedSearches | filter:$ctrl.searchFilter">
-        <td>{{ search.id }}</td>
-        <td>{{ search.label }}</td>
-        <td>{{ $ctrl.entityTitles[search.api_entity] }}</td>
+        <td>{{:: search.id }}</td>
+        <td>{{:: search.label }}</td>
+        <td>{{:: $ctrl.entityTitles[search.api_entity] }}</td>
         <td>
           <div class="btn-group">
             <button type="button" disabled ng-if="!search.display_name" class="btn btn-xs dropdown-toggle btn-primary-outline">
@@ -43,7 +45,7 @@
             </ul>
           </div>
         </td>
-        <td>{{ search.groups.join(', ') }}</td>
+        <td>{{:: search.groups.join(', ') }}</td>
         <td ng-if="::$ctrl.afformEnabled">
           <div class="btn-group">
             <button type="button" ng-click="$ctrl.loadAfforms()" ng-if="search.display_name" class="btn btn-xs dropdown-toggle btn-primary-outline" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -52,7 +54,7 @@
             </button>
             <ul class="dropdown-menu">
               <li ng-repeat="display_name in search.display_name" ng-if="::$ctrl.afformAdminEnabled">
-                <a href="{{:: $ctrl.newFormPath + '#/create/search/' + search.name + '.' + display_name }}">
+                <a href="{{:: $ctrl.afformPath + '#/create/search/' + search.name + '.' + display_name }}">
                   <i class="fa fa-plus"></i> {{:: ts('Create form for %1', {1: search.display_label[$index]}) }}
                 </a>
               </li>
@@ -63,15 +65,17 @@
                   <em ng-if="$ctrl.afforms && !$ctrl.afforms[search.name]">{{:: ts('None Found') }}</em>
                 </a>
               </li>
-              <li ng-if="$ctrl.afforms" ng-repeat="afform in $ctrl.afforms[search.name]" ng-class="{disabled: !afform.url}" title="{{:: afform.url ? ts('Open form in new tab') : ts('This form does not have a page') }}">
-                <a href="{{:: afform.url }}" target="_blank">
-                  <i class="crm-i {{:: afform.url ? 'fa-external-link' : 'fa-list-alt' }}"></i>
+              <li ng-if="$ctrl.afforms" ng-repeat="afform in $ctrl.afforms[search.name]" title="{{:: ts('Edit form') }}">
+                <a href="{{:: $ctrl.afformPath + '#/edit/' + afform.name }}">
+                  <i class="crm-i fa-pencil-square-o"></i>
                   {{:: afform.title }}
                 </a>
               </li>
             </ul>
           </div>
         </td>
+        <td>{{:: ts('%1 by %2', {1: formatDate(search.created_date), 2: search['created.display_name']}) }}</td>
+        <td>{{:: ts('%1 by %2', {1: formatDate(search.created_date), 2: search['modified.display_name']}) }}</td>
         <td class="text-right">
           <a class="btn btn-xs btn-default" href="#/edit/{{:: search.id }}">{{:: ts('Edit') }}</a>
           <a class="btn btn-xs btn-default" href="#/create/{{:: search.api_entity + '?params=' + $ctrl.encode(search.api_params) }}">{{:: ts('Clone') }}</a>

@@ -3,7 +3,9 @@
 
   angular.module('crmSearchDisplayList').component('crmSearchDisplayList', {
     bindings: {
-      apiEntity: '<',
+      apiEntity: '@',
+      search: '<',
+      display: '<',
       apiParams: '<',
       settings: '<',
       filters: '<'
@@ -12,44 +14,51 @@
       afFieldset: '?^^afFieldset'
     },
     templateUrl: '~/crmSearchDisplayList/crmSearchDisplayList.html',
-    controller: function($scope, crmApi4, searchDisplayUtils) {
-      var ts = $scope.ts = CRM.ts(),
+    controller: function($scope, $element, crmApi4, searchDisplayUtils) {
+      var ts = $scope.ts = CRM.ts('org.civicrm.search'),
         ctrl = this;
+
       this.page = 1;
+      this.rowCount = null;
 
       this.$onInit = function() {
-        this.apiParams = _.cloneDeep(this.apiParams);
-        this.apiParams.limit = parseInt(this.settings.limit || 0, 10);
-        this.columns = searchDisplayUtils.prepareColumns(this.settings.columns, this.apiParams);
+        this.sort = this.settings.sort ? _.cloneDeep(this.settings.sort) : [];
         $scope.displayUtils = searchDisplayUtils;
-        if (this.afFieldset) {
-          $scope.$watch(this.afFieldset.getFieldData, this.getResults, true);
+
+        // If search is embedded in contact summary tab, display count in tab-header
+        var contactTab = $element.closest('.crm-contact-page .ui-tabs-panel').attr('id');
+        if (contactTab) {
+          var unwatchCount = $scope.$watch('$ctrl.rowCount', function(rowCount) {
+            if (typeof rowCount === 'number') {
+              unwatchCount();
+              CRM.tabHeader.updateCount(contactTab.replace('contact-', '#tab_'), rowCount);
+            }
+          });
         }
-        $scope.$watch('$ctrl.filters', ctrl.getResults, true);
+
+        if (this.afFieldset) {
+          $scope.$watch(this.afFieldset.getFieldData, onChangeFilters, true);
+        }
+        $scope.$watch('$ctrl.filters', onChangeFilters, true);
       };
 
       this.getResults = _.debounce(function() {
-        var params = searchDisplayUtils.prepareParams(ctrl);
-
-        crmApi4(ctrl.apiEntity, 'get', params).then(function(results) {
-          ctrl.results = results;
-          ctrl.rowCount = results.count;
-        });
+        searchDisplayUtils.getResults(ctrl);
       }, 100);
 
-      $scope.formatResult = function(row, col) {
-        var value = row[col.key],
-          formatted = searchDisplayUtils.formatSearchValue(row, col, value),
-          output = '';
-        if (formatted.length || (col.label && col.forceLabel)) {
-          if (col.label && (formatted.length || col.forceLabel)) {
-            output += '<label>' + _.escape(col.label) + '</label> ';
-          }
-          if (formatted.length) {
-            output += (col.prefix || '') + formatted + (col.suffix || '');
-          }
-        }
-        return output;
+      // Refresh current page
+      this.refresh = function(row) {
+        searchDisplayUtils.getResults(ctrl);
+      };
+
+      function onChangeFilters() {
+        ctrl.page = 1;
+        ctrl.rowCount = null;
+        ctrl.getResults();
+      }
+
+      this.formatFieldValue = function(rowData, col) {
+        return searchDisplayUtils.formatDisplayValue(rowData, col.key, ctrl.settings.columns);
       };
 
     }

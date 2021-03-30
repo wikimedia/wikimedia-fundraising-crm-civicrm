@@ -9,19 +9,45 @@
     },
     require: {editor: '^^afGuiEditor'},
     controller: function ($scope, $timeout, afGui) {
-      var ts = $scope.ts = CRM.ts();
+      var ts = $scope.ts = CRM.ts('org.civicrm.afform_admin');
       var ctrl = this;
       $scope.controls = {};
       $scope.fieldList = [];
+      $scope.calcFieldList = [];
+      $scope.blockList = [];
+      $scope.blockTitles = [];
       $scope.elementList = [];
       $scope.elementTitles = [];
 
       $scope.getField = afGui.getField;
 
-      function buildPaletteLists() {
+      this.buildPaletteLists = function() {
         var search = $scope.controls.fieldSearch ? $scope.controls.fieldSearch.toLowerCase() : null;
+        buildCalcFieldList(search);
         buildFieldList(search);
+        buildBlockList(search);
         buildElementList(search);
+      };
+
+      function buildCalcFieldList(search) {
+        $scope.calcFieldList.length = 0;
+        _.each(_.cloneDeep(ctrl.display.calc_fields), function(field) {
+          if (!search || _.contains(field.defn.label.toLowerCase(), search)) {
+            $scope.calcFieldList.push(field);
+          }
+        });
+      }
+
+      function buildBlockList(search) {
+        $scope.blockList.length = 0;
+        $scope.blockTitles.length = 0;
+        _.each(afGui.meta.blocks, function(block, directive) {
+          if (!search || _.contains(directive, search) || _.contains(block.name.toLowerCase(), search) || _.contains(block.title.toLowerCase(), search)) {
+            var item = {"#tag": directive};
+            $scope.blockList.push(item);
+            $scope.blockTitles.push(block.title);
+          }
+        });
       }
 
       function buildFieldList(search) {
@@ -39,7 +65,7 @@
           var joinInfo = join[0].split(' AS '),
             entity = afGui.getEntity(joinInfo[0]),
             alias = joinInfo[1];
-          entityCount[entity.entity] = entityCount[entity.entity] ? entityCount[entity.entity] + 1 : 1;
+          entityCount[entity.entity] = (entityCount[entity.entity] || 0) + 1;
           $scope.fieldList.push({
             entityType: entity.entity,
             label: ts('%1 Fields', {1: entity.label + (entityCount[entity.entity] > 1 ? ' ' + entityCount[entity.entity] : '')}),
@@ -50,12 +76,24 @@
         function filterFields(fields, prefix) {
           return _.transform(fields, function(fieldList, field) {
             if (!search || _.contains(field.name, search) || _.contains(field.label.toLowerCase(), search)) {
-              fieldList.push({
-                "#tag": "af-field",
-                name: (prefix ? prefix + '.' : '') + field.name
-              });
+              fieldList.push(fieldDefaults(field, prefix));
             }
           }, []);
+        }
+
+        function fieldDefaults(field, prefix) {
+          var tag = {
+            "#tag": "af-field",
+            name: (prefix ? prefix + '.' : '') + field.name
+          };
+          if (field.input_type === 'Select') {
+            tag.defn = {input_attrs: {multiple: true}};
+          } else if (field.input_type === 'Date') {
+            tag.defn = {input_type: 'Select', search_range: true};
+          } else if (field.options) {
+            tag.defn = {input_type: 'Select', input_attrs: {multiple: true}};
+          }
+          return tag;
         }
       }
 
@@ -74,15 +112,11 @@
         });
       }
 
-      $scope.clearSearch = function() {
-        $scope.controls.fieldSearch = '';
-      };
-
       // This gets called from jquery-ui so we have to manually apply changes to scope
       $scope.buildPaletteLists = function() {
         $timeout(function() {
           $scope.$apply(function() {
-            buildPaletteLists();
+            ctrl.buildPaletteLists();
           });
         });
       };
@@ -90,6 +124,18 @@
       // Checks if a field is on the form or set as a value
       $scope.fieldInUse = function(fieldName) {
         return check(ctrl.editor.layout['#children'], {'#tag': 'af-field', name: fieldName});
+      };
+
+      // Checks if fields in a block are already in use on the form.
+      // Note that if a block contains no fields it can be used repeatedly, so this will always return false for those.
+      $scope.blockInUse = function(block) {
+        if (block['af-join']) {
+          return check(ctrl.editor.layout['#children'], {'af-join': block['af-join']});
+        }
+        var fieldsInBlock = _.pluck(afGui.findRecursive(afGui.meta.blocks[block['#tag']].layout, {'#tag': 'af-field'}), 'name');
+        return check(ctrl.editor.layout['#children'], function(item) {
+          return item['#tag'] === 'af-field' && _.includes(fieldsInBlock, item.name);
+        });
       };
 
       // Check for a matching item for this entity
@@ -120,7 +166,14 @@
         return found.match;
       }
 
-      $scope.$watch('controls.fieldSearch', buildPaletteLists);
+      this.$onInit = function() {
+        // When a new block is saved, update the list
+        this.meta = afGui.meta;
+        $scope.$watchCollection('$ctrl.meta.blocks', function() {
+          $scope.controls.fieldSearch = '';
+          ctrl.buildPaletteLists();
+        });
+      };
     }
   });
 

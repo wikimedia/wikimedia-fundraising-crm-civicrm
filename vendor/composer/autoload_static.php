@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit329aa0035170c6565680995bd6fe05fb
+class ComposerStaticInit0389bd66dcf0005a3b803fa03717f44c
 {
     public static $files = array (
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
@@ -100,6 +100,7 @@ class ComposerStaticInit329aa0035170c6565680995bd6fe05fb
         'F' => 
         array (
             'FontLib\\' => 8,
+            'Firebase\\JWT\\' => 13,
         ),
         'D' => 
         array (
@@ -278,6 +279,10 @@ class ComposerStaticInit329aa0035170c6565680995bd6fe05fb
         'FontLib\\' => 
         array (
             0 => __DIR__ . '/..' . '/phenx/php-font-lib/src/FontLib',
+        ),
+        'Firebase\\JWT\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
         ),
         'Dompdf\\' => 
         array (
@@ -570,11 +575,11 @@ class ComposerStaticInit329aa0035170c6565680995bd6fe05fb
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit329aa0035170c6565680995bd6fe05fb::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit329aa0035170c6565680995bd6fe05fb::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit329aa0035170c6565680995bd6fe05fb::$prefixesPsr0;
-            $loader->fallbackDirsPsr0 = ComposerStaticInit329aa0035170c6565680995bd6fe05fb::$fallbackDirsPsr0;
-            $loader->classMap = ComposerStaticInit329aa0035170c6565680995bd6fe05fb::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit0389bd66dcf0005a3b803fa03717f44c::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit0389bd66dcf0005a3b803fa03717f44c::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit0389bd66dcf0005a3b803fa03717f44c::$prefixesPsr0;
+            $loader->fallbackDirsPsr0 = ComposerStaticInit0389bd66dcf0005a3b803fa03717f44c::$fallbackDirsPsr0;
+            $loader->classMap = ComposerStaticInit0389bd66dcf0005a3b803fa03717f44c::$classMap;
 
         }, null, ClassLoader::class);
     }

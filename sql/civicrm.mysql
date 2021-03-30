@@ -197,7 +197,7 @@ SET FOREIGN_KEY_CHECKS=1;
 CREATE TABLE `civicrm_address_format` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Address Format Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Address Format ID',
      `format` text    COMMENT 'The format of an address' 
 ,
         PRIMARY KEY (`id`)
@@ -428,7 +428,7 @@ CREATE TABLE `civicrm_system_log` (
 CREATE TABLE `civicrm_worldregion` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Country Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Country ID',
      `name` varchar(128)    COMMENT 'Region name to be associated with countries' 
 ,
         PRIMARY KEY (`id`)
@@ -828,7 +828,13 @@ CREATE TABLE `civicrm_saved_search` (
      `mapping_id` int unsigned    COMMENT 'Foreign key to civicrm_mapping used for saved search-builder searches.',
      `search_custom_id` int unsigned    COMMENT 'Foreign key to civicrm_option value table used for saved custom searches.',
      `api_entity` varchar(255)    COMMENT 'Entity name for API based search',
-     `api_params` text    COMMENT 'Parameters for API based search' 
+     `api_params` text    COMMENT 'Parameters for API based search',
+     `created_id` int unsigned    COMMENT 'FK to contact table.',
+     `modified_id` int unsigned    COMMENT 'FK to contact table.',
+     `expires_date` timestamp NULL   COMMENT 'Optional date after which the search is not needed',
+     `created_date` timestamp NOT NULL  DEFAULT CURRENT_TIMESTAMP COMMENT 'When the search was created.',
+     `modified_date` timestamp NOT NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the search was last modified.',
+     `description` text     
 ,
         PRIMARY KEY (`id`)
  
@@ -836,7 +842,7 @@ CREATE TABLE `civicrm_saved_search` (
         name
   )
   
-,          CONSTRAINT FK_civicrm_saved_search_mapping_id FOREIGN KEY (`mapping_id`) REFERENCES `civicrm_mapping`(`id`) ON DELETE SET NULL  
+,          CONSTRAINT FK_civicrm_saved_search_mapping_id FOREIGN KEY (`mapping_id`) REFERENCES `civicrm_mapping`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_saved_search_created_id FOREIGN KEY (`created_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_saved_search_modified_id FOREIGN KEY (`modified_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL  
 )  ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC  ;
 
 -- /*******************************************************
@@ -884,7 +890,7 @@ CREATE TABLE `civicrm_batch` (
      `created_id` int unsigned    COMMENT 'FK to Contact ID',
      `created_date` datetime    COMMENT 'When was this item created',
      `modified_id` int unsigned    COMMENT 'FK to Contact ID',
-     `modified_date` datetime    COMMENT 'When was this item created',
+     `modified_date` datetime    COMMENT 'When was this item modified',
      `saved_search_id` int unsigned    COMMENT 'FK to Saved Search ID',
      `status_id` int unsigned NOT NULL   COMMENT 'fk to Batch Status options in civicrm_option_values',
      `type_id` int unsigned    COMMENT 'fk to Batch Type options in civicrm_option_values',
@@ -1067,7 +1073,7 @@ CREATE TABLE `civicrm_premiums` (
 CREATE TABLE `civicrm_currency` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Currency Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Currency ID',
      `name` varchar(64)    COMMENT 'Currency Name',
      `symbol` varchar(8)    COMMENT 'Currency Symbol',
      `numeric_code` varchar(3)    COMMENT 'Numeric currency code',
@@ -1254,7 +1260,7 @@ CREATE TABLE `civicrm_financial_item` (
 CREATE TABLE `civicrm_membership_status` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership ID',
      `name` varchar(128)    COMMENT 'Name for Membership Status',
      `label` varchar(128)    COMMENT 'Label for Membership Status',
      `start_event` varchar(12)    COMMENT 'Event when this status starts.',
@@ -1418,7 +1424,7 @@ CREATE TABLE `civicrm_participant_status_type` (
 CREATE TABLE `civicrm_event_carts` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Cart Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Cart ID',
      `user_id` int unsigned    COMMENT 'FK to civicrm_contact who created this cart',
      `completed` tinyint   DEFAULT 0  
 ,
@@ -1513,7 +1519,7 @@ CREATE TABLE `civicrm_case_type` (
      `name` varchar(64) NOT NULL   COMMENT 'Machine name for Case Type',
      `title` varchar(64) NOT NULL   COMMENT 'Natural language name for Case Type',
      `description` varchar(255)    COMMENT 'Description of the Case Type',
-     `is_active` tinyint    COMMENT 'Is this entry active?',
+     `is_active` tinyint   DEFAULT 1 COMMENT 'Is this case type enabled?',
      `is_reserved` tinyint    COMMENT 'Is this case type a predefined system type?',
      `weight` int NOT NULL  DEFAULT 1 COMMENT 'Ordering of the case types',
      `definition` blob    COMMENT 'xml definition of case type' 
@@ -1550,7 +1556,7 @@ CREATE TABLE `civicrm_grant` (
      `amount_granted` decimal(20,2)    COMMENT 'Granted amount, in default currency.',
      `currency` varchar(3) NOT NULL   COMMENT '3 character string, value from config setting or input via user.',
      `rationale` text    COMMENT 'Grant rationale.',
-     `status_id` int unsigned NOT NULL   COMMENT 'Id of Grant status.',
+     `status_id` int unsigned NOT NULL   COMMENT 'ID of Grant status.',
      `financial_type_id` int unsigned   DEFAULT NULL COMMENT 'FK to Financial Type.' 
 ,
         PRIMARY KEY (`id`)
@@ -1748,7 +1754,7 @@ CREATE TABLE `civicrm_cache` (
 CREATE TABLE `civicrm_country` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Country Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Country ID',
      `name` varchar(64)    COMMENT 'Country Name',
      `iso_code` char(2)    COMMENT 'ISO Code',
      `country_code` varchar(4)    COMMENT 'National prefix to be used when dialing TO this country.',
@@ -2012,7 +2018,7 @@ CREATE TABLE `civicrm_im` (
 CREATE TABLE `civicrm_job` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Job Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Job ID',
      `domain_id` int unsigned NOT NULL   COMMENT 'Which Domain is this scheduled job for',
      `run_frequency` varchar(8)   DEFAULT "Daily" COMMENT 'Scheduled job run frequency.',
      `last_run` timestamp NULL  DEFAULT NULL COMMENT 'When was this cron entry last run',
@@ -2040,7 +2046,7 @@ CREATE TABLE `civicrm_job` (
 CREATE TABLE `civicrm_job_log` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Job log entry Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Job log entry ID',
      `domain_id` int unsigned NOT NULL   COMMENT 'Which Domain is this scheduled job for',
      `run_time` timestamp    COMMENT 'Log entry date',
      `job_id` int unsigned    COMMENT 'Pointer to job id - not a FK though, just for logging purposes',
@@ -2234,6 +2240,8 @@ CREATE TABLE `civicrm_note` (
      `entity_id` int unsigned NOT NULL   COMMENT 'Foreign key to the referenced item.',
      `note` text    COMMENT 'Note and/or Comment.',
      `contact_id` int unsigned    COMMENT 'FK to Contact ID creator',
+     `note_date` timestamp   DEFAULT CURRENT_TIMESTAMP COMMENT 'Date attached to the note',
+     `created_date` timestamp NOT NULL  DEFAULT CURRENT_TIMESTAMP COMMENT 'When the note was created.',
      `modified_date` timestamp   DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When was this note last modified/edited',
      `subject` varchar(255)    COMMENT 'subject of note description',
      `privacy` varchar(255)    COMMENT 'Foreign Key to Note Privacy Level (which is an option value pair and hence an implicit FK)' 
@@ -2428,12 +2436,12 @@ CREATE TABLE `civicrm_uf_match` (
 CREATE TABLE `civicrm_timezone` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Timezone Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Timezone ID',
      `name` varchar(64)    COMMENT 'Timezone full name',
      `abbreviation` char(3)    COMMENT 'ISO Code for timezone abbreviation',
      `gmt` varchar(64)    COMMENT 'GMT name of the timezone',
      `offset` int    ,
-     `country_id` int unsigned NOT NULL   COMMENT 'Country Id' 
+     `country_id` int unsigned NOT NULL   COMMENT 'Country ID' 
 ,
         PRIMARY KEY (`id`)
  
@@ -2656,7 +2664,7 @@ CREATE TABLE `civicrm_group` (
         name
   )
   
-,          CONSTRAINT FK_civicrm_group_saved_search_id FOREIGN KEY (`saved_search_id`) REFERENCES `civicrm_saved_search`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_group_created_id FOREIGN KEY (`created_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_group_modified_id FOREIGN KEY (`modified_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL  
+,          CONSTRAINT FK_civicrm_group_saved_search_id FOREIGN KEY (`saved_search_id`) REFERENCES `civicrm_saved_search`(`id`) ON DELETE CASCADE,          CONSTRAINT FK_civicrm_group_created_id FOREIGN KEY (`created_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_group_modified_id FOREIGN KEY (`modified_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL  
 )  ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC  ;
 
 -- /*******************************************************
@@ -2669,9 +2677,9 @@ CREATE TABLE `civicrm_group` (
 CREATE TABLE `civicrm_subscription_history` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Internal Id',
-     `contact_id` int unsigned NOT NULL   COMMENT 'Contact Id',
-     `group_id` int unsigned    COMMENT 'Group Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Internal ID',
+     `contact_id` int unsigned NOT NULL   COMMENT 'Contact ID',
+     `group_id` int unsigned    COMMENT 'Group ID',
      `date` timestamp NOT NULL  DEFAULT CURRENT_TIMESTAMP COMMENT 'Date of the (un)subscription',
      `method` varchar(8)    COMMENT 'How the (un)subscription was triggered',
      `status` varchar(8)    COMMENT 'The state of the contact within the group',
@@ -2803,7 +2811,7 @@ CREATE TABLE `civicrm_mailing_event_confirm` (
 CREATE TABLE `civicrm_contribution_page` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Contribution Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Contribution ID',
      `title` varchar(255)    COMMENT 'Contribution Page title. For top of page display',
      `intro_text` text    COMMENT 'Text and html allowed. Displayed below title.',
      `financial_type_id` int unsigned    COMMENT 'default financial type assigned to contributions submitted via this page, e.g. Contribution, Campaign Contribution',
@@ -2924,7 +2932,7 @@ CREATE TABLE `civicrm_premiums_product` (
 CREATE TABLE `civicrm_contribution_widget` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Contribution Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Contribution ID',
      `contribution_page_id` int unsigned    COMMENT 'The Contribution Page which triggered this contribution',
      `is_active` tinyint    COMMENT 'Is this property active?',
      `title` varchar(255)    COMMENT 'Widget title.',
@@ -3059,7 +3067,7 @@ CREATE TABLE `civicrm_sms_provider` (
 CREATE TABLE `civicrm_membership_type` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership ID',
      `domain_id` int unsigned NOT NULL   COMMENT 'Which Domain is this match entry for',
      `name` varchar(128) NOT NULL   COMMENT 'Name of Membership Type',
      `description` varchar(255)    COMMENT 'Description of Membership Type',
@@ -3100,7 +3108,7 @@ CREATE TABLE `civicrm_membership_type` (
 CREATE TABLE `civicrm_membership_block` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership ID',
      `entity_table` varchar(64)    COMMENT 'Name for Membership Status',
      `entity_id` int unsigned NOT NULL   COMMENT 'FK to civicrm_contribution_page.id',
      `membership_types` varchar(1024)    COMMENT 'Membership types to be exposed by this block',
@@ -3136,7 +3144,7 @@ CREATE TABLE `civicrm_case` (
      `start_date` date    COMMENT 'Date on which given case starts.',
      `end_date` date    COMMENT 'Date on which given case ends.',
      `details` text    COMMENT 'Details populated from Open Case. Only used in the CiviCase extension.',
-     `status_id` int unsigned NOT NULL   COMMENT 'Id of case status.',
+     `status_id` int unsigned NOT NULL   COMMENT 'ID of case status.',
      `is_deleted` tinyint   DEFAULT 0 ,
      `created_date` timestamp NULL  DEFAULT NULL COMMENT 'When was the case was created.',
      `modified_date` timestamp NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When was the case (or closely related entity) was created or modified or deleted.' 
@@ -3521,8 +3529,8 @@ CREATE TABLE `civicrm_uf_field` (
      `in_selector` tinyint   DEFAULT 0 COMMENT 'Is this field included as a column in the selector table?',
      `is_searchable` tinyint   DEFAULT 0 COMMENT 'Is this field included search form of profile?',
      `location_type_id` int unsigned    COMMENT 'Location type of this mapping, if required',
-     `phone_type_id` int unsigned    COMMENT 'Phone Type Id, if required',
-     `website_type_id` int unsigned    COMMENT 'Website Type Id, if required',
+     `phone_type_id` int unsigned    COMMENT 'Phone Type ID, if required',
+     `website_type_id` int unsigned    COMMENT 'Website Type ID, if required',
      `label` varchar(255) NOT NULL   COMMENT 'To save label for fields.',
      `field_type` varchar(255)    COMMENT 'This field saves field type (ie individual,household.. field etc).',
      `is_reserved` tinyint    COMMENT 'Is this field reserved for use by some other CiviCRM functionality?',
@@ -4115,11 +4123,11 @@ CREATE TABLE `civicrm_contribution_recur` (
      `amount` decimal(20,2) NOT NULL   COMMENT 'Amount to be collected (including any sales tax) by payment processor each recurrence.',
      `currency` varchar(3)   DEFAULT NULL COMMENT '3 character string, value from config setting or input via user.',
      `frequency_unit` varchar(8)   DEFAULT 'month' COMMENT 'Time units for recurrence of payment.',
-     `frequency_interval` int unsigned NOT NULL   COMMENT 'Number of time units for recurrence of payment.',
+     `frequency_interval` int unsigned NOT NULL  DEFAULT 1 COMMENT 'Number of time units for recurrence of payment.',
      `installments` int unsigned    COMMENT 'Total number of payments to be made. Set this to 0 if this is an open-ended commitment i.e. no set end date.',
-     `start_date` datetime NOT NULL   COMMENT 'The date the first scheduled recurring contribution occurs.',
-     `create_date` datetime NOT NULL   COMMENT 'When this recurring contribution record was created.',
-     `modified_date` datetime    COMMENT 'Last updated date for this record. mostly the last time a payment was received',
+     `start_date` datetime NOT NULL  DEFAULT CURRENT_TIMESTAMP COMMENT 'The date the first scheduled recurring contribution occurs.',
+     `create_date` datetime NOT NULL  DEFAULT CURRENT_TIMESTAMP COMMENT 'When this recurring contribution record was created.',
+     `modified_date` datetime   DEFAULT CURRENT_TIMESTAMP COMMENT 'Last updated date for this record. mostly the last time a payment was received',
      `cancel_date` datetime    COMMENT 'Date this recurring contribution was cancelled by contributor- if we can get access to it',
      `cancel_reason` text    COMMENT 'Free text field for a reason for cancelling',
      `end_date` datetime    COMMENT 'Date this recurring contribution finished successfully',
@@ -4127,7 +4135,7 @@ CREATE TABLE `civicrm_contribution_recur` (
      `payment_token_id` int unsigned    COMMENT 'Optionally used to store a link to a payment token used for this recurring contribution.',
      `trxn_id` varchar(255)    COMMENT 'unique transaction id. may be processor id, bank id + trans id, or account number + check number... depending on payment_method',
      `invoice_id` varchar(255)    COMMENT 'unique invoice id, system generated or passed in',
-     `contribution_status_id` int unsigned   DEFAULT 1 ,
+     `contribution_status_id` int unsigned   DEFAULT 2 ,
      `is_test` tinyint   DEFAULT 0 ,
      `cycle_day` int unsigned NOT NULL  DEFAULT 1 COMMENT 'Day in the period when the payment should be charged e.g. 1st of month, 15th etc.',
      `next_sched_contribution_date` datetime    COMMENT 'Next scheduled date',
@@ -4210,7 +4218,7 @@ CREATE TABLE `civicrm_financial_trxn` (
 CREATE TABLE `civicrm_membership` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership ID',
      `contact_id` int unsigned NOT NULL   COMMENT 'FK to Contact ID',
      `membership_type_id` int unsigned NOT NULL   COMMENT 'FK to Membership Type',
      `join_date` date    COMMENT 'Beginning of initial membership period (member since...).',
@@ -4456,7 +4464,7 @@ CREATE TABLE `civicrm_price_field_value` (
 CREATE TABLE `civicrm_pcp_block` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'PCP block Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'PCP block ID',
      `entity_table` varchar(64)    ,
      `entity_id` int unsigned NOT NULL   COMMENT 'FK to civicrm_contribution_page.id OR civicrm_event.id',
      `target_entity_type` varchar(255) NOT NULL  DEFAULT 'contribute' COMMENT 'The type of entity that this pcp targets',
@@ -4872,7 +4880,7 @@ CREATE TABLE `civicrm_event` (
 CREATE TABLE `civicrm_participant` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Participant Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Participant ID',
      `contact_id` int unsigned NOT NULL   COMMENT 'FK to Contact ID',
      `event_id` int unsigned NOT NULL   COMMENT 'FK to Event ID',
      `status_id` int unsigned NOT NULL  DEFAULT 1 COMMENT 'Participant status ID. FK to civicrm_participant_status_type. Default of 1 should map to status = Registered.',
@@ -4912,8 +4920,8 @@ CREATE TABLE `civicrm_participant` (
 CREATE TABLE `civicrm_participant_payment` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Participant Payment Id',
-     `participant_id` int unsigned NOT NULL   COMMENT 'Participant Id (FK)',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Participant Payment ID',
+     `participant_id` int unsigned NOT NULL   COMMENT 'Participant ID (FK)',
      `contribution_id` int unsigned NOT NULL   COMMENT 'FK to contribution table.' 
 ,
         PRIMARY KEY (`id`)
@@ -4934,7 +4942,7 @@ CREATE TABLE `civicrm_participant_payment` (
 CREATE TABLE `civicrm_events_in_carts` (
 
 
-     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Event In Cart Id',
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Event In Cart ID',
      `event_id` int unsigned    COMMENT 'FK to Event ID',
      `event_cart_id` int unsigned    COMMENT 'FK to Event Cart ID' 
 ,

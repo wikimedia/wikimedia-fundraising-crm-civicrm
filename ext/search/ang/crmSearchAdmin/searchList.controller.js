@@ -2,8 +2,9 @@
   "use strict";
 
   angular.module('crmSearchAdmin').controller('searchList', function($scope, savedSearches, crmApi4) {
-    var ts = $scope.ts = CRM.ts(),
+    var ts = $scope.ts = CRM.ts('org.civicrm.search'),
       ctrl = $scope.$ctrl = this;
+    $scope.formatDate = CRM.utils.formatDate;
     this.savedSearches = savedSearches;
     this.afformEnabled = CRM.crmSearchAdmin.afformEnabled;
     this.afformAdminEnabled = CRM.crmSearchAdmin.afformAdminEnabled;
@@ -13,7 +14,7 @@
     }, {});
 
     this.searchPath = CRM.url('civicrm/search');
-    this.newFormPath = CRM.url('civicrm/admin/afform');
+    this.afformPath = CRM.url('civicrm/admin/afform');
 
     this.encode = function(params) {
       return encodeURI(angular.toJson(params));
@@ -47,6 +48,8 @@
             ctrl.afforms[searchName[1]] = ctrl.afforms[searchName[1]] || [];
             ctrl.afforms[searchName[1]].push({
               title: afform.title,
+              name: afform.name,
+              // FIXME: This is the view url, currently not exposed to the UI, as BS3 doesn't support submenus.
               url: afform.server_route ? CRM.url(afform.server_route) : null
             });
           }

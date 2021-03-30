@@ -12,7 +12,7 @@
     },
     require: {editor: '^^afGuiEditor'},
     controller: function($scope, crmApi4, dialogService, afGui) {
-      var ts = $scope.ts = CRM.ts(),
+      var ts = $scope.ts = CRM.ts('org.civicrm.afform_admin'),
         ctrl = this;
 
       this.$onInit = function() {
@@ -22,7 +22,12 @@
           if (blockTag && (blockTag in afGui.meta.blocks) && !afGui.meta.blocks[blockTag].layout) {
             ctrl.loading = true;
             crmApi4('Afform', 'loadAdminData', {
-              definition: {name: afGui.meta.blocks[blockTag].name}
+              definition: {name: afGui.meta.blocks[blockTag].name},
+              skipEntities: _.transform(afGui.meta.entities, function(result, entity, entityName) {
+                if (entity.fields) {
+                  result.push(entityName);
+                }
+              }, [])
             }, 0).then(function(data) {
               afGui.addMeta(data);
               initializeBlockContainer();
@@ -31,6 +36,14 @@
           }
           initializeBlockContainer();
         }
+      };
+
+      this.sortableOptions = {
+        handle: '.af-gui-bar',
+        connectWith: '[ui-sortable]',
+        cancel: 'input,textarea,button,select,option,a,.dropdown-menu',
+        placeholder: 'af-gui-dropzone',
+        containment: '#afGuiEditor-canvas-body'
       };
 
       $scope.isSelectedFieldset = function(entityName) {
@@ -180,7 +193,7 @@
         };
 
         _.each(afGui.meta.blocks, function(blockInfo, directive) {
-          if (directive === ctrl.node['#tag'] || blockInfo.join === ctrl.getFieldEntityType()) {
+          if (directive === ctrl.node['#tag'] || (blockInfo.join && blockInfo.join === ctrl.getFieldEntityType())) {
             block.options.push({
               id: directive,
               text: blockInfo.title
@@ -222,7 +235,7 @@
           model.block = afGui.meta.blocks[$scope.block.original].block;
         }
         else {
-          model.block = ctrl.getFieldEntityType('id') || '*';
+          model.block = ctrl.getFieldEntityType();
         }
         dialogService.open('saveBlockDialog', '~/afGuiEditor/saveBlock.html', model, options)
           .then(function(block) {
@@ -292,14 +305,14 @@
               }
             });
           }
-          if (!entityType && afGui.getField(searchDisplay['saved_search.api_entity'], fieldName)) {
+          if (!entityType && fieldName && afGui.getField(searchDisplay['saved_search.api_entity'], fieldName)) {
             entityType = searchDisplay['saved_search.api_entity'];
           }
           if (entityType) {
             return false;
           }
         });
-        return entityType;
+        return entityType || _.map(afGui.meta.searchDisplays, 'saved_search.api_entity')[0];
       };
 
     }

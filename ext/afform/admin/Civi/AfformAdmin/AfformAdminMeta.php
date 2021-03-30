@@ -18,10 +18,10 @@ class AfformAdminMeta {
       ->execute();
     // Pluralize tabs (too bad option groups only store a single label)
     $plurals = [
-      'form' => ts('Custom Forms'),
-      'search' => ts('Search Displays'),
-      'block' => ts('Field Blocks'),
-      'system' => ts('System Forms'),
+      'form' => E::ts('Custom Forms'),
+      'search' => E::ts('Search Displays'),
+      'block' => E::ts('Field Blocks'),
+      'system' => E::ts('System Forms'),
     ];
     foreach ($afformTypes as $index => $type) {
       $afformTypes[$index]['plural'] = $plurals[$type['name']] ?? \CRM_Utils_String::pluralize($type['label']);
@@ -84,7 +84,7 @@ class AfformAdminMeta {
       'includeCustom' => TRUE,
       'loadOptions' => ['id', 'label'],
       'action' => 'create',
-      'select' => ['name', 'label', 'input_type', 'input_attrs', 'required', 'options', 'help_pre', 'help_post', 'serialize', 'data_type'],
+      'select' => ['name', 'label', 'input_type', 'input_attrs', 'required', 'options', 'help_pre', 'help_post', 'serialize', 'data_type', 'fk_entity'],
       'where' => [['input_type', 'IS NOT NULL']],
     ];
     if (in_array($entityName, ['Individual', 'Household', 'Organization'])) {
@@ -110,6 +110,11 @@ class AfformAdminMeta {
   public static function getGuiSettings() {
     $data = [
       'entities' => [
+        '*' => [
+          'label' => E::ts('Content Block'),
+          'icon' => 'fa-pencil-square-o',
+          'fields' => [],
+        ],
         'Contact' => self::getApiEntity('Contact'),
       ],
     ];
@@ -216,13 +221,21 @@ class AfformAdminMeta {
     ];
 
     $data['permissions'] = [];
-    foreach (\CRM_Core_Permission::basicPermissions(TRUE, TRUE) as $name => $perm) {
+    $perms = \Civi\Api4\Permission::get()
+      ->addWhere('group', 'IN', ['afformGeneric', 'const', 'civicrm', 'cms'])
+      ->addWhere('is_active', '=', 1)
+      ->setOrderBy(['title' => 'ASC'])
+      ->execute();
+    foreach ($perms as $perm) {
       $data['permissions'][] = [
-        'id' => $name,
-        'text' => $perm[0],
-        'description' => $perm[1] ?? NULL,
+        'id' => $perm['name'],
+        'text' => $perm['title'],
+        'description' => $perm['description'] ?? NULL,
       ];
     }
+
+    $dateRanges = \CRM_Utils_Array::makeNonAssociative(\CRM_Core_OptionGroup::values('relative_date_filters'), 'id', 'label');
+    $data['dateRanges'] = array_merge([['id' => '{}', 'label' => E::ts('Choose Date Range')]], $dateRanges);
 
     return $data;
   }
