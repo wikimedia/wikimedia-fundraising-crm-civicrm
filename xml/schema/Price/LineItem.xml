@@ -28,7 +28,10 @@
     <type>varchar</type>
     <length>64</length>
     <required>true</required>
-    <comment>table which has the transaction</comment>
+    <pseudoconstant>
+      <callback>CRM_Price_BAO_LineItem::entityTables</callback>
+    </pseudoconstant>
+    <comment>May contain civicrm_contribution, civicrm_participant or civicrm_membership</comment>
     <add>1.7</add>
   </field>
   <field>
@@ -138,16 +141,10 @@
     <add>3.2</add>
 
   </field>
-  <index>
-    <name>index_entity</name>
-    <fieldName>entity_table</fieldName>
-    <fieldName>entity_id</fieldName>
-    <add>1.7</add>
-  </index>
-  <index>
+   <index>
     <name>UI_line_item_value</name>
-    <fieldName>entity_table</fieldName>
     <fieldName>entity_id</fieldName>
+    <fieldName>entity_table</fieldName>
     <fieldName>contribution_id</fieldName>
     <fieldName>price_field_value_id</fieldName>
     <fieldName>price_field_id</fieldName>
@@ -231,4 +228,3 @@
    </html>
   </field>
 </table>
-

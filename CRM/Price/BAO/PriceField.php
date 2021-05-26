@@ -436,13 +436,6 @@ class CRM_Price_BAO_PriceField extends CRM_Price_DAO_PriceField {
           if ($is_pay_later) {
             $qf->add('text', 'txt-' . $elementName, $label, ['size' => '4']);
           }
-
-          // CRM-6902 - Add "max" option for a price set field
-          if (in_array($opId, $freezeOptions)) {
-            self::freezeIfEnabled($choice[$opId], $customOption[$opId]);
-            // CRM-14696 - Improve display for sold out price set options
-            $choice[$opt['id']] = '<span class="sold-out-option">' . $opt['label'] . '&nbsp;(' . ts('Sold out') . ')</span>';
-          }
         }
         if (!empty($qf->_membershipBlock) && $field->name == 'contribution_amount') {
           $choice['-1'] = ts('No thank you');
@@ -470,6 +463,14 @@ class CRM_Price_BAO_PriceField extends CRM_Price_DAO_PriceField {
         }
 
         $element = &$qf->addRadio($elementName, $label, $choice, [], NULL, FALSE, $choiceAttrs);
+        foreach ($element->getElements() as $radioElement) {
+          // CRM-6902 - Add "max" option for a price set field
+          if (in_array($radioElement->getValue(), $freezeOptions)) {
+            self::freezeIfEnabled($radioElement, $customOption[$radioElement->getValue()]);
+            // CRM-14696 - Improve display for sold out price set options
+            $radioElement->setText('<span class="sold-out-option">' . $radioElement->getText() . '&nbsp;(' . ts('Sold out') . ')</span>');
+          }
+        }
 
         // make contribution field required for quick config when membership block is enabled
         if (($field->name == 'membership_amount' || $field->name == 'contribution_amount')
@@ -794,7 +795,7 @@ WHERE  id IN (" . implode(',', array_keys($priceFields)) . ')';
             $selectedAmounts[$opId] = $options[$opId]['amount'];
           }
         }
-        elseif (in_array($fields["price_{$fieldId}"], array_keys($options))) {
+        elseif (array_key_exists($fields["price_{$fieldId}"], $options)) {
           $selectedAmounts[$fields["price_{$fieldId}"]] = $options[$fields["price_{$fieldId}"]]['amount'];
         }
       }
@@ -803,7 +804,7 @@ WHERE  id IN (" . implode(',', array_keys($priceFields)) . ')';
       // now we have all selected amount in hand.
       $totalAmount = array_sum($selectedAmounts);
       // The form offers a field to enter the amount paid. This may differ from the amount that is due to complete the purchase
-      $totalPaymentAmountEnteredOnForm = CRM_Utils_Array::value('partial_payment_total', $fields, CRM_Utils_Array::value('total_amount', $fields));
+      $totalPaymentAmountEnteredOnForm = CRM_Utils_Array::value('total_amount', $fields);
       if ($totalAmount < 0) {
         $error['_qf_default'] = ts('%1 amount can not be less than zero. Please select the options accordingly.', [1 => $componentName]);
       }

@@ -329,18 +329,39 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
     }
 
     [$this->_memberDisplayName, $this->_memberEmail] = CRM_Contact_BAO_Contact_Location::getEmailDetails($this->_contactID);
-
+    $this->_contributorContactID = $this->getContributionContactID();
     //CRM-10375 Where the payer differs to the member the payer should get the email.
     // here we store details in order to do that
     if (!empty($formValues['soft_credit_contact_id'])) {
-      $this->_receiptContactId = $this->_contributorContactID = $formValues['soft_credit_contact_id'];
+      $this->_receiptContactId = $formValues['soft_credit_contact_id'];
       [$this->_contributorDisplayName, $this->_contributorEmail] = CRM_Contact_BAO_Contact_Location::getEmailDetails($this->_contributorContactID);
     }
     else {
-      $this->_receiptContactId = $this->_contributorContactID = $this->_contactID;
+      $this->_receiptContactId = $this->_contactID;
       $this->_contributorDisplayName = $this->_memberDisplayName;
       $this->_contributorEmail = $this->_memberEmail;
     }
+  }
+
+  /**
+   * Get the contact id for the contribution.
+   *
+   * @return int
+   */
+  protected function getContributionContactID(): int {
+    return (int) ($this->getSubmittedValue('soft_credit_contact_id') ?: $this->getSubmittedValue('contact_id'));
+  }
+
+  /**
+   * Get the contact id for the contribution.
+   *
+   * @return int
+   */
+  protected function getMembershipContactID(): int {
+    // It's not clear that $this->_contactID *could* be set outside
+    // tests when contact_id is not submitted - so this fallback
+    // is precautionary in order to be similar to past behaviour.
+    return (int) ($this->getSubmittedValue('contact_id') ?: $this->_contactID);
   }
 
   /**
@@ -483,7 +504,7 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
     if ($priceSetDetails[$this->order->getPriceSetID()]['is_quick_config'] && isset($formValues['total_amount'])) {
       // Amount overrides only permitted on quick config.
       // Possibly Order object should enforce this...
-      $this->order->setOverrideTotalAmount($formValues['total_amount']);
+      $this->order->setOverrideTotalAmount((float) $formValues['total_amount']);
     }
     $this->order->setOverrideFinancialTypeID((int) $formValues['financial_type_id']);
     return $formValues;
@@ -494,7 +515,12 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
    *
    * @param array $formValues
    */
-  public function testSubmit(array $formValues): void {
+  public function testSubmit(array $formValues = []): void {
+    if (empty($formValues)) {
+      // If getForm is used these will be set - this is now
+      // preferred.
+      $formValues = $this->controller->exportValues($this->_name);
+    }
     $this->exportedValues = $formValues;
     $this->setContextVariables($formValues);
     $this->_memType = !empty($formValues['membership_type_id']) ? $formValues['membership_type_id'][1] : NULL;
