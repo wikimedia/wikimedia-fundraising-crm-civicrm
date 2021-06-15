@@ -68,7 +68,7 @@ class CRM_Core_Reference_Basic implements CRM_Core_Reference_Interface {
    * @return bool
    */
   public function matchesTargetTable($tableName) {
-    return ($this->getTargetTable() === $tableName);
+    return ($this->getTargetTable() === $tableName && $this->refTable !== 'civicrm_contact_name_pair_family');
   }
 
   /**
