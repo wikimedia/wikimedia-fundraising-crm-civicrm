@@ -141,7 +141,7 @@ class SqlTriggers {
     // Sort tables alphabetically in order to output in a consistent order
     // for sites that like to diff this output over time
     // (ie. with the logging_no_trigger_permission setting in place).
-    asort($triggers);
+    ksort($triggers);
     // now spit out the sql
     foreach ($triggers as $tableName => $tables) {
       if ($onlyTableName != NULL && $onlyTableName != $tableName) {
